@@ -1,4 +1,5 @@
 #include "Plots.h"
+#include "LanguageManager.h"
 #include "ThemeManager.h"
 
 #include <QFontMetricsF>
@@ -8,6 +9,11 @@
 #include <cmath>
 
 namespace phy104 {
+namespace {
+QString displayText(const QString& source) {
+    return LanguageManager::instance().text(source);
+}
+} // namespace
 
 GridCanvas::GridCanvas(QWidget* parent) : QWidget(parent) {
     connect(&ThemeManager::instance(), &ThemeManager::themeChanged, this, [this] { update(); });
@@ -71,9 +77,11 @@ void LineChart::paintEvent(QPaintEvent*) {
     auto X = [&](double x) { return plot.left() + (x - m_xMin) / (m_xMax - m_xMin) * plot.width(); };
     auto Y = [&](double y) { return plot.bottom() - (y - m_yMin) / (m_yMax - m_yMin) * plot.height(); };
 
+    const QString yLabel = displayText(m_yLabel);
+    const QString xLabel = displayText(m_xLabel);
     p.setPen(t.dim);
-    p.drawText(QPointF(8, 14), m_yLabel);
-    p.drawText(QPointF(plot.right() - fm.horizontalAdvance(m_xLabel), plot.bottom() + 36), m_xLabel);
+    p.drawText(QPointF(8, 14), yLabel);
+    p.drawText(QPointF(plot.right() - fm.horizontalAdvance(xLabel), plot.bottom() + 36), xLabel);
 
     for (const ChartRegion& r : m_regions) {                              // shaded regions first (under the grid)
         QColor fill = r.color.isValid() ? r.color : t.amber;
@@ -81,7 +89,7 @@ void LineChart::paintEvent(QPaintEvent*) {
         p.fillRect(QRectF(X(r.x0), plot.top(), X(r.x1) - X(r.x0), plot.height()), fill);
         if (!r.label.isEmpty()) {
             p.setPen(r.color.isValid() ? r.color : t.amber);
-            p.drawText(QPointF(X(r.x0) + 8, plot.top() + 28), r.label);
+            p.drawText(QPointF(X(r.x0) + 8, plot.top() + 28), displayText(r.label));
         }
     }
     p.setPen(QPen(t.border, 1));
@@ -115,7 +123,8 @@ void LineChart::paintEvent(QPaintEvent*) {
         p.setPen(QPen(h.color.isValid() ? h.color : t.dim, 1, Qt::DashLine));
         p.drawLine(QPointF(plot.left(), Y(h.y)), QPointF(plot.right(), Y(h.y)));
         p.setPen(t.muted);
-        p.drawText(QPointF(plot.right() - 8 - fm.horizontalAdvance(h.label), Y(h.y) - 6), h.label);
+        const QString label = displayText(h.label);
+        p.drawText(QPointF(plot.right() - 8 - fm.horizontalAdvance(label), Y(h.y) - 6), label);
     }
     for (const ChartVLine& v : m_vlines) {
         p.setPen(QPen(v.color.isValid() ? v.color : t.text, 1.4, Qt::DashLine));
@@ -163,8 +172,9 @@ void LineChart::paintEvent(QPaintEvent*) {
     for (const ChartVLine& v : m_vlines) {                                 // labels are drawn outside the clip
         if (v.label.isEmpty()) continue;
         p.setPen(v.color.isValid() ? v.color : t.text);
-        const double lw = fm.horizontalAdvance(v.label);
-        p.drawText(QPointF(std::min(plot.right() - lw, std::max(plot.left(), X(v.x) - lw / 2)), v.labelAtTop ? plot.top() - 6 : plot.bottom() - 18), v.label);
+        const QString label = displayText(v.label);
+        const double lw = fm.horizontalAdvance(label);
+        p.drawText(QPointF(std::min(plot.right() - lw, std::max(plot.left(), X(v.x) - lw / 2)), v.labelAtTop ? plot.top() - 6 : plot.bottom() - 18), label);
     }
     for (const ChartPoint& pt : m_points) {
         const QColor col = pt.color.isValid() ? pt.color : t.sage;
@@ -196,8 +206,9 @@ void LineChart::paintEvent(QPaintEvent*) {
         p.drawEllipse(QPointF(X(pt.x), Y(pt.y)), 4, 4);
         if (!pt.label.isEmpty()) {
             p.setPen(t.text);
-            const double lw = fm.horizontalAdvance(pt.label);
-            p.drawText(QPointF(std::min(plot.right() - lw - 4, X(pt.x) + 10), Y(pt.y) - 8), pt.label);
+            const QString label = displayText(pt.label);
+            const double lw = fm.horizontalAdvance(label);
+            p.drawText(QPointF(std::min(plot.right() - lw - 4, X(pt.x) + 10), Y(pt.y) - 8), label);
         }
     }
 
@@ -205,15 +216,16 @@ void LineChart::paintEvent(QPaintEvent*) {
     double x = plot.left();
     const double y = height() - 8;
     for (const QString& item : m_legend) {
+        const QString label = displayText(item);
         p.setPen(Qt::NoPen);
         p.setBrush(t.sage);
         p.drawEllipse(QPointF(x + 3, y - 3), 3, 3);
         p.setPen(t.muted);
-        p.drawText(QPointF(x + 12, y), item);
-        x += 18 + fm.horizontalAdvance(item) + 14;
+        p.drawText(QPointF(x + 12, y), label);
+        x += 18 + fm.horizontalAdvance(label) + 14;
     }
     p.setPen(t.muted);
-    p.drawText(QPointF(x, y), m_caption);
+    p.drawText(QPointF(x, y), displayText(m_caption));
 }
 
 } // namespace phy104

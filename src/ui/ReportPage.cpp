@@ -4,6 +4,7 @@
 #include "ExperimentPages.h"
 #include "ReportDocument.h"
 #include "ExportService.h"
+#include "LanguageManager.h"
 #include "RecentExportPanel.h"
 #include "ThemeManager.h"
 
@@ -13,6 +14,7 @@
 #include <QDate>
 #include <QDateTime>
 #include <QDialog>
+#include <QLocale>
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -38,6 +40,17 @@
 
 namespace phy104 {
 namespace {
+
+QString localized(const QString& source) {
+    return LanguageManager::instance().text(source);
+}
+
+std::string localized(const std::string& source) {
+    static const std::string actionPrefix = "ACTION: ";
+    if (source.rfind(actionPrefix, 0) == 0)
+        return localized(QStringLiteral("ACTION: ")).toStdString() + localized(source.substr(actionPrefix.size()));
+    return localized(QString::fromStdString(source)).toStdString();
+}
 
 /// Renders a widget (even a hidden one inside the page stack) into a 2x image for print quality.
 QImage grabWidget(QWidget* widget) {
@@ -183,9 +196,32 @@ QString ReportPage::destinationFolder() const { return m_folder->currentData().t
 
 ReportOptions ReportPage::options(int imageWidth) const {
     ReportOptions o;
-    o.generated = QDateTime::currentDateTime().toString("d MMMM yyyy · HH:mm").toStdString();
+    const bool arabic = LanguageManager::instance().isArabic();
+    const QLocale dateLocale = arabic ? QLocale(QLocale::Arabic, QLocale::Egypt) : QLocale::c();
+    o.generated = dateLocale.toString(QDateTime::currentDateTime(), "d MMMM yyyy · HH:mm").toStdString();
     const QString sessionName = QFileInfo(m_ctx->sessionFile).fileName();
-    o.sessionName = (sessionName.isEmpty() ? QString("Unsaved session") : sessionName).toStdString();
+    o.sessionName = (sessionName.isEmpty() ? localized(QStringLiteral("Unsaved session")) : sessionName).toStdString();
+    o.title = localized(QStringLiteral("PHY104 Laboratory Report")).toStdString();
+    o.subtitle = localized(QStringLiteral("Optical Assistant · PHY 104 · Optics")).toStdString();
+    o.rightToLeft = arabic;
+    o.labels.mastheadOrganization = localized(QStringLiteral("PHY104 · OPTICS LABORATORY")).toStdString();
+    o.labels.mastheadReport = localized(QStringLiteral("LAB REPORT")).toStdString();
+    o.labels.generated = localized(QStringLiteral("GENERATED")).toStdString();
+    o.labels.session = localized(QStringLiteral("SESSION")).toStdString();
+    o.labels.experiments = localized(QStringLiteral("EXPERIMENTS")).toStdString();
+    o.labels.result = localized(QStringLiteral("RESULT")).toStdString();
+    o.labels.figureFormat = localized(QStringLiteral("Figure %1.")).toStdString();
+    o.labels.opticalDiagramFormat = localized(QStringLiteral("Optical diagram — %1.")).toStdString();
+    o.labels.dataChartFormat = localized(QStringLiteral("Data chart — %1.")).toStdString();
+    o.labels.experimentalParameters = localized(QStringLiteral("Experimental parameters")).toStdString();
+    o.labels.sessionNotes = localized(QStringLiteral("Session notes")).toStdString();
+    o.labels.savedCalculations = localized(QStringLiteral("Saved calculations")).toStdString();
+    o.labels.tableExperiment = localized(QStringLiteral("Experiment")).toStdString();
+    o.labels.tableInputs = localized(QStringLiteral("Inputs")).toStdString();
+    o.labels.tableResult = localized(QStringLiteral("Result")).toStdString();
+    o.labels.nothingSelected = localized(QStringLiteral("Nothing selected yet: open an experiment or tick more sections.")).toStdString();
+    o.labels.footerFormat = localized(QStringLiteral("PHY104 Optical Assistant · %1")).toStdString();
+    o.labels.pageFormat = localized(QStringLiteral("Page %1 of %2")).toStdString();
     o.notes = m_chkNotes->isChecked();
     o.registers = m_chkRegs->isChecked();
     o.diagrams = m_chkDiagrams->isChecked();
@@ -197,20 +233,37 @@ ReportOptions ReportPage::options(int imageWidth) const {
 
 ReportContent ReportPage::collect(QMap<QString, QImage>& images) const {
     ReportContent content;
-    content.notes = m_ctx->log.notes();
+    content.notes = m_ctx->log.notes(); // Student-authored Markdown is intentionally never passed through i18n.
     content.runs = m_ctx->log.runs();
+    for (RunRecord& run : content.runs) {
+        run.experiment = localized(run.experiment);
+        run.description = localized(run.description);
+        run.result = localized(run.result);
+    }
     for (ExperimentPage* page : m_sources) {
         if (!page) continue;
         const QString name = page->experimentName();
-        const Snapshot* snap = m_ctx->log.snapshot(name.toStdString());
+        const std::string sourceName = name.toStdString();
+        const Snapshot* snap = m_ctx->log.snapshot(sourceName);
         if (!snap) continue;
         ReportSection section;
-        section.title = name.toStdString();
-        section.headline = snap->headline;
+        section.title = localized(sourceName);
+        section.headline = localized(snap->headline);
         section.parameters = snap->parameters;
+        for (auto& [label, value] : section.parameters) {
+            label = localized(label);
+            value = localized(value);
+        }
         section.registers = snap->registers;
+        for (LcdRegister& reg : section.registers) {
+            reg.title = localized(reg.title);
+            reg.resultLabel = localized(reg.resultLabel);
+            reg.resultValue = localized(reg.resultValue);
+            for (std::string& line : reg.lines) line = localized(line);
+            for (std::string& line : reg.extraLines) line = localized(line);
+        }
         if (m_chkDiagrams->isChecked()) {
-            const QString key = QString::fromStdString(reportImageKey("diagram", section.title));
+            const QString key = QString::fromStdString(reportImageKey("diagram", sourceName));
             QImage image = grabWidget(page->diagramCanvas());
             if (!image.isNull()) {
                 section.diagramKey = key.toStdString();
@@ -218,7 +271,7 @@ ReportContent ReportPage::collect(QMap<QString, QImage>& images) const {
             }
         }
         if (m_chkCharts->isChecked()) {
-            const QString key = QString::fromStdString(reportImageKey("chart", section.title));
+            const QString key = QString::fromStdString(reportImageKey("chart", sourceName));
             QImage image = grabWidget(page->chartWidget());
             if (!image.isNull()) {
                 section.chartKey = key.toStdString();
@@ -295,8 +348,10 @@ bool ReportPage::renderTo(QPrinter& printer) {
         headerFont.setWeight(QFont::DemiBold);
         painter.setFont(headerFont);
         const QRectF header(page.left(), page.top() + 2, page.width(), headerHeight - 4);
-        painter.drawText(header, Qt::AlignLeft | Qt::AlignVCenter, "PHY104 · OPTICS LABORATORY");
-        painter.drawText(header, Qt::AlignRight | Qt::AlignVCenter, "LABORATORY REPORT");
+        const Qt::Alignment leading = o.rightToLeft ? Qt::AlignRight : Qt::AlignLeft;
+        const Qt::Alignment trailing = o.rightToLeft ? Qt::AlignLeft : Qt::AlignRight;
+        painter.drawText(header, leading | Qt::AlignVCenter, QString::fromStdString(o.labels.mastheadOrganization));
+        painter.drawText(header, trailing | Qt::AlignVCenter, QString::fromStdString(o.labels.mastheadReport));
         painter.setPen(QPen(rule, 0.8));
         const qreal headerRuleY = page.top() + headerHeight - 1;
         painter.drawLine(QPointF(page.left(), headerRuleY), QPointF(page.right(), headerRuleY));
@@ -315,10 +370,10 @@ bool ReportPage::renderTo(QPrinter& printer) {
         footerFont.setPointSize(8);
         painter.setFont(footerFont);
         const QRectF footer(page.left(), footerRuleY + 2, page.width(), footerHeight - 2);
-        painter.drawText(footer, Qt::AlignLeft | Qt::AlignVCenter,
-                         "PHY104 Optical Assistant · " + QString::fromStdString(o.generated));
-        painter.drawText(footer, Qt::AlignRight | Qt::AlignVCenter,
-                         QString("Page %1 of %2").arg(pageIndex + 1).arg(pages));
+        const QString footerText = QString::fromStdString(o.labels.footerFormat).arg(QString::fromStdString(o.generated));
+        const QString pageText = QString::fromStdString(o.labels.pageFormat).arg(pageIndex + 1).arg(pages);
+        painter.drawText(footer, leading | Qt::AlignVCenter, footerText);
+        painter.drawText(footer, trailing | Qt::AlignVCenter, pageText);
         painter.restore();
     }
     painter.end();

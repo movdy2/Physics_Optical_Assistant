@@ -745,6 +745,16 @@ int main() {
         CHECK(html.find("Saved calculations") != std::string::npos && html.find("<td>Prisms</td>") != std::string::npos);
         CHECK(html.find("13 November 2026 · 02:15") != std::string::npos);
 
+        ReportOptions localizedReport = o;
+        localizedReport.rightToLeft = true;
+        localizedReport.title = "تقرير مختبر PHY104";
+        localizedReport.labels.result = "النتيجة";
+        localizedReport.labels.sessionNotes = "ملاحظات الجلسة";
+        const std::string rtlHtml = reportHtml(content, localizedReport);
+        CHECK(rtlHtml.find("<body dir=\"rtl\">") != std::string::npos);
+        CHECK(rtlHtml.find("<b>النتيجة</b>") != std::string::npos && rtlHtml.find("<h2>ملاحظات الجلسة</h2>") != std::string::npos);
+        CHECK(rtlHtml.find("<h3>Notes</h3>") != std::string::npos); // user Markdown remains as authored
+
         ReportOptions none = o;
         none.notes = none.registers = none.diagrams = none.charts = none.runs = false;
         const std::string bare = reportHtml(content, none);

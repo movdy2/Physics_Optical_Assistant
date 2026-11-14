@@ -5,15 +5,22 @@
 #include <QApplication>
 #include <QComboBox>
 #include <QEvent>
+#include <QFile>
 #include <QGroupBox>
 #include <QHash>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QLabel>
+#include <QRegularExpression>
+#include <QSet>
+#include <QVector>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QMenu>
 #include <QPlainTextEdit>
 #include <QSettings>
 #include <QSignalBlocker>
+#include <QStringList>
 #include <QTabBar>
 #include <QTabWidget>
 #include <QTableWidget>
@@ -21,7 +28,9 @@
 #include <QTreeWidget>
 #include <QWidget>
 
+#include <algorithm>
 #include <functional>
+#include <utility>
 
 namespace phy104 {
 namespace {
@@ -32,7 +41,8 @@ QSettings* languageSettings() {
 }
 
 const QHash<QString, QString>& arabicCatalog() {
-    static const QHash<QString, QString> catalog{
+    static const QHash<QString, QString> catalog = [] {
+        QHash<QString, QString> result{
         {QStringLiteral("Dashboard"), QStringLiteral("لوحة التحكم")},
         {QStringLiteral("Refraction & TIR"), QStringLiteral("الانكسار والانعكاس الكلي")},
         {QStringLiteral("Lenses & Mirrors"), QStringLiteral("العدسات والمرايا")},
@@ -342,6 +352,21 @@ const QHash<QString, QString>& arabicCatalog() {
         {QStringLiteral("Export diagram"), QStringLiteral("تصدير الرسم")},
         {QStringLiteral("PNG image (*.png)"), QStringLiteral("صورة PNG (*.png)")},
     };
+
+    for (const QString& path : {QStringLiteral(":/i18n/ar-ui.json"),
+                                QStringLiteral(":/i18n/ar-content.json"),
+                                QStringLiteral(":/i18n/ar-lessons.json"),
+                                QStringLiteral(":/i18n/ar-core.json")}) {
+        QFile translations(path);
+        if (!translations.open(QIODevice::ReadOnly)) continue;
+        const QJsonDocument document = QJsonDocument::fromJson(translations.readAll());
+        if (!document.isObject()) continue;
+        const QJsonObject entries = document.object();
+        for (auto it = entries.begin(); it != entries.end(); ++it)
+            if (it.value().isString()) result.insert(it.key(), it.value().toString());
+    }
+    return result;
+    }();
     return catalog;
 }
 
@@ -356,6 +381,137 @@ const QHash<QString, QString>& englishCatalog() {
     }();
     return reverse;
 }
+
+const QHash<QString, QString>& foldedArabicCatalog() {
+    static const QHash<QString, QString> folded = [] {
+        QHash<QString, QString> result;
+        QSet<QString> ambiguous;
+        const auto& arabic = arabicCatalog();
+        for (auto it = arabic.cbegin(); it != arabic.cend(); ++it) {
+            const QString key = it.key().toCaseFolded();
+            const auto existing = result.constFind(key);
+            if (existing == result.cend()) result.insert(key, it.value());
+            else if (existing.value() != it.value()) ambiguous.insert(key);
+        }
+        for (const QString& key : ambiguous) result.remove(key);
+        return result;
+    }();
+    return folded;
+}
+
+struct TranslationPattern {
+    QRegularExpression expression;
+    QString translation;
+    QVector<int> argumentIndexes;
+};
+
+const QVector<TranslationPattern>& translationPatterns() {
+    static const QVector<TranslationPattern> patterns = [] {
+        QVector<TranslationPattern> result;
+        static const QRegularExpression placeholder(QStringLiteral("%([1-9])"));
+        const auto& catalog = arabicCatalog();
+        QStringList keys = catalog.keys();
+        std::sort(keys.begin(), keys.end(), [](const QString& a, const QString& b) {
+            return a.size() == b.size() ? a < b : a.size() > b.size();
+        });
+        for (const QString& key : keys) {
+            if (!key.contains(placeholder)) continue;
+            QString expression = QStringLiteral("^");
+            QVector<int> indexes;
+            qsizetype copied = 0;
+            auto matches = placeholder.globalMatch(key);
+            while (matches.hasNext()) {
+                const QRegularExpressionMatch match = matches.next();
+                expression += QRegularExpression::escape(key.mid(copied, match.capturedStart() - copied));
+                expression += QStringLiteral("(.+?)");
+                indexes.push_back(match.captured(1).toInt());
+                copied = match.capturedEnd();
+            }
+            expression += QRegularExpression::escape(key.mid(copied));
+            expression += QLatin1Char('$');
+            result.push_back({QRegularExpression(expression, QRegularExpression::CaseInsensitiveOption),
+                              catalog.value(key), std::move(indexes)});
+        }
+        return result;
+    }();
+    return patterns;
+}
+
+QString translatePattern(const QString& source) {
+    for (const TranslationPattern& pattern : translationPatterns()) {
+        const QRegularExpressionMatch match = pattern.expression.match(source);
+        if (!match.hasMatch()) continue;
+        QString translated = pattern.translation;
+        QHash<int, QString> arguments;
+        for (qsizetype i = 0; i < pattern.argumentIndexes.size(); ++i)
+            if (!arguments.contains(pattern.argumentIndexes[i])) arguments.insert(pattern.argumentIndexes[i], match.captured(static_cast<int>(i + 1)));
+        for (auto it = arguments.cbegin(); it != arguments.cend(); ++it)
+            translated.replace(QLatin1Char('%') + QString::number(it.key()), it.value());
+        return translated;
+    }
+    return source;
+}
+
+const QVector<QPair<QRegularExpression, QString>>& embeddedTranslations() {
+    static const QVector<QPair<QRegularExpression, QString>> translations = [] {
+        QVector<QPair<QRegularExpression, QString>> result;
+        const auto& catalog = arabicCatalog();
+        QHash<QString, QString> keysByFolded;
+        QHash<QString, QString> valuesByFolded;
+        QSet<QString> ambiguous;
+        for (auto it = catalog.cbegin(); it != catalog.cend(); ++it) {
+            const QString& key = it.key();
+            if (key.size() < 3 || key == it.value() || key.contains(QLatin1Char('%'))) continue;
+            bool plainWords = true;
+            int letters = 0;
+            for (const QChar ch : key) {
+                if (ch.isLetter()) {
+                    if (ch.unicode() > 0x7f) { plainWords = false; break; }
+                    ++letters;
+                } else if (!(ch.isSpace() || ch.unicode() == 39 || ch == QLatin1Char('-'))) {
+                    plainWords = false;
+                    break;
+                }
+            }
+            if (!plainWords || letters < 3) continue;
+            const QString folded = key.toCaseFolded();
+            if (!keysByFolded.contains(folded)) {
+                keysByFolded.insert(folded, key);
+                valuesByFolded.insert(folded, it.value());
+            } else if (valuesByFolded.value(folded) != it.value()) {
+                // A word such as "light" can be an optical noun or a theme name. Exact catalog
+                // matches remain available, but ambiguous meanings are not guessed inside prose.
+                ambiguous.insert(folded);
+            }
+        }
+        QStringList keys;
+        for (auto it = keysByFolded.cbegin(); it != keysByFolded.cend(); ++it)
+            if (!ambiguous.contains(it.key())) keys.push_back(it.value());
+        std::sort(keys.begin(), keys.end(), [](const QString& a, const QString& b) {
+            return a.size() == b.size() ? a < b : a.size() > b.size();
+        });
+        for (const QString& key : keys) {
+            const QString expression = QStringLiteral("(?<![A-Za-z0-9_])") + QRegularExpression::escape(key) +
+                                       QStringLiteral("(?![A-Za-z0-9_])");
+            result.push_back({QRegularExpression(expression, QRegularExpression::CaseInsensitiveOption),
+                              valuesByFolded.value(key.toCaseFolded())});
+        }
+        return result;
+    }();
+    return translations;
+}
+
+QString translateEmbedded(const QString& source) {
+    QString translated = source;
+    for (const auto& entry : embeddedTranslations())
+        translated.replace(entry.first, entry.second);
+    return translated;
+}
+
+constexpr int kI18nSourceRole = Qt::UserRole + 0x5A0;
+constexpr int kI18nLastRole = Qt::UserRole + 0x5A1;
+constexpr int kI18nTipSourceRole = Qt::UserRole + 0x5A2;
+constexpr int kI18nTipLastRole = Qt::UserRole + 0x5A3;
 
 } // namespace
 
@@ -384,97 +540,180 @@ QString LanguageManager::text(const QString& source) const {
     if (isArabic()) {
         const QString appTitle = QStringLiteral("PHY104 Optical Assistant — ");
         if (source.startsWith(appTitle)) return QStringLiteral("مساعد PHY104 البصري — ") + source.mid(appTitle.size());
-        if (source.startsWith("LAB SESSION / ")) return QStringLiteral("جلسة المختبر / ") + source.mid(14);
-        if (source.startsWith("Session saved · ")) return QStringLiteral("تم حفظ الجلسة · ") + source.mid(16);
-        if (source.startsWith("Last saved ")) return QStringLiteral("آخر حفظ ") + source.mid(11);
-        const auto it = arabicCatalog().constFind(source);
-        return it == arabicCatalog().cend() ? source : it.value();
+        const auto& catalog = arabicCatalog();
+        const auto it = catalog.constFind(source);
+        if (it != catalog.cend()) return it.value();
+        const auto folded = foldedArabicCatalog().constFind(source.toCaseFolded());
+        if (folded != foldedArabicCatalog().cend()) return folded.value();
+        const QString patterned = translatePattern(source);
+        if (patterned != source) return patterned;
+        return translateEmbedded(source);
     }
     const QString arabicTitle = QStringLiteral("مساعد PHY104 البصري — ");
     if (source.startsWith(arabicTitle)) return QStringLiteral("PHY104 Optical Assistant — ") + source.mid(arabicTitle.size());
-    if (source.startsWith(QStringLiteral("جلسة المختبر / "))) return QStringLiteral("LAB SESSION / ") + source.mid(15);
-    if (source.startsWith(QStringLiteral("تم حفظ الجلسة · "))) return QStringLiteral("Session saved · ") + source.mid(16);
-    if (source.startsWith(QStringLiteral("آخر حفظ "))) return QStringLiteral("Last saved ") + source.mid(8);
     const auto it = englishCatalog().constFind(source);
     return it == englishCatalog().cend() ? source : it.value();
 }
 
+void LanguageManager::translateValue(QObject* owner, const char* field, const QString& value,
+                                     const std::function<void(const QString&)>& setter) {
+    if (!owner) return;
+    const QByteArray sourceProperty = QByteArray("i18nSource_") + field;
+    const QByteArray lastProperty = QByteArray("i18nLast_") + field;
+    const QByteArray languageProperty = QByteArray("i18nLanguage_") + field;
+    const QVariant previousTarget = owner->property(lastProperty.constData());
+    const int currentLanguage = isArabic() ? 1 : 0;
+    if (previousTarget.isValid() && value == previousTarget.toString() &&
+        owner->property(languageProperty.constData()).toInt() == currentLanguage)
+        return; // paint events are frequent; an unchanged, already translated field needs no regex work
+    const QString source = previousTarget.isValid() && value == previousTarget.toString()
+        ? owner->property(sourceProperty.constData()).toString() : value;
+    const QString translated = text(source);
+    owner->setProperty(sourceProperty.constData(), source);
+    owner->setProperty(lastProperty.constData(), translated);
+    owner->setProperty(languageProperty.constData(), currentLanguage);
+    if (translated != value && setter) setter(translated);
+}
+
 void LanguageManager::translateAction(QAction* action) {
     if (!action || action->property("i18nSkip").toBool()) return;
-    const QString label = text(action->text());
-    if (label != action->text()) action->setText(label);
-    const QString tip = text(action->toolTip());
-    if (tip != action->toolTip()) action->setToolTip(tip);
-    const QString status = text(action->statusTip());
-    if (status != action->statusTip()) action->setStatusTip(status);
+    translateValue(action, "text", action->text(), [action](const QString& v) { action->setText(v); });
+    translateValue(action, "toolTip", action->toolTip(), [action](const QString& v) { action->setToolTip(v); });
+    translateValue(action, "statusTip", action->statusTip(), [action](const QString& v) { action->setStatusTip(v); });
 }
 
 void LanguageManager::translateWidget(QWidget* widget) {
     if (!widget || widget->property("i18nSkip").toBool()) return;
-    auto update = [this](const QString& value, const auto& setter) {
-        const QString translated = text(value);
+    auto update = [this](QObject* owner, const char* field, const QString& value, const auto& setter) {
+        translateValue(owner, field, value, setter);
+    };
+    auto updateItem = [this](const QString& value, const QVariant& sourceValue, const QVariant& targetValue,
+                             const auto& setter, const auto& store) {
+        const QString source = targetValue.isValid() && value == targetValue.toString() ? sourceValue.toString() : value;
+        const QString translated = text(source);
+        store(source, translated);
         if (translated != value) setter(translated);
     };
 
-    if (auto* label = qobject_cast<QLabel*>(widget)) update(label->text(), [label](const QString& v) { label->setText(v); });
+    if (auto* label = qobject_cast<QLabel*>(widget))
+        update(label, "text", label->text(), [label](const QString& v) { label->setText(v); });
     if (auto* button = qobject_cast<QAbstractButton*>(widget)) {
-        update(button->text(), [button](const QString& v) { button->setText(v); });
-        update(button->toolTip(), [button](const QString& v) { button->setToolTip(v); });
-        update(button->accessibleName(), [button](const QString& v) { button->setAccessibleName(v); });
+        update(button, "text", button->text(), [button](const QString& v) { button->setText(v); });
+        update(button, "toolTip", button->toolTip(), [button](const QString& v) { button->setToolTip(v); });
+        update(button, "accessibleName", button->accessibleName(), [button](const QString& v) { button->setAccessibleName(v); });
     }
-    if (auto* group = qobject_cast<QGroupBox*>(widget)) update(group->title(), [group](const QString& v) { group->setTitle(v); });
-    update(widget->windowTitle(), [widget](const QString& v) { widget->setWindowTitle(v); });
-    update(widget->toolTip(), [widget](const QString& v) { widget->setToolTip(v); });
+    if (auto* group = qobject_cast<QGroupBox*>(widget))
+        update(group, "title", group->title(), [group](const QString& v) { group->setTitle(v); });
+    update(widget, "windowTitle", widget->windowTitle(), [widget](const QString& v) { widget->setWindowTitle(v); });
+    update(widget, "toolTip", widget->toolTip(), [widget](const QString& v) { widget->setToolTip(v); });
 
     if (auto* edit = qobject_cast<QLineEdit*>(widget))
-        update(edit->placeholderText(), [edit](const QString& v) { edit->setPlaceholderText(v); });
+        update(edit, "placeholder", edit->placeholderText(), [edit](const QString& v) { edit->setPlaceholderText(v); });
     if (auto* edit = qobject_cast<QTextEdit*>(widget))
-        update(edit->placeholderText(), [edit](const QString& v) { edit->setPlaceholderText(v); });
-    if (auto* edit = qobject_cast<QPlainTextEdit*>(widget))
-        update(edit->placeholderText(), [edit](const QString& v) { edit->setPlaceholderText(v); });
+        update(edit, "placeholder", edit->placeholderText(), [edit](const QString& v) { edit->setPlaceholderText(v); });
+    if (auto* edit = qobject_cast<QPlainTextEdit*>(widget)) {
+        update(edit, "placeholder", edit->placeholderText(), [edit](const QString& v) { edit->setPlaceholderText(v); });
+        // Only the untouched app-provided starter note is eligible for localization. Once the
+        // student edits it, the flag is cleared and their authored content is never rewritten.
+        if (edit->property("i18nBuiltinContent").toBool()) {
+            update(edit, "plainText", edit->toPlainText(), [edit](const QString& v) {
+                const QSignalBlocker blocker(edit);
+                edit->setPlainText(v);
+            });
+        }
+    }
 
     if (auto* combo = qobject_cast<QComboBox*>(widget)) {
         const QSignalBlocker blocker(combo);
-        for (int i = 0; i < combo->count(); ++i)
-            update(combo->itemText(i), [combo, i](const QString& v) { combo->setItemText(i, v); });
+        for (int i = 0; i < combo->count(); ++i) {
+            const QVariant source = combo->itemData(i, kI18nSourceRole);
+            const QVariant target = combo->itemData(i, kI18nLastRole);
+            updateItem(combo->itemText(i), source, target,
+                [combo, i](const QString& v) { combo->setItemText(i, v); },
+                [combo, i](const QString& s, const QString& t) {
+                    combo->setItemData(i, s, kI18nSourceRole);
+                    combo->setItemData(i, t, kI18nLastRole);
+                });
+        }
     }
     if (auto* tabs = qobject_cast<QTabWidget*>(widget)) {
-        for (int i = 0; i < tabs->count(); ++i)
-            update(tabs->tabText(i), [tabs, i](const QString& v) { tabs->setTabText(i, v); });
+        QTabBar* bar = tabs->findChild<QTabBar*>();
+        for (int i = 0; i < tabs->count(); ++i) {
+            const QVariant source = bar ? bar->tabData(i).toMap().value(QStringLiteral("i18nSource")) : QVariant();
+            const QVariant target = bar ? bar->tabData(i).toMap().value(QStringLiteral("i18nLast")) : QVariant();
+            updateItem(tabs->tabText(i), source, target,
+                [tabs, i](const QString& v) { tabs->setTabText(i, v); },
+                [bar, i](const QString& s, const QString& t) {
+                    if (!bar) return;
+                    QVariantMap data = bar->tabData(i).toMap();
+                    data.insert(QStringLiteral("i18nSource"), s);
+                    data.insert(QStringLiteral("i18nLast"), t);
+                    bar->setTabData(i, data);
+                });
+        }
     }
     if (auto* tabBar = qobject_cast<QTabBar*>(widget)) {
-        for (int i = 0; i < tabBar->count(); ++i)
-            update(tabBar->tabText(i), [tabBar, i](const QString& v) { tabBar->setTabText(i, v); });
+        for (int i = 0; i < tabBar->count(); ++i) {
+            const QVariantMap data = tabBar->tabData(i).toMap();
+            updateItem(tabBar->tabText(i), data.value(QStringLiteral("i18nSource")), data.value(QStringLiteral("i18nLast")),
+                [tabBar, i](const QString& v) { tabBar->setTabText(i, v); },
+                [tabBar, i](const QString& s, const QString& t) {
+                    QVariantMap updated = tabBar->tabData(i).toMap();
+                    updated.insert(QStringLiteral("i18nSource"), s);
+                    updated.insert(QStringLiteral("i18nLast"), t);
+                    tabBar->setTabData(i, updated);
+                });
+        }
     }
     if (auto* list = qobject_cast<QListWidget*>(widget)) {
         for (int i = 0; i < list->count(); ++i) {
             auto* item = list->item(i);
-            update(item->text(), [item](const QString& v) { item->setText(v); });
+            updateItem(item->text(), item->data(kI18nSourceRole), item->data(kI18nLastRole),
+                [item](const QString& v) { item->setText(v); },
+                [item](const QString& s, const QString& t) { item->setData(kI18nSourceRole, s); item->setData(kI18nLastRole, t); });
+            updateItem(item->toolTip(), item->data(kI18nTipSourceRole), item->data(kI18nTipLastRole),
+                [item](const QString& v) { item->setToolTip(v); },
+                [item](const QString& s, const QString& t) { item->setData(kI18nTipSourceRole, s); item->setData(kI18nTipLastRole, t); });
         }
     }
     if (auto* table = qobject_cast<QTableWidget*>(widget)) {
+        const auto updateTableItem = [&updateItem](QTableWidgetItem* item) {
+            if (!item) return;
+            updateItem(item->text(), item->data(kI18nSourceRole), item->data(kI18nLastRole),
+                [item](const QString& v) { item->setText(v); },
+                [item](const QString& s, const QString& t) { item->setData(kI18nSourceRole, s); item->setData(kI18nLastRole, t); });
+        };
         for (int row = 0; row < table->rowCount(); ++row)
-            for (int col = 0; col < table->columnCount(); ++col)
-                if (auto* item = table->item(row, col)) update(item->text(), [item](const QString& v) { item->setText(v); });
-        for (int col = 0; col < table->columnCount(); ++col)
-            if (auto* item = table->horizontalHeaderItem(col)) update(item->text(), [item](const QString& v) { item->setText(v); });
-        for (int row = 0; row < table->rowCount(); ++row)
-            if (auto* item = table->verticalHeaderItem(row)) update(item->text(), [item](const QString& v) { item->setText(v); });
+            for (int col = 0; col < table->columnCount(); ++col) updateTableItem(table->item(row, col));
+        for (int col = 0; col < table->columnCount(); ++col) updateTableItem(table->horizontalHeaderItem(col));
+        for (int row = 0; row < table->rowCount(); ++row) updateTableItem(table->verticalHeaderItem(row));
     }
     if (auto* tree = qobject_cast<QTreeWidget*>(widget)) {
         const int columns = tree->columnCount();
-        for (int col = 0; col < columns; ++col)
-            if (auto* item = tree->headerItem()) update(item->text(col), [item, col](const QString& v) { item->setText(col, v); });
+        const auto updateTreeItem = [&updateItem, columns](QTreeWidgetItem* item) {
+            if (!item) return;
+            for (int col = 0; col < columns; ++col) {
+                const QVariant source = item->data(col, kI18nSourceRole);
+                const QVariant target = item->data(col, kI18nLastRole);
+                updateItem(item->text(col), source, target,
+                    [item, col](const QString& v) { item->setText(col, v); },
+                    [item, col](const QString& s, const QString& t) {
+                        item->setData(col, kI18nSourceRole, s);
+                        item->setData(col, kI18nLastRole, t);
+                    });
+            }
+        };
+        updateTreeItem(tree->headerItem());
         std::function<void(QTreeWidgetItem*)> translateItem = [&](QTreeWidgetItem* item) {
             if (!item) return;
-            for (int col = 0; col < columns; ++col) update(item->text(col), [item, col](const QString& v) { item->setText(col, v); });
+            updateTreeItem(item);
             for (int i = 0; i < item->childCount(); ++i) translateItem(item->child(i));
         };
         for (int i = 0; i < tree->topLevelItemCount(); ++i) translateItem(tree->topLevelItem(i));
     }
 
     if (auto* menu = qobject_cast<QMenu*>(widget)) {
-        update(menu->title(), [menu](const QString& v) { menu->setTitle(v); });
+        update(menu, "menuTitle", menu->title(), [menu](const QString& v) { menu->setTitle(v); });
         for (QAction* action : menu->actions()) translateAction(action);
     }
     for (QAction* action : widget->actions()) translateAction(action);
@@ -487,7 +726,10 @@ void LanguageManager::apply(QWidget* root) {
     m_applying = true;
     translateWidget(root);
     const auto widgets = root->findChildren<QWidget*>();
-    for (QWidget* widget : widgets) translateWidget(widget);
+    for (QWidget* widget : widgets) {
+        translateWidget(widget);
+        widget->update(); // custom-painted diagrams and charts also redraw in the selected language
+    }
     m_applying = false;
     root->updateGeometry();
     root->update();
