@@ -24,6 +24,7 @@
 #include "ui/StudyHubPage.h"
 #include "ui/ThickLensPage.h"
 #include "ui/ThemeManager.h"
+#include "ui/LanguageManager.h"
 #include "ui/VirtualKeyboard.h"
 
 #include <QApplication>
@@ -37,6 +38,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QFont>
 #include <QLabel>
 #include <QLineEdit>
 #include <QKeySequence>
@@ -141,6 +143,8 @@ class InteractionTest : public QObject {
 private slots:
     void initTestCase() {
         QStandardPaths::setTestModeEnabled(true);
+        LanguageManager::instance().install(*qApp);
+        LanguageManager::instance().setLanguage(UiLanguage::English);
         ThemeManager::loadFonts();
         ThemeManager::instance().apply(*qApp, true);
         m_app = std::make_unique<App>(App::Paths{DATA_DIR, m_tmp.path() + "/session.phy"});
@@ -930,6 +934,41 @@ private slots:
             QVERIFY2(exportButton && exportButton->menu() && exportButton->menu()->actions().size() == 3,
                      "a main page is missing the single PDF / Excel / CSV export menu");
         }
+    }
+    void languageSwitchTranslatesTheShellAndUsesRtl() {
+        go(0);
+        auto* language = win().languageButton();
+        QVERIFY(language);
+        QCOMPARE(language->text(), QString("العربية"));
+
+        click(language);
+        QCOMPARE(LanguageManager::instance().language(), UiLanguage::Arabic);
+        QCOMPARE(qApp->layoutDirection(), Qt::RightToLeft);
+        QCOMPARE(language->text(), QString("English"));
+        QCOMPARE(language->accessibleName(), QString("التبديل إلى الإنجليزية"));
+        QVERIFY(qApp->font().families().contains("Noto Naskh Arabic"));
+        auto* calculatorInput = m_app->calculator->findChild<QLineEdit*>("lcdInput");
+        auto* formulaInput = m_app->solver->findChild<QLineEdit*>("lcdInput");
+        auto* unitField = m_app->refraction->findChild<UnitField*>();
+        QVERIFY(calculatorInput && formulaInput && unitField);
+        QCOMPARE(calculatorInput->layoutDirection(), Qt::LeftToRight);
+        QCOMPARE(formulaInput->layoutDirection(), Qt::LeftToRight);
+        QCOMPARE(unitField->edit()->layoutDirection(), Qt::LeftToRight);
+        QCOMPARE(m_app->dashboard->findChild<QLabel*>("pageTitle")->text(), QString("لوحة التحكم"));
+        QVERIFY(findButton(m_app->dashboard, "حفظ"));
+        auto* exportButton = m_app->dashboard->findChild<QToolButton*>("exportMenu");
+        QVERIFY(exportButton);
+        QCOMPARE(exportButton->text(), QString("تصدير"));
+        QVERIFY(win().windowTitle().startsWith(QStringLiteral("مساعد PHY104 البصري — ")));
+
+        click(language);
+        QCOMPARE(LanguageManager::instance().language(), UiLanguage::English);
+        QCOMPARE(qApp->layoutDirection(), Qt::LeftToRight);
+        QCOMPARE(language->text(), QString("العربية"));
+        QCOMPARE(language->accessibleName(), QString("Switch to Arabic"));
+        QCOMPARE(m_app->dashboard->findChild<QLabel*>("pageTitle")->text(), QString("Dashboard"));
+        QVERIFY(findButton(m_app->dashboard, "Save"));
+        QVERIFY(win().windowTitle().startsWith(QStringLiteral("PHY104 Optical Assistant — ")));
     }
     void calculatorExportMenuRoutesAllFormats() {
         goTo(m_app->calculator);

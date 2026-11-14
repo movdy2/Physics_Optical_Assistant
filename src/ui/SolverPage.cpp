@@ -243,6 +243,7 @@ void SolverPage::showFormula(const Formula& formula) {
     for (const auto& var : formula.variables) {
         auto* edit = new QLineEdit(QString::fromStdString(var.defaultValue));
         edit->setObjectName("lcdInput");                          // Casio LCD style
+        edit->setLayoutDirection(Qt::LeftToRight);                 // keep variables and scientific notation readable in Arabic UI
         ThemeManager::polishLcdInput(edit);
         const auto ov = formula.unitOverrides.find(var.id);
         const std::string unit = ov != formula.unitOverrides.end() ? ov->second : var.unit;

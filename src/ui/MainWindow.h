@@ -38,6 +38,7 @@ public:
     QList<QPushButton*> navButtons() const;
     QPushButton* themeButton() const { return m_themeButton; }
     QPushButton* keyboardButton() const { return m_keyboardButton; }
+    QPushButton* languageButton() const { return m_languageButton; }
     VirtualKeyboard* keyboard() const { return m_keyboard; }
     QLabel* engineLabel() const { return m_engine; }
     QString statusLeftText() const;
@@ -59,6 +60,7 @@ private:
     void addNavButton(const QString& title, const QString& icon, int pageIndex, int section);
     void installShortcuts();
     void refreshIcons();
+    void refreshLanguageButton();
     void refreshStatus();
     void showMessage(const QString& text);
     QLineEdit* fallbackField() const;
@@ -76,7 +78,7 @@ private:
     QLabel* m_engine;
     QString m_transient;
     QTimer* m_messageTimer;
-    QPushButton *m_themeButton, *m_keyboardButton;
+    QPushButton *m_themeButton, *m_keyboardButton, *m_languageButton;
     QStringList m_shortcutKeys;
 };
 
