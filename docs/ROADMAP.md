@@ -63,5 +63,5 @@
 5. Undo for field edits and drag-and-drop of data files (the shortcuts - Ctrl+S, Ctrl+Enter, Ctrl+P, Ctrl+1..9,
    Ctrl+Tab, F11 - are done).
 6. Units: unit dropdown per field (nm/µm/mm/cm/m), significant-figures setting, copy-as-LaTeX for every register.
-7. Accessibility and polish: high-contrast theme, font-size setting, window-size tests (1080x700), translations (Arabic UI).
+7. Accessibility and polish: high-contrast theme, font-size setting, window-size tests (1080x700), and expand Arabic UI coverage to remaining lesson prose and dynamic captions.
 8. Packaging: Windows installer (windeployqt + NSIS), Linux AppImage (the GitHub Actions build matrix is done).

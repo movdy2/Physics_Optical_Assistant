@@ -10,6 +10,7 @@
 #include "ui/NotesPage.h"
 #include "ui/Components.h"
 #include "ui/MathSolverPage.h"
+#include "ui/LanguageManager.h"
 #include "ui/SolverPage.h"
 #include "ui/ThemeManager.h"
 
@@ -89,6 +90,7 @@ static void takeScreenshots(QApplication& app, phy104::App& application, const Q
 int main(int argc, char* argv[]) {
     QApplication app(argc, argv);
     QCoreApplication::setApplicationVersion(QStringLiteral(PHY104_APP_VERSION));
+    phy104::LanguageManager::instance().install(app);
     phy104::ThemeManager::loadFonts();
     phy104::ThemeManager::instance().apply(app, phy104::ThemeManager::storedDarkTheme());   // as last time
 

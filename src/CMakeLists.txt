@@ -9,7 +9,7 @@ set(PHY104_UI_SOURCES
     ui/ThemeManager.cpp ui/Icons.cpp ui/Components.cpp ui/Plots.cpp ui/OpticsCanvases.cpp
     ui/AppContext.cpp ui/BasePage.cpp ui/ExperimentPages.cpp ui/ModelExperimentPages.cpp ui/ScientificKeyboard.cpp ui/EquationLabPage.cpp ui/DashboardPage.cpp ui/NotesPage.cpp ui/ExportService.cpp ui/RecentExportPanel.cpp ui/ExportPage.cpp ui/ReportPage.cpp ui/StudyHubPage.cpp ui/ThickLensPage.cpp
     ui/LatexRenderer.cpp ui/FormulaListDelegate.cpp ui/SvgDiagramView.cpp ui/DiagramsPage.cpp
-    ui/MarkdownHighlighter.cpp ui/MarkdownWorkspace.cpp ui/MathSolverPage.cpp ui/VirtualKeyboard.cpp ui/SolverPage.cpp ui/ConstantsPage.cpp ui/MainWindow.cpp
+    ui/MarkdownHighlighter.cpp ui/MarkdownWorkspace.cpp ui/MathSolverPage.cpp ui/VirtualKeyboard.cpp ui/SolverPage.cpp ui/ConstantsPage.cpp ui/LanguageManager.cpp ui/MainWindow.cpp
 )
 
 # All widgets live in a library so the tests can build the very same application.
