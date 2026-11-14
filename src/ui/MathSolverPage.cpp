@@ -44,6 +44,7 @@ MathSolverPage::MathSolverPage(AppContext* context, QWidget* parent)
 
     m_input = new QLineEdit;
     m_input->setObjectName("lcdInput");
+    m_input->setLayoutDirection(Qt::LeftToRight);
     ThemeManager::polishLcdInput(m_input);
     m_input->setPlaceholderText("Expression");
     const auto refreshPlaceholder = [this] {

@@ -1,4 +1,5 @@
 #include "ThemeManager.h"
+#include "LanguageManager.h"
 
 #include <QApplication>
 #include <QFont>
@@ -72,6 +73,8 @@ void ThemeManager::apply(QApplication& app, bool dark) {
 
     app.setStyle(QStyleFactory::create("Fusion"));
     QFont font(uiFont());
+    if (LanguageManager::instance().isArabic())
+        font.setFamilies({"Inter", "Noto Naskh Arabic", "Noto Sans Arabic", "DejaVu Sans", "Segoe UI", "Arial"});
     font.setPixelSize(13);
     app.setFont(font);
 

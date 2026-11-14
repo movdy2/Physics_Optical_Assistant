@@ -3,10 +3,12 @@
 #include "BasePage.h"
 #include "ExportPage.h"
 #include "Icons.h"
+#include "LanguageManager.h"
 #include "ThemeManager.h"
 #include "VirtualKeyboard.h"
 
 #include <QAbstractSpinBox>
+#include <QApplication>
 #include <QButtonGroup>
 #include <QComboBox>
 #include <QHBoxLayout>
@@ -46,14 +48,18 @@ protected:
         QPainter p(this);
         p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
         const int iconSize = 18, left = 14;
-        p.drawPixmap(QRect(left, (height() - iconSize) / 2, iconSize, iconSize), isChecked() ? m_on : m_off);
+        const bool rtl = layoutDirection() == Qt::RightToLeft;
+        const int iconX = rtl ? width() - left - iconSize : left;
+        p.drawPixmap(QRect(iconX, (height() - iconSize) / 2, iconSize, iconSize), isChecked() ? m_on : m_off);
         QFont f(ThemeManager::uiFont());
         f.setPixelSize(12);
         f.setWeight(isChecked() ? QFont::Medium : QFont::Normal);
         p.setFont(f);
         p.setPen(isChecked() ? t.amber : t.text);
         const int textLeft = left + iconSize + 12;
-        p.drawText(QRect(textLeft, 0, width() - textLeft - 8, height()), Qt::AlignVCenter | Qt::AlignLeft, m_title);
+        const QRect textRect(rtl ? 8 : textLeft, 0, width() - textLeft - 8, height());
+        const Qt::Alignment align = rtl ? Qt::AlignVCenter | Qt::AlignRight : Qt::AlignVCenter | Qt::AlignLeft;
+        p.drawText(textRect, align | Qt::TextWordWrap, LanguageManager::instance().text(m_title));
     }
 
 private:
@@ -183,6 +189,10 @@ MainWindow::MainWindow(AppContext* ctx, const std::vector<KeyboardGroup>& keyboa
     statusBar()->addWidget(m_statusMid);
     statusBar()->addWidget(plain("|"));
     statusBar()->addWidget(m_statusRight);
+    m_languageButton = new QPushButton;
+    m_languageButton->setObjectName("flat");
+    m_languageButton->setFocusPolicy(Qt::NoFocus);
+    m_languageButton->setProperty("i18nSkip", true);
     m_keyboardButton = new QPushButton("⌨ Keyboard");
     m_keyboardButton->setObjectName("flat");
     m_keyboardButton->setCheckable(true);
@@ -190,6 +200,8 @@ MainWindow::MainWindow(AppContext* ctx, const std::vector<KeyboardGroup>& keyboa
     m_themeButton = new QPushButton("☾ Dark");
     m_themeButton->setObjectName("flat");
     m_themeButton->setFocusPolicy(Qt::NoFocus);
+    refreshLanguageButton();
+    statusBar()->addPermanentWidget(m_languageButton);
     statusBar()->addPermanentWidget(m_keyboardButton);
     statusBar()->addPermanentWidget(m_themeButton);
     statusBar()->addPermanentWidget(plain("Qt 6 · Offline"));
@@ -204,6 +216,14 @@ MainWindow::MainWindow(AppContext* ctx, const std::vector<KeyboardGroup>& keyboa
     connect(m_keyboardButton, &QPushButton::toggled, this, [this, keyboardFrame](bool on) {
         keyboardFrame->setVisible(on);
         m_keyboard->setVisible(on);
+    });
+    connect(m_languageButton, &QPushButton::clicked, this, [this] {
+        auto& language = LanguageManager::instance();
+        language.setLanguage(language.isArabic() ? UiLanguage::English : UiLanguage::Arabic);
+        ThemeManager::instance().apply(*qApp, ThemeManager::instance().isDark());
+        refreshStatus();
+        language.apply(this);
+        refreshLanguageButton();
     });
     connect(m_themeButton, &QPushButton::clicked, this, [this] { emit themeToggled(!ThemeManager::instance().isDark()); });
     connect(&ThemeManager::instance(), &ThemeManager::themeChanged, this, [this, applyWindowIcon] {
@@ -319,10 +339,8 @@ void MainWindow::addNavAlias(const QString& title, const QString& icon, int page
 }
 
 void MainWindow::addNavButton(const QString& title, const QString& icon, int pageIndex, int section) {
-    QString label = title;
-    const bool wraps = label.contains(" (") && label.size() > 22;
-    if (wraps) label.replace(" (", "\n(");
-    auto* b = new NavButton(label, icon);
+    const bool wraps = title.contains(" (") && title.size() > 22;
+    auto* b = new NavButton(title, icon);
     b->setObjectName(section == 0 ? "navItem" : "navItemSmall");
     if (wraps) b->setMinimumHeight(54);
     m_navGroup->addButton(b);
@@ -341,6 +359,14 @@ void MainWindow::setCurrentPage(int index) {
 
 void MainWindow::refreshIcons() {
     for (const NavEntry& e : m_nav) e.button->update();
+}
+
+void MainWindow::refreshLanguageButton() {
+    if (!m_languageButton) return;
+    const bool arabic = LanguageManager::instance().isArabic();
+    m_languageButton->setText(arabic ? "English" : "العربية");
+    m_languageButton->setToolTip(arabic ? "التبديل إلى الإنجليزية" : "Switch the interface to Arabic");
+    m_languageButton->setAccessibleName(arabic ? "التبديل إلى الإنجليزية" : "Switch to Arabic");
 }
 
 } // namespace phy104
