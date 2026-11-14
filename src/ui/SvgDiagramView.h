@@ -32,6 +32,7 @@ private:
     QString m_path;
     QByteArray m_template;
     QSvgRenderer m_renderer;
+    bool m_loadedArabic = false;
 };
 
 } // namespace phy104

@@ -1,11 +1,59 @@
 #include "SvgDiagramView.h"
+#include "LanguageManager.h"
 #include "ThemeManager.h"
 
 #include <QFile>
 #include <QImage>
+#include <QRegularExpression>
 #include <QPainter>
 
 namespace phy104 {
+namespace {
+
+QString decodeXmlText(QString text) {
+    text.replace(QStringLiteral("&lt;"), QStringLiteral("<"));
+    text.replace(QStringLiteral("&gt;"), QStringLiteral(">"));
+    text.replace(QStringLiteral("&quot;"), QStringLiteral("\""));
+    text.replace(QStringLiteral("&apos;"), QStringLiteral("'"));
+    text.replace(QStringLiteral("&amp;"), QStringLiteral("&"));
+    return text;
+}
+
+QString encodeXmlText(QString text) {
+    text.replace(QLatin1Char('&'), QStringLiteral("&amp;"));
+    text.replace(QLatin1Char('<'), QStringLiteral("&lt;"));
+    text.replace(QLatin1Char('>'), QStringLiteral("&gt;"));
+    return text;
+}
+
+QByteArray localizeSvgText(const QByteArray& svg) {
+    if (!LanguageManager::instance().isArabic()) return svg;
+    QString source = QString::fromUtf8(svg);
+    const QRegularExpression textElement(QStringLiteral("(<text\\b[^>]*>)(.*?)(</text>)"),
+                                         QRegularExpression::DotMatchesEverythingOption);
+    QString output;
+    qsizetype copied = 0;
+    auto matches = textElement.globalMatch(source);
+    while (matches.hasNext()) {
+        const QRegularExpressionMatch match = matches.next();
+        output += source.mid(copied, match.capturedStart() - copied);
+        const QString inner = match.captured(2);
+        // Keep mathematical subscripts and inline SVG markup byte-for-byte. Their equations and notation are language-neutral.
+        if (inner.contains(QStringLiteral("<tspan"))) {
+            output += match.captured();
+        } else {
+            const QString decoded = decodeXmlText(inner);
+            const QString translated = LanguageManager::instance().text(decoded);
+            output += translated == decoded ? match.captured()
+                                            : match.captured(1) + encodeXmlText(translated) + match.captured(3);
+        }
+        copied = match.capturedEnd();
+    }
+    output += source.mid(copied);
+    return output.toUtf8();
+}
+
+} // namespace
 
 SvgDiagramView::SvgDiagramView(QWidget* parent) : QWidget(parent) {
     setMinimumSize(360, 240);
@@ -33,11 +81,13 @@ bool SvgDiagramView::load(const QString& path) {
 
 void SvgDiagramView::reload() {
     if (m_template.isEmpty()) return;
-    m_renderer.load(applyTheme(m_template));
+    m_loadedArabic = LanguageManager::instance().isArabic();
+    m_renderer.load(applyTheme(localizeSvgText(m_template)));
     update();
 }
 
 void SvgDiagramView::paintEvent(QPaintEvent*) {
+    if (!m_template.isEmpty() && m_loadedArabic != LanguageManager::instance().isArabic()) reload();
     QPainter p(this);
     p.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform | QPainter::TextAntialiasing);
     const Theme& t = ThemeManager::instance().theme();
@@ -62,7 +112,7 @@ bool SvgDiagramView::exportPng(const QString& fileName, int widthPixels) const {
     image.fill(ThemeManager::instance().theme().canvas);          // opaque, readable background
     QPainter p(&image);
     p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-    QSvgRenderer renderer(applyTheme(m_template));                 // fresh renderer: render() is const-unfriendly
+    QSvgRenderer renderer(applyTheme(localizeSvgText(m_template))); // fresh renderer: render() is const-unfriendly
     renderer.render(&p, QRectF(0, 0, widthPixels, height));
     p.end();
     return image.save(fileName, "PNG");

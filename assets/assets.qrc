@@ -1,4 +1,10 @@
 <RCC>
+    <qresource prefix="/i18n">
+        <file alias="ar-ui.json">i18n/ar-ui.json</file>
+        <file alias="ar-content.json">i18n/ar-content.json</file>
+        <file alias="ar-lessons.json">i18n/ar-lessons.json</file>
+        <file alias="ar-core.json">i18n/ar-core.json</file>
+    </qresource>
     <qresource prefix="/diagrams">
         <file alias="refraction.svg">diagrams/refraction.svg</file>
         <file alias="tir.svg">diagrams/tir.svg</file>

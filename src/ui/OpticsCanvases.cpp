@@ -1,6 +1,7 @@
 #include "OpticsCanvases.h"
 #include "ThickLens.h"
 #include "PhysicsCalculator.h"
+#include "LanguageManager.h"
 #include "ThemeManager.h"
 
 #include <QFontMetricsF>
@@ -31,14 +32,15 @@ QFont monoFont(int px, bool bold = false) {
 
 /// Text anchored at `pos`: Qt::AlignLeft / AlignRight / AlignHCenter, vertically centred.
 void text(QPainter& p, QPointF pos, const QString& s, const QColor& c, int px = 10, Qt::Alignment a = Qt::AlignLeft, bool bold = false) {
+    const QString display = LanguageManager::instance().text(s);
     const QFont f = monoFont(px, bold);
     const QFontMetricsF fm(f);
-    const double w = fm.horizontalAdvance(s);
+    const double w = fm.horizontalAdvance(display);
     double x = pos.x();
     if (a & Qt::AlignRight) x -= w; else if (a & Qt::AlignHCenter) x -= w / 2;
     p.setFont(f);
     p.setPen(c);
-    p.drawText(QPointF(x, pos.y() + fm.ascent() / 2 - 1), s);
+    p.drawText(QPointF(x, pos.y() + fm.ascent() / 2 - 1), display);
 }
 
 QPointF unit(QPointF v) {
@@ -91,6 +93,12 @@ QPointF extendTo(QPointF a, QPointF b, double xLimit) {
 
 QString describeImage(const PC::ImageResult& img) {
     const double m = std::fabs(img.magnification);
+    if (LanguageManager::instance().isArabic()) {
+        const QString kind = LanguageManager::instance().text(img.real ? "REAL" : "VIRTUAL");
+        const QString orientation = LanguageManager::instance().text(img.upright ? "UPRIGHT" : "INVERTED");
+        const QString size = LanguageManager::instance().text(QString::fromStdString(sizeDescription(m)));
+        return kind + " · " + orientation + " · " + size;
+    }
     return QString(img.real ? "Real" : "Virtual") + " · " + (img.upright ? "upright" : "inverted") + " · " +
            (m > 1.0001 ? "enlarged" : (m < 0.9999 ? "diminished" : "same size"));
 }

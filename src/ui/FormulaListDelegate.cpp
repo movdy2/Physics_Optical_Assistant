@@ -1,4 +1,5 @@
 #include "FormulaListDelegate.h"
+#include "LanguageManager.h"
 #include "LatexRenderer.h"
 #include "ThemeManager.h"
 
@@ -33,7 +34,8 @@ QSize FormulaListDelegate::sizeHint(const QStyleOptionViewItem& option, const QM
 
 void FormulaListDelegate::paint(QPainter* p, const QStyleOptionViewItem& option, const QModelIndex& index) const {
     const Theme& t = ThemeManager::instance().theme();
-    const QString chapter = index.data(ChapterRole).toString();
+    const QString chapter = LanguageManager::instance().text(index.data(ChapterRole).toString());
+    const QString name = LanguageManager::instance().text(index.data(Qt::DisplayRole).toString());
     const bool selected = option.state & QStyle::State_Selected;
     const bool hover = option.state & QStyle::State_MouseOver;
 
@@ -45,8 +47,9 @@ void FormulaListDelegate::paint(QPainter* p, const QStyleOptionViewItem& option,
         QFont f = option.font; f.setBold(true); f.setPixelSize(11);
         p->setFont(f);
         p->setPen(t.aqua);
+        const QString heading = LanguageManager::instance().isArabic() ? chapter : chapter.toUpper();
         p->drawText(QRect(r.left() + 2, r.top(), r.width(), kHeaderHeight - 2), Qt::AlignVCenter | Qt::AlignLeft,
-                    chapter.toUpper());
+                    heading);
         r.setTop(r.top() + kHeaderHeight);
     }
 
@@ -58,7 +61,7 @@ void FormulaListDelegate::paint(QPainter* p, const QStyleOptionViewItem& option,
     p->setFont(nameFont);
     p->setPen(t.yellow);
     p->drawText(QRect(r.left() + kPad, r.top() + kPad - 2, r.width() - 2 * kPad, kNameHeight),
-                Qt::AlignVCenter | Qt::AlignLeft, index.data(Qt::DisplayRole).toString());
+                Qt::AlignVCenter | Qt::AlignLeft, name);
 
     const QPixmap& pix = formulaPixmap(index.data(LatexRole).toString());
     p->drawPixmap(QPointF(r.left() + kPad, r.top() + kPad + kNameHeight), pix);

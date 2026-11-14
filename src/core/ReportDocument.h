@@ -20,12 +20,36 @@ struct ReportSection {
     std::string chartKey;                                  // "img://chart-<slug>", empty = no picture
 };
 
+/// Fixed labels supplied by the UI layer so the report builder stays independent of Qt/i18n.
+struct ReportLabels {
+    std::string mastheadOrganization = "PHY104 · OPTICS LABORATORY";
+    std::string mastheadReport = "LAB REPORT";
+    std::string generated = "GENERATED";
+    std::string session = "SESSION";
+    std::string experiments = "EXPERIMENTS";
+    std::string result = "RESULT";
+    std::string figureFormat = "Figure %1.";
+    std::string opticalDiagramFormat = "Optical diagram — %1.";
+    std::string dataChartFormat = "Data chart — %1.";
+    std::string experimentalParameters = "Experimental parameters";
+    std::string sessionNotes = "Session notes";
+    std::string savedCalculations = "Saved calculations";
+    std::string tableExperiment = "Experiment";
+    std::string tableInputs = "Inputs";
+    std::string tableResult = "Result";
+    std::string nothingSelected = "Nothing selected yet: open an experiment or tick more sections.";
+    std::string footerFormat = "PHY104 Optical Assistant · %1";
+    std::string pageFormat = "Page %1 of %2";
+};
+
 /// What the student selected in the PDF-report mode of the Export page.
 struct ReportOptions {
     std::string title = "PHY104 Laboratory Report";
     std::string subtitle = "Optical Assistant · PHY 104 · Optics";
     std::string generated;                                 // "13 November 2026 · 02:15"
     std::string sessionName = "optics_lab.phy";
+    ReportLabels labels;
+    bool rightToLeft = false;
     bool showMasthead = true;                              // the PDF renderer supplies its own repeated running header
     bool notes = true;
     bool registers = true;
