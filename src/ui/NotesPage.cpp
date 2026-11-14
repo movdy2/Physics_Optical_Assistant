@@ -17,7 +17,9 @@ NotesPage::NotesPage(AppContext* ctx, std::vector<ScientificPage> keyboardPages,
     m_notesPanel = new Panel("Session notes", "SAVED " + ctx->lastSavedTime());
     m_notes = new MarkdownWorkspace;
     const QString saved = QString::fromStdString(ctx->log.notes());
-    m_notes->setMarkdown(saved.isEmpty() ? MarkdownWorkspace::starterNotes() : saved);
+    const bool showingStarter = saved.isEmpty();
+    m_notes->setMarkdown(showingStarter ? MarkdownWorkspace::starterNotes() : saved);
+    if (showingStarter) m_notes->editor()->setProperty("i18nBuiltinContent", true);
 
     // the same scientific keyboard as the Equation Lab, docked under the note and writing LaTeX into it
     m_keyboard = new ScientificKeyboard(std::move(keyboardPages), this);

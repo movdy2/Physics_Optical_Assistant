@@ -3,6 +3,8 @@
 #include <QObject>
 #include <QString>
 
+#include <functional>
+
 class QAction;
 class QApplication;
 class QEvent;
@@ -32,6 +34,8 @@ private:
     LanguageManager() = default;
     void translateWidget(QWidget* widget);
     void translateAction(QAction* action);
+    void translateValue(QObject* owner, const char* field, const QString& value,
+                        const std::function<void(const QString&)>& setter);
 
     QApplication* m_app = nullptr;
     UiLanguage m_language = UiLanguage::English;
