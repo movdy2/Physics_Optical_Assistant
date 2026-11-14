@@ -34,10 +34,13 @@ into the session, into every snapshot's `notesContent`, and into the `.phy` file
 | **Thick Lens & Aberration** | a real glass element: signed `R₁ R₂`, centre thickness, aperture → paraxial power, **principal planes**, BFL/FFL, imaging from `H₂`, **third-order spherical aberration** (`ΔSA ∝ D²`) and a **Spectrum** tab with the Cauchy focal spread and Abbe number |
 | **Notes** | the clean Markdown study workspace of the design: editor + snippet toolbar + live LaTeX preview, autosaved; **⌨ Keyboard** opens the scientific keyboard (from `keyboard.json`) and types LaTeX straight into the note |
 | **Page actions** | every main-page header uses the same **Save** button plus one **Export** menu for PDF report / Excel (.xlsx) / CSV (.csv); all formats open the unified Export destination |
+| **Language** | the status-bar toggle switches between English and Arabic, remembers the choice, and sets Arabic pages right-to-left; equations and numeric input stay left-to-right |
 | *Tools:* **Export** | one sidebar destination with **Series data** (full CSV/Excel tables, workbook settings and Print…) and **PDF report** (academic lab-report layout, session metadata, numbered experiments, figure captions, page-numbered PDF and Print…); recent exports are remembered in the `.phy` session |
 | *Tools:* **Formula Solver** | 42 formulas in 7 chapters: search, chapter filter, paging, LaTeX, LCD input/answer |
 | *Tools:* **Calculator** | clean expression → result layout with recent history, DEG/RAD, `Ans`, and a focused math keypad (numbers, operators, parentheses, powers, roots, trig and logs); no extra physics-variable browser |
 | *Tools:* **Study Hub** | tabs for ten chapters (summary, rules and chapter constants), shared autosaving Notes, and six Optical Setups (PNG export); the Notes shortcut stays in the sidebar, and global Constants are no longer a Study Hub tab |
+
+Arabic mode uses a built-in offline catalog for navigation, actions, common controls and captions. Scientific notation and numeric fields remain left-to-right; uncatalogued lesson prose and formula data remain in English.
 
 Common to the experiment pages: live update while typing, **Calculate & Simulate** saves a run to the session,
 **Reset parameters**, invalid input never shows `NaN` - a red field, an `E_...` register with the

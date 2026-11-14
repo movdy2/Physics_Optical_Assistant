@@ -14,6 +14,7 @@
 #include "ui/ModelExperimentPages.h"
 #include "ui/MainWindow.h"
 #include "ui/MathSolverPage.h"
+#include "ui/LanguageManager.h"
 #include "ui/NotesPage.h"
 #include "ui/ReportPage.h"
 #include "ui/SolverPage.h"
@@ -107,6 +108,8 @@ App::App(const Paths& paths) {
         if (index == exportIndex) exportPage->showDataExport();
         m_window->setCurrentPage(index);
     });
+
+    LanguageManager::instance().apply(m_window.get());
 }
 
 App::~App() = default;

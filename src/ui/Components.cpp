@@ -91,6 +91,7 @@ UnitField::UnitField(const QString& unit, QWidget* parent) : QFrame(parent) {
     l->setSpacing(6);
     m_edit = new QLineEdit;
     m_edit->setFrame(false);
+    m_edit->setLayoutDirection(Qt::LeftToRight);       // keep numeric expressions and scientific symbols stable in Arabic UI
     m_edit->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
     m_edit->installEventFilter(this);
     installEventFilter(this);
