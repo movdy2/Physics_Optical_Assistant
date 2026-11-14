@@ -560,6 +560,27 @@ private slots:
         QVERIFY2(b, qPrintable("toolbar button not found: " + text));
         click(b);
     }
+    void builtinStarterNotesTranslateButUserContentStaysUntouched() {
+        auto* w = workspace();
+        const QString english = MarkdownWorkspace::starterNotes();
+        QCOMPARE(w->markdown(), english);
+        auto* language = win().languageButton();
+        click(language);
+        const QString arabic = QString::fromUtf8(
+            "# ملاحظات المختبر\n\n## الانكسار والانعكاس الكلي الداخلي\n\n### قانون سنيل\n"
+            "- $n₁ sin θ₁ = n₂ sin θ₂$\n- قارن معامل الانكسار المستخرج بالقيمة المرجعية\n\n"
+            "#### تنبيه للاختبار\nتُقاس الزوايا من العمود المقام، لا من السطح.\n");
+        QCOMPARE(w->markdown(), arabic);
+        click(language);
+        QCOMPARE(w->markdown(), english);
+
+        const QString authored = "# My notes\n- n₁ sin θ₁ = n₂ sin θ₂\n";
+        w->setMarkdown(authored); // loading student text clears the built-in-content marker
+        click(language);
+        QCOMPARE(w->markdown(), authored);
+        click(language);
+        QCOMPARE(w->markdown(), authored);
+    }
     void workspaceHasSnippetToolbar() {
         auto* w = workspace();
         QVERIFY(w);

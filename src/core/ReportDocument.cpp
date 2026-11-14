@@ -21,6 +21,12 @@ std::string escape(const std::string& s) {
     return out;
 }
 
+std::string formatLabel(std::string format, const std::string& token, const std::string& value) {
+    const std::size_t at = format.find(token);
+    if (at != std::string::npos) format.replace(at, token.size(), value);
+    return format;
+}
+
 /// **bold** and `code` inside text that has already been escaped.
 std::string inlineMarkup(const std::string& text) {
     std::string out;
@@ -144,19 +150,22 @@ std::string reportHtml(const ReportContent& content, const ReportOptions& o) {
     h += ".summary { background: #edf6f7; border-left: 3px solid #0b7285; padding: 5pt 8pt; }";
     h += ".figure-caption { color: #627d98; font-size: 8pt; margin-top: 0; }";
     h += ".parameter-label { color: #52606d; }";
-    h += "</style></head><body>";
+    if (o.rightToLeft)
+        h += "body { direction: rtl; } th { text-align: right; } .summary { border-left: 0; border-right: 3px solid #0b7285; } .masthead td { letter-spacing: 0; }";
+    h += "</style></head><body";
+    h += o.rightToLeft ? " dir=\"rtl\">" : ">";
 
     // ---------------------------------------------------------------- report identity and session metadata
     if (o.showMasthead) {
-        h += "<table class=\"masthead\" width=\"100%\"><tr><td><b>PHY104 · OPTICS LABORATORY</b></td>";
-        h += "<td align=\"right\">LAB REPORT</td></tr></table>";
+        h += "<table class=\"masthead\" width=\"100%\"><tr><td><b>" + escape(o.labels.mastheadOrganization) + "</b></td>";
+        h += "<td align=\"right\">" + escape(o.labels.mastheadReport) + "</td></tr></table>";
     }
     h += "<h1>" + escape(o.title) + "</h1>";
     h += "<p style=\"color:#52606d; margin-bottom:7pt\">" + escape(o.subtitle) + "</p>";
     h += "<table class=\"metadata\" width=\"100%\"><tr>";
-    h += "<td><span class=\"meta-label\">GENERATED</span><br><b>" + escape(o.generated) + "</b></td>";
-    h += "<td><span class=\"meta-label\">SESSION</span><br><b>" + escape(o.sessionName) + "</b></td>";
-    h += "<td><span class=\"meta-label\">EXPERIMENTS</span><br><b>" + std::to_string(content.sections.size()) + "</b></td>";
+    h += "<td><span class=\"meta-label\">" + escape(o.labels.generated) + "</span><br><b>" + escape(o.generated) + "</b></td>";
+    h += "<td><span class=\"meta-label\">" + escape(o.labels.session) + "</span><br><b>" + escape(o.sessionName) + "</b></td>";
+    h += "<td><span class=\"meta-label\">" + escape(o.labels.experiments) + "</span><br><b>" + std::to_string(content.sections.size()) + "</b></td>";
     h += "</tr></table><hr>";
 
     // ---------------------------------------------------------------- numbered experiments and figure captions
@@ -166,19 +175,23 @@ std::string reportHtml(const ReportContent& content, const ReportOptions& o) {
         ++index;
         h += "<h2>" + std::to_string(index) + ". " + escape(s.title) + "</h2>";
         if (!s.headline.empty())
-            h += "<p class=\"summary\"><b>RESULT</b><br>" + escape(s.headline) + "</p>";
+            h += "<p class=\"summary\"><b>" + escape(o.labels.result) + "</b><br>" + escape(s.headline) + "</p>";
         if (o.diagrams && !s.diagramKey.empty()) {
             ++figure;
             h += "<p><img src=\"" + escape(s.diagramKey) + "\" width=\"" + width + "\"></p>";
-            h += "<p class=\"figure-caption\"><b>Figure " + std::to_string(figure) + ".</b> Optical diagram — " + escape(s.title) + ".</p>";
+            const std::string figureLabel = formatLabel(o.labels.figureFormat, "%1", std::to_string(figure));
+            const std::string diagramLabel = formatLabel(o.labels.opticalDiagramFormat, "%1", s.title);
+            h += "<p class=\"figure-caption\"><b>" + escape(figureLabel) + "</b> " + escape(diagramLabel) + "</p>";
         }
         if (o.charts && !s.chartKey.empty()) {
             ++figure;
             h += "<p><img src=\"" + escape(s.chartKey) + "\" width=\"" + width + "\"></p>";
-            h += "<p class=\"figure-caption\"><b>Figure " + std::to_string(figure) + ".</b> Data chart — " + escape(s.title) + ".</p>";
+            const std::string figureLabel = formatLabel(o.labels.figureFormat, "%1", std::to_string(figure));
+            const std::string chartLabel = formatLabel(o.labels.dataChartFormat, "%1", s.title);
+            h += "<p class=\"figure-caption\"><b>" + escape(figureLabel) + "</b> " + escape(chartLabel) + "</p>";
         }
         if (o.registers && !s.parameters.empty()) {
-            h += "<h3>Experimental parameters</h3><table width=\"100%\">";
+            h += "<h3>" + escape(o.labels.experimentalParameters) + "</h3><table width=\"100%\">";
             for (std::size_t i = 0; i < s.parameters.size(); i += 2) {
                 h += "<tr><th class=\"parameter-label\">" + escape(s.parameters[i].first) + "</th><td>" + escape(s.parameters[i].second) + "</td>";
                 if (i + 1 < s.parameters.size())
@@ -205,15 +218,16 @@ std::string reportHtml(const ReportContent& content, const ReportOptions& o) {
 
     // ---------------------------------------------------------------- notes
     if (o.notes && !content.notes.empty()) {
-        h += "<h2>Session notes</h2>";
+        h += "<h2>" + escape(o.labels.sessionNotes) + "</h2>";
         h += markdownToHtml(content.notes);
     }
 
     // ---------------------------------------------------------------- saved runs
     if (o.runs && !content.runs.empty()) {
-        h += "<h2>Saved calculations</h2>";
+        h += "<h2>" + escape(o.labels.savedCalculations) + "</h2>";
         h += "<table width=\"100%\">";
-        h += "<tr><th>#</th><th>Experiment</th><th>Inputs</th><th>Result</th></tr>";
+        h += "<tr><th>#</th><th>" + escape(o.labels.tableExperiment) + "</th><th>" + escape(o.labels.tableInputs) +
+             "</th><th>" + escape(o.labels.tableResult) + "</th></tr>";
         for (const RunRecord& r : content.runs)
             h += "<tr><td>" + std::to_string(r.id) + "</td><td>" + escape(r.experiment) + "</td><td>" + escape(r.description) +
                  "</td><td>" + escape(r.result) + "</td></tr>";
@@ -221,7 +235,7 @@ std::string reportHtml(const ReportContent& content, const ReportOptions& o) {
     }
 
     if (index == 0 && (!o.notes || content.notes.empty()) && (!o.runs || content.runs.empty()))
-        h += "<p style=\"color:#52606d\">Nothing selected yet: open an experiment or tick more sections.</p>";
+        h += "<p style=\"color:#52606d\">" + escape(o.labels.nothingSelected) + "</p>";
 
     h += "</body></html>";
     return h;

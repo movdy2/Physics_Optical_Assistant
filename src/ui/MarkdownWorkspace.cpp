@@ -1,6 +1,7 @@
 #include "MarkdownWorkspace.h"
 #include "Components.h"
 #include "LatexRenderer.h"
+#include "LanguageManager.h"
 #include "MarkdownHighlighter.h"
 #include "ThemeManager.h"
 
@@ -118,11 +119,15 @@ void MarkdownEditor::keyPressEvent(QKeyEvent* e) {
 
 // ============================================================================ MarkdownWorkspace
 QString MarkdownWorkspace::starterNotes() {
+    // Keep the built-in template in one canonical language. LanguageManager translates it only
+    // while the editor still contains this untouched starter; user-authored notes are never rewritten.
     return "# Lab notes\n\n## Refraction & TIR\n\n### Snell's law\n- $n₁ sin θ₁ = n₂ sin θ₂$\n- compare the fitted index with the reference value\n\n"
            "#### Exam warning\nAngles are measured from the normal, not from the surface.\n";
 }
 
 QString MarkdownWorkspace::problemTemplate() {
+    if (LanguageManager::instance().isArabic())
+        return "### المعطيات:\n- \n\n### المعادلة:\n- $ $\n\n### التعويض والحل:\n- \n";
     return "### Given:\n- \n\n### Formula:\n- $ $\n\n### Substitution & Solution:\n- \n";
 }
 
@@ -206,6 +211,7 @@ MarkdownWorkspace::MarkdownWorkspace(QWidget* parent) : QWidget(parent) {
     connect(m_statsTimer, &QTimer::timeout, this, &MarkdownWorkspace::updateStats);
     connect(m_editor, &QPlainTextEdit::textChanged, this, [this] {
         if (m_loading) return;
+        m_editor->setProperty("i18nBuiltinContent", false);
         m_pending = true;
         m_saved->setText("Editing…");
         m_saveTimer->start();
@@ -311,15 +317,17 @@ void MarkdownWorkspace::insertTemplate() {
     c.beginEditBlock();
     c.insertText(prefix);
     const int start = c.position();
-    c.insertText(problemTemplate());
-    const int givenBulletOffset = static_cast<int>(QString("### Given:\n- ").size());
-    c.setPosition(start + givenBulletOffset);                                // cursor right after the first "- ".
+    const QString content = problemTemplate();
+    c.insertText(content);
+    const int firstBullet = content.indexOf("- ");
+    c.setPosition(start + (firstBullet >= 0 ? firstBullet + 2 : content.size())); // cursor after the first bullet marker
     c.endEditBlock();
     m_editor->setTextCursor(c);
     m_editor->setFocus();
 }
 
 void MarkdownWorkspace::setMarkdown(const QString& markdown) {
+    m_editor->setProperty("i18nBuiltinContent", false);
     m_loading = true;
     m_editor->setPlainText(markdown);
     m_loading = false;

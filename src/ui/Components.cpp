@@ -273,10 +273,10 @@ void LcdRegisterView::setRegister(const LcdRegister& reg) {
     m_layout->addSpacing(2);
 
     for (const std::string& line : reg.lines) {
-        auto* l = new QLabel(QString::fromStdString(line).toHtmlEscaped().replace("  ", "&nbsp;&nbsp;").replace(" ", "&nbsp;"));
+        auto* l = new QLabel(QString::fromStdString(line));
         l->setObjectName("lcdLine");
         ThemeManager::polishLcdFont(l);
-        l->setTextFormat(Qt::RichText);
+        l->setTextFormat(Qt::PlainText); // keep source text available to the language catalog
         m_layout->addWidget(l);
     }
     if (!reg.resultValue.empty()) {
@@ -292,8 +292,9 @@ void LcdRegisterView::setRegister(const LcdRegister& reg) {
     }
     m_layout->addSpacing(4);
     addDivider(125);
-    auto* foot = new QLabel(QString::fromStdString(reg.footer).replace(" ", "\u00a0"));
+    auto* foot = new QLabel(QString::fromStdString(reg.footer));
     foot->setObjectName("lcdFoot");
+    foot->setTextFormat(Qt::PlainText);
     ThemeManager::polishLcdFont(foot);
     m_layout->addWidget(foot);
 }
