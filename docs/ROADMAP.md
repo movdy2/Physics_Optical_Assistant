@@ -29,7 +29,7 @@
 * **Keyboard shortcuts**: Ctrl+S save, Ctrl+Enter calculate/solve, Ctrl+P PDF report, Ctrl+1..9 pages, Ctrl+Tab next
   page, F11 full screen; the pages fill the window (tested at 1920 px wide).
 * **CI**: GitHub Actions build matrix (Linux Qt 6 + ctest, Windows MSVC + Qt 6.8.3, Qt-free `g++` core test).
-* **Packaging**: version-tagged GitHub Releases bundle a Linux x86_64 AppImage and Windows x64 NSIS installer plus portable ZIP; pull requests and manual runs upload test artifacts.
+* **Packaging**: version-tagged GitHub Releases bundle a Linux x86_64 AppImage and Windows x64 NSIS installer plus portable ZIP; AppImages are smoke-tested on Arch Linux, and pull requests/manual runs upload test artifacts.
 * Session file (`.phy`, format version 6): runs (with their sweep), notes, snapshots (parameters + calculator registers),
   equations and the recent export. The removed Draw Space sketch is no longer saved; legacy drawing payloads are ignored.
 * **Experiment extras** (v2.8): **Thick Lens & Aberration** page (power with a finite thickness, principal planes,
