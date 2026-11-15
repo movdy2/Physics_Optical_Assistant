@@ -34,10 +34,12 @@ See [the Figma-to-code mapping](docs/FIGMA_MAPPING.md) for the screen-by-screen 
 
 A version tag (`v*`) builds and publishes these GitHub Release assets:
 
-- **Linux x86_64:** a single `.AppImage` file.
+- **Linux x86_64:** a single `.AppImage` file, smoke-tested on Arch Linux.
 - **Windows x64:** a setup `.exe` installer and a portable `.zip` containing the app `.exe`, Qt runtime, and `data/` files. A bare `.exe` by itself is not sufficient to run the Qt application.
 
-After the packaging workflow is merged, publish a release by tagging a merged commit, for example:
+On Arch Linux, install `fuse2` for normal AppImage mounting and ensure `harfbuzz` is present; the release build is smoke-tested in an Arch Linux environment.
+
+Publish a release by tagging a merged commit, for example:
 
 ```sh
 git tag v2.3.0
