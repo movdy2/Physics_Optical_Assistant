@@ -164,12 +164,32 @@ jobs:
           APPIMAGE_EXTRACT_AND_RUN: "1"
           QT_QPA_PLATFORM: offscreen
         run: |
-          appimage="$(find dist -maxdepth 1 -type f -name '*.AppImage' -print -quit)"
-          test -n "$appimage"
+          shopt -s nullglob
+          appimages=(dist/*.AppImage)
+          if [ "${#appimages[@]}" -ne 1 ]; then
+            echo "::error title=Arch smoke::Expected one AppImage in dist; found ${#appimages[@]}"
+            ls -la dist
+            exit 1
+          fi
+          appimage="${appimages[0]}"
           chmod +x "$appimage"
           mkdir -p build/smoke-arch
-          "$appimage" --screenshots build/smoke-arch
-          test -s build/smoke-arch/dashboard_arabic.png
+          set +e
+          output="$("$appimage" --screenshots build/smoke-arch 2>&1)"
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ]; then
+            printf '%s\n' "$output" | tail -n 25 | while IFS= read -r line; do
+              line="${line//'%'/'%25'}"
+              echo "::error title=AppImage on Arch::$line"
+            done
+            echo "::error title=Arch smoke::AppImage exited with status $status"
+            exit "$status"
+          fi
+          if [ ! -s build/smoke-arch/dashboard_arabic.png ]; then
+            echo "::error title=Arch smoke::AppImage did not create the Arabic dashboard screenshot"
+            exit 1
+          fi
 
   windows-installer:
     name: Windows · x64 · installer and portable ZIP
