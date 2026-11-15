@@ -46,6 +46,16 @@ int main(int argc, char** argv) {
             check(LatexRenderer::validate(QString::fromStdString(v.latex), &err), "LaTeX of variable " + QString::fromStdString(v.id) + ": " + err);
             ++latexCount;
         }
+        for (const auto& note : JsonStudyNotesRepository(data + "/notes.json").loadAll()) {
+            check(!note.id.empty() && !note.chapter.empty() && !note.type.empty() && !note.title.empty(),
+                  "study note has all metadata: " + QString::fromStdString(note.id));
+            for (const std::string& equation : note.equations) {
+                QString err;
+                check(LatexRenderer::validate(QString::fromStdString(equation), &err),
+                      "LaTeX of study note " + QString::fromStdString(note.id) + ": " + err);
+                ++latexCount;
+            }
+        }
     } catch (const std::exception& e) { check(false, e.what()); }
     for (const char* broken : {"\\frac{1}", "\\frac{", "\\sqrt", "x^", "x_", "\\left(", "{{", "}}", "\\frac{}{}", "^{}", "\\operatorname{min}()"}) {   // half-typed formulas must never crash
         const QPixmap p = LatexRenderer::render(broken, QFont(), Qt::white, 1.0);

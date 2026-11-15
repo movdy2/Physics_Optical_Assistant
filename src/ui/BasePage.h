@@ -29,13 +29,13 @@ public:
     bool isPaused() const { return m_paused; }
     /// Kept for page compatibility; the shared Save + Export header is already applied by the base constructor.
     void useSaveExportHeader();
-    /// The download icon of the header: one button, three formats (PDF report, Excel, CSV).
+    /// The download icon of the header: one button, three formats (PDF report, Excel .xls, CSV).
     QToolButton* exportButton() const { return m_exportButton; }
 
 signals:
     void openPageRequested(int index);        // used by the dashboard
     void stateChanged();                      // status bar text or paused state changed
-    /// The header export menu: 0 = PDF report, 1 = Excel (.xlsx), 2 = CSV (.csv).
+    /// The header export menu: 0 = PDF report, 1 = Excel (.xls), 2 = CSV (.csv).
     void exportFormatRequested(int format);
 
 protected:

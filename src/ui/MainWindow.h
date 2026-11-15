@@ -9,6 +9,7 @@
 class QButtonGroup;
 class QLabel;
 class QLineEdit;
+class QListWidget;
 class QPushButton;
 class QStackedWidget;
 class QTimer;
@@ -20,7 +21,7 @@ class AppContext;
 class BasePage;
 class VirtualKeyboard;
 
-/// Figma shell: sidebar (brand, modules, tools, session info) | pages | status bar.
+/// Figma shell: sidebar (navigation and recent activity) | pages | status bar.
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
@@ -40,7 +41,7 @@ public:
     QPushButton* keyboardButton() const { return m_keyboardButton; }
     QPushButton* languageButton() const { return m_languageButton; }
     VirtualKeyboard* keyboard() const { return m_keyboard; }
-    QLabel* engineLabel() const { return m_engine; }
+    QListWidget* activityLog() const { return m_activityLog; }
     QString statusLeftText() const;
 
     /// "Ctrl+S", "Ctrl+P", "Ctrl+Return", "Ctrl+1".."Ctrl+9", "Ctrl+Tab": what the window listens to.
@@ -63,6 +64,9 @@ private:
     void refreshLanguageButton();
     void refreshStatus();
     void showMessage(const QString& text);
+    void addActivity(const QString& action, const QString& detail = QString());
+    void refreshActivityLog();
+    QString pageName(int index) const;
     QLineEdit* fallbackField() const;
 
     AppContext* m_ctx;
@@ -75,7 +79,10 @@ private:
     std::vector<NavEntry> m_nav;
     VirtualKeyboard* m_keyboard;
     QLabel *m_statusLeft, *m_statusMid, *m_statusRight;
-    QLabel* m_engine;
+    struct ActivityEntry { QString action; QString detail; QString time; };
+    QListWidget* m_activityLog;
+    std::vector<ActivityEntry> m_activityEntries;
+    int m_lastRunCount = 0;
     QString m_transient;
     QTimer* m_messageTimer;
     QPushButton *m_themeButton, *m_keyboardButton, *m_languageButton;

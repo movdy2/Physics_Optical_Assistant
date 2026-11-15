@@ -15,7 +15,7 @@ add_library(phy104_core STATIC
     ReportSupport.cpp
     ReportDocument.cpp
     SessionLog.cpp
-    XlsxWriter.cpp
+    XlsWriter.cpp
     DataExport.cpp
     EquationText.cpp
     Units.cpp

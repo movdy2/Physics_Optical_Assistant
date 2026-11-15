@@ -54,7 +54,7 @@ ModeTabs* ModelPage::addTabs(const QStringList& tabs) {
 
 void ModelPage::build(const QString& diagramTitle, QWidget* canvas, const QString& chartTitle, const QString& hint) {
     auto cols = addThreeColumns();
-    buildButtons(m_fieldLayout, hint, true);
+    buildButtons(m_fieldLayout, hint);
     cols.left->addWidget(m_controls, 1);
 
     m_diagram = new Panel(diagramTitle, "");
@@ -142,7 +142,7 @@ void ModelPage::apply(bool record) {
 
 // ============================================================================ Newton's rings
 NewtonRingsPage::NewtonRingsPage(AppContext* ctx, QWidget* parent)
-    : ModelPage("Newton's Rings", "EXPERIMENT 10 / Dark rings in a thin air film, reflected or transmitted", "Newton's Rings", ctx, parent) {
+    : ModelPage("Newton's Rings", "Dark rings in a thin air film, reflected or transmitted", "Newton's Rings", ctx, parent) {
     addTabs({"Reflected", "Dark rings"});
     m_lambda = addField(QString::fromLatin1(FieldIds::wavelength), "Vacuum wavelength · λ", "nm", 600, 2);
     m_radius = addField(QString::fromLatin1(FieldIds::radiusOfCurvature), "Radius of curvature · R", "m", 1.0, 4);
@@ -171,7 +171,7 @@ QString NewtonRingsPage::runDescription() const {
 
 // ============================================================================ Michelson
 MichelsonPage::MichelsonPage(AppContext* ctx, QWidget* parent)
-    : ModelPage("Michelson Interferometry", "EXPERIMENT 09 / Mirror displacement, fringe shift and fringe count", "Michelson Interferometry", ctx, parent) {
+    : ModelPage("Michelson Interferometry", "Mirror displacement, fringe shift and fringe count", "Michelson Interferometry", ctx, parent) {
     addTabs({"Displacement", "Fringes"});
     m_lambda = addField(QString::fromLatin1(FieldIds::wavelength), "Wavelength · λ", "nm", 632.8, 2);
     m_dx = addField(QString::fromLatin1(FieldIds::mirrorDisplacement), "Mirror displacement · Δx", "µm", 0.75, 4, true, true, 0.05);
@@ -200,7 +200,7 @@ QString MichelsonPage::runDescription() const {
 
 // ============================================================================ thin film
 ThinFilmPage::ThinFilmPage(AppContext* ctx, QWidget* parent)
-    : ModelPage("Thin-Film Interference", "EXPERIMENT 08 / Single film at normal incidence: reflection and transmission", "Thin-Film Interference", ctx, parent) {
+    : ModelPage("Thin-Film Interference", "Single film at normal incidence: reflection and transmission", "Thin-Film Interference", ctx, parent) {
     addTabs({"Reflection", "Transmission", "Colours"});
     m_lambda = addField(QString::fromLatin1(FieldIds::wavelength), "Vacuum wavelength · λ", "nm", 600, 2);
     m_n = addField(QString::fromLatin1(FieldIds::refractiveIndex), "Film index · n", "", 1.5, 4, false, true, 0.01);
@@ -254,7 +254,7 @@ QString ThinFilmPage::runDescription() const {
 
 // ============================================================================ diffraction grating
 GratingPage::GratingPage(AppContext* ctx, QWidget* parent)
-    : ModelPage("Diffraction Grating", "EXPERIMENT 07 / Principal maxima of a transmission grating", "Diffraction Grating", ctx, parent) {
+    : ModelPage("Diffraction Grating", "Principal maxima of a transmission grating", "Diffraction Grating", ctx, parent) {
     addTabs({"Transmission", "Orders", "Resolution"});
     m_density = addField(QString::fromLatin1(FieldIds::gratingDensity), "Line density · N", "lines/cm", 5000, 0, false, true, 100);
     m_lambda = addField(QString::fromLatin1(FieldIds::wavelength), "Wavelength · λ", "nm", 600, 2);
@@ -287,7 +287,7 @@ QString GratingPage::runDescription() const {
 
 // ============================================================================ single slit
 SingleSlitPage::SingleSlitPage(AppContext* ctx, QWidget* parent)
-    : ModelPage("Single-Slit Diffraction", "EXPERIMENT 06 / First minimum and central maximum width", "Single-Slit Diffraction", ctx, parent) {
+    : ModelPage("Single-Slit Diffraction", "First minimum and central maximum width", "Single-Slit Diffraction", ctx, parent) {
     addTabs({"Intensity", "Geometry", "Envelope"});
     m_width = addField(QString::fromLatin1(FieldIds::slitWidth), "Slit width · a", "mm", 0.1, 4, false, true, 0.01);
     m_lambda = addField(QString::fromLatin1(FieldIds::wavelength), "Wavelength · λ", "nm", 500, 2);
@@ -327,7 +327,7 @@ QString SingleSlitPage::runDescription() const {
 
 // ============================================================================ Malus + Brewster
 PolarizationPage::PolarizationPage(AppContext* ctx, QWidget* parent)
-    : ModelPage("Malus's law & Brewster's angle", "EXPERIMENT 05 / Polarizers and the Brewster angle", "Polarization (Malus & Brewster)", ctx, parent) {
+    : ModelPage("Polarization (Malus & Brewster)", "Polarizers and the Brewster angle", "Polarization (Malus & Brewster)", ctx, parent) {
     addTabs({"Malus", "Brewster"});
     m_beam = addCombo("Incident beam", {"Unpolarized", "Polarized"}, {1, 0});
     m_intensity = addField(QString::fromLatin1(FieldIds::incidentIntensity), "Before polarizer · Iᵢₙ", "W/m²", 100, 2);

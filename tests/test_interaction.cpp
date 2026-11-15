@@ -23,6 +23,7 @@
 #include "ui/SolverPage.h"
 #include "ui/StudyHubPage.h"
 #include "ui/ThickLensPage.h"
+#include "JsonRepositories.h"
 #include "ui/ThemeManager.h"
 #include "ui/LanguageManager.h"
 #include "ui/VirtualKeyboard.h"
@@ -45,12 +46,15 @@
 #include <QSignalSpy>
 #include <QListWidget>
 #include <QMenu>
+#include <QScrollArea>
 #include <QPalette>
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QStandardPaths>
+#include <QStackedWidget>
 #include <QTableWidget>
 #include <QTemporaryDir>
+#include <QVBoxLayout>
 #include <QTest>
 #include <QTextBlock>
 #include <QTextCursor>
@@ -58,8 +62,10 @@
 #include <QTextEdit>
 #include <QTextFragment>
 #include <QToolButton>
-#include <cstdlib>
 #include <algorithm>
+#include <cstdlib>
+#include <utility>
+#include <vector>
 
 using namespace phy104;
 
@@ -158,16 +164,42 @@ private slots:
     void sidebarButtonsOpenTheirPages() {
         const auto buttons = win().navButtons();
         QVERIFY(buttons.size() >= 10);
+        auto* navigation = win().findChild<QScrollArea*>("navigationScroll");
+        QVERIFY(navigation);
         for (QPushButton* b : buttons) {
+            navigation->ensureWidgetVisible(b, 4, 4);
+            QApplication::processEvents();
             click(b);
             QVERIFY2(b->isChecked(), qPrintable("nav button not checked: " + b->text()));
         }
+        navigation->ensureWidgetVisible(buttons[1], 4, 4);
         click(buttons[1]);
         QCOMPARE(win().currentPage(), 1);
+        navigation->ensureWidgetVisible(buttons[4], 4, 4);
         click(buttons[4]);
         QCOMPARE(win().currentPage(), 4);
+        navigation->ensureWidgetVisible(buttons[0], 4, 4);
         click(buttons[0]);
         QCOMPARE(win().currentPage(), 0);
+    }
+
+    void shellRemovesTechnicalLabelsAndTracksActivity() {
+        QVERIFY(win().windowTitle().isEmpty());
+        const QStringList labels = allLabelTexts(&win());
+        for (const QString& removed : {QStringLiteral("PHY104"), QStringLiteral("Optical Assistant"),
+                                       QStringLiteral("COMPUTATIONAL OPTICS / v1.4"), QStringLiteral("LAB SESSION"),
+                                       QStringLiteral("ENGINE READY"), QStringLiteral("Qt 6 · Offline"),
+                                       QStringLiteral("PHY104 / Semester 02")}) {
+            for (const QString& label : labels)
+                QVERIFY2(!label.contains(removed, Qt::CaseInsensitive), qPrintable("removed sidebar/status label remains: " + label));
+        }
+        auto* activity = win().activityLog();
+        QVERIFY(activity && activity->objectName() == "activityLog");
+        QVERIFY(activity->count() > 0);
+        goTo(m_app->refraction);
+        QTRY_VERIFY_WITH_TIMEOUT(activity->item(0)->text().contains("Refraction & TIR"), 1500);
+        click(findButton(m_app->refraction, calcText()));
+        QTRY_VERIFY_WITH_TIMEOUT(activity->item(0)->text().contains("#"), 1500);
     }
     void dashboardCardsAndButtonsNavigate() {
         go(0);
@@ -980,16 +1012,48 @@ private slots:
         auto* exportButton = m_app->dashboard->findChild<QToolButton*>("exportMenu");
         QVERIFY(exportButton);
         QCOMPARE(exportButton->text(), QString("تصدير"));
-        QVERIFY(win().windowTitle().startsWith(QStringLiteral("مساعد PHY104 البصري — ")));
+        QVERIFY2(win().windowTitle().isEmpty(), "the native window title should be removed");
 
+        // First return to English, then select TIR and switch languages while that screen is open.
+        go(0);
+        click(language);
+        QCOMPARE(LanguageManager::instance().language(), UiLanguage::English);
+        QCOMPARE(qApp->layoutDirection(), Qt::LeftToRight);
+        goTo(m_app->refraction);
+        click(findButton(m_app->refraction, "TIR"));
+        click(language);
+        QCOMPARE(LanguageManager::instance().language(), UiLanguage::Arabic);
+        QCOMPARE(qApp->layoutDirection(), Qt::RightToLeft);
+        QApplication::processEvents();
+        QVERIFY(win().activityLog()->item(0)->text().contains("فُتحت صفحة"));
+
+        bool hasArabicTirResult = false;
+        int checkedLcdLabels = 0;
+        for (QLabel* label : m_app->refraction->findChildren<QLabel*>()) {
+            const QString objectName = label->objectName();
+            if (!(objectName == "lcdTitle" || objectName == "lcdLine" || objectName == "lcdCaption" ||
+                  objectName == "lcdBig" || objectName == "lcdFoot") || !label->isVisibleTo(m_app->refraction)) continue;
+            ++checkedLcdLabels;
+            QVERIFY2(label->wordWrap(), qPrintable("LCD label does not wrap: " + label->text()));
+            QVERIFY(!label->font().families().contains("DSEG14 Classic"));
+            if (objectName != "lcdTitle") QVERIFY(label->alignment().testFlag(Qt::AlignRight));
+            if (label->text().contains("الانعكاس الكلي الداخلي")) hasArabicTirResult = true;
+            if (label->hasHeightForWidth())
+                QVERIFY2(label->height() >= label->heightForWidth(label->width()), qPrintable("clipped LCD label: " + label->text()));
+        }
+        QVERIFY(checkedLcdLabels > 0);
+        QVERIFY2(hasArabicTirResult, "the Arabic TIR result is missing from the LCD registers");
+
+        go(0);
         click(language);
         QCOMPARE(LanguageManager::instance().language(), UiLanguage::English);
         QCOMPARE(qApp->layoutDirection(), Qt::LeftToRight);
         QCOMPARE(language->text(), QString("العربية"));
         QCOMPARE(language->accessibleName(), QString("Switch to Arabic"));
+        QVERIFY(win().activityLog()->item(0)->text().contains("Opened"));
         QCOMPARE(m_app->dashboard->findChild<QLabel*>("pageTitle")->text(), QString("Dashboard"));
         QVERIFY(findButton(m_app->dashboard, "Save"));
-        QVERIFY(win().windowTitle().startsWith(QStringLiteral("PHY104 Optical Assistant — ")));
+        QVERIFY2(win().windowTitle().isEmpty(), "the native window title should remain empty");
     }
     void calculatorExportMenuRoutesAllFormats() {
         goTo(m_app->calculator);
@@ -1030,6 +1094,45 @@ private slots:
         QVERIFY(notes.contains("1.5492 mm") && notes.contains("λ = 600 nm"));
         QCOMPARE(workspace()->markdown(), notes);                                  // the notes page reloaded the appended text
     }
+
+    void allElevenExperimentsShareLayoutAndSendToNotes() {
+        const std::vector<std::pair<QWidget*, QString>> experiments{
+            {m_app->refraction, "Refraction & TIR"}, {m_app->lenses, "Lenses & Mirrors"},
+            {m_app->prisms, "Prisms"}, {m_app->wave, "Wave Interference"},
+            {m_app->polarization, "Polarization (Malus & Brewster)"},
+            {m_app->singleSlit, "Single-Slit Diffraction"}, {m_app->grating, "Diffraction Grating"},
+            {m_app->thinFilm, "Thin-Film Interference"}, {m_app->michelson, "Michelson Interferometry"},
+            {m_app->newton, "Newton's Rings"}, {m_app->thickLens, "Thick Lens & Aberration"}
+        };
+        AppContext& context = m_app->context();
+        const QString previousNotes = QString::fromStdString(context.log.notes());
+        context.setNotes("");
+        for (const auto& [page, name] : experiments) {
+            goTo(page);
+            auto* title = page->findChild<QLabel*>("pageTitle");
+            auto* subtitle = page->findChild<QLabel*>("pageSubtitle");
+            QVERIFY(title && subtitle);
+            QCOMPARE(title->text(), name);
+            QVERIFY2(!subtitle->text().contains("EXPERIMENT", Qt::CaseInsensitive), qPrintable(subtitle->text()));
+            auto* calculate = findButton(page, calcText());
+            auto* send = page->findChild<QPushButton*>("sendToNotes");
+            QVERIFY(calculate && send && send->isVisibleTo(&win()));
+            QCOMPARE(calculate->geometry().top(), send->geometry().top());
+
+            auto* reset = findButton(page, "Reset parameters");
+            QVERIFY(reset);
+            click(reset);
+            const int before = context.log.savedCalculations();
+            click(calculate);
+            QCOMPARE(context.log.savedCalculations(), before + 1);
+            click(send);
+            const QString notes = QString::fromStdString(context.log.notes());
+            QVERIFY2(notes.contains("### " + name), qPrintable("notes missing for " + name + ": " + notes));
+        }
+        context.setNotes(previousNotes.toStdString());
+        workspace()->setMarkdown(previousNotes);
+    }
+
     void newScreensPauseOnInvalidInputAndRestore() {
         goTo(m_app->newton);
         auto fields = m_app->newton->findChildren<UnitField*>();                    // λ, R, m
@@ -1037,11 +1140,11 @@ private slots:
         QTRY_VERIFY_WITH_TIMEOUT(!findButton(m_app->newton, calcText())->isEnabled(), 1500);
         QVERIFY2(findButton(m_app->newton, "Restore m = 4"), "no Restore button");
         QVERIFY(m_app->newton->isPaused());
-        QCOMPARE(win().engineLabel()->text(), QString("● CALCULATION PAUSED"));
+        QVERIFY(!win().findChild<QLabel*>("engineReady"));
         click(findButton(m_app->newton, "Restore m = 4"));
         QTRY_VERIFY_WITH_TIMEOUT(findButton(m_app->newton, calcText())->isEnabled(), 1500);
         QCOMPARE(fields[2]->text(), QString("4"));
-        QCOMPARE(win().engineLabel()->text(), QString("● ENGINE READY"));
+        QVERIFY(!win().findChild<QLabel*>("engineReady"));
 
         goTo(m_app->grating);
         auto g = m_app->grating->findChildren<UnitField*>();                        // N, λ, m, M
@@ -1160,7 +1263,7 @@ private slots:
         auto actions = button->menu()->actions();
         QCOMPARE(actions.size(), 3);
         QCOMPARE(actions[0]->text(), QString("PDF report…"));
-        QCOMPARE(actions[1]->text(), QString("Excel (.xlsx)…"));
+        QCOMPARE(actions[1]->text(), QString("Excel (.xls)…"));
         QCOMPARE(actions[2]->text(), QString("CSV (.csv)…"));
 
         actions[1]->trigger();                                              // Excel
@@ -1223,6 +1326,13 @@ private slots:
         QVERIFY2(!m_app->studyHub->summaryLabel()->text().isEmpty(), "the second chapter has no summary on screen");
 
         m_app->studyHub->selectSection(1);
+        auto* noteViews = m_app->studyHub->findChild<QStackedWidget*>("studyHubNoteViews");
+        auto* materialList = m_app->studyHub->findChild<QListWidget*>("studyMaterialList");
+        QVERIFY(noteViews && materialList);
+        if (noteViews->currentIndex() != 0) click(modeTab(m_app->studyHub, "Study material"));
+        QCOMPARE(materialList->count(), 20);
+        QVERIFY2(materialList->isVisibleTo(&win()), "the structured study-material catalog is not visible");
+        click(modeTab(m_app->studyHub, "My notes"));
         QVERIFY2(m_app->studyHub->notesEditor() && m_app->studyHub->notesEditor()->isVisibleTo(&win()), "the chapter JSON notes editor is missing");
         m_app->studyHub->selectSection(2);
         auto* diagrams = m_app->diagrams->findChild<QListWidget*>("diagramList");
@@ -1232,7 +1342,73 @@ private slots:
         m_app->studyHub->selectSection(0);
     }
 
+    void studyHubShowsAllStructuredNotesAndRetainsThePersonalEditor() {
+        m_app->studyHub->selectSection(1);
+        auto* noteViews = m_app->studyHub->findChild<QStackedWidget*>("studyHubNoteViews");
+        auto* materialList = m_app->studyHub->findChild<QListWidget*>("studyMaterialList");
+        auto* search = m_app->studyHub->findChild<QLineEdit*>("studyMaterialSearch");
+        auto* chapterFilter = m_app->studyHub->findChild<QComboBox*>("studyMaterialChapterFilter");
+        auto* detailBody = m_app->studyHub->findChild<QWidget*>("studyMaterialDetailBody");
+        auto* noteTitle = m_app->studyHub->findChild<QLabel*>("studyMaterialTitle");
+        auto* noteMeta = m_app->studyHub->findChild<QLabel*>("studyMaterialMeta");
+        QVERIFY(noteViews && materialList && search && chapterFilter && detailBody && noteTitle && noteMeta);
+        if (noteViews->currentIndex() != 0) click(modeTab(m_app->studyHub, "Study material"));
+
+        const auto catalog = JsonStudyNotesRepository(QString::fromUtf8(DATA_DIR) + "/notes.json").loadAll();
+        QCOMPARE(static_cast<int>(catalog.size()), 20);
+        QCOMPARE(materialList->count(), 20);
+        QCOMPARE(chapterFilter->count(), 6);             // all chapters plus the five supplied chapter labels
+        for (int chapterIndex = 1; chapterIndex < chapterFilter->count(); ++chapterIndex) {
+            chapterFilter->setCurrentIndex(chapterIndex);
+            QCOMPARE(materialList->count(), 4);          // four notes in each chapter
+        }
+        chapterFilter->setCurrentIndex(0);
+        search->setText("Brewster");
+        QVERIFY(materialList->count() > 0 && materialList->count() < 20); // search includes note body text
+        search->clear();
+        QCOMPARE(materialList->count(), 20);
+
+        auto* bodyLayout = qobject_cast<QVBoxLayout*>(detailBody->layout());
+        QVERIFY(bodyLayout);
+        for (int row = 0; row < static_cast<int>(catalog.size()); ++row) {
+            materialList->setCurrentRow(row);
+            QApplication::processEvents();
+            const StudyNote& expected = catalog[static_cast<std::size_t>(row)];
+            QCOMPARE(noteTitle->text(), QString::fromStdString(expected.title));
+            QCOMPARE(noteMeta->text(), QString::fromStdString(expected.chapter) + "  ·  " +
+                                         QString::fromStdString(expected.type).toUpper() + "  ·  " +
+                                         QString::fromStdString(expected.id));
+
+            QStringList content;
+            QStringList equations;
+            for (int i = 0; i < bodyLayout->count(); ++i) {
+                QWidget* item = bodyLayout->itemAt(i)->widget();
+                if (auto* point = qobject_cast<QLabel*>(item); point && point->objectName() == "studyMaterialPoint")
+                    content.push_back(point->property("studyNoteContent").toString());
+                if (auto* scroll = qobject_cast<QScrollArea*>(item); scroll && scroll->objectName() == "studyMaterialEquationScroll") {
+                    auto* formula = qobject_cast<LatexWidget*>(scroll->widget());
+                    QVERIFY(formula);
+                    equations.push_back(formula->property("rawEquation").toString());
+                }
+            }
+            QStringList expectedContent;
+            for (const std::string& line : expected.content) expectedContent.push_back(QString::fromStdString(line));
+            QStringList expectedEquations;
+            for (const std::string& equation : expected.equations) expectedEquations.push_back(QString::fromStdString(equation));
+            QCOMPARE(content, expectedContent);
+            QCOMPARE(equations, expectedEquations);
+        }
+
+        click(modeTab(m_app->studyHub, "My notes"));
+        QVERIFY(m_app->studyHub->notesEditor()->isVisibleTo(&win()));
+        QVERIFY(m_app->studyHub->noteSummaryEditor()->isVisibleTo(&win()));
+    }
+
     void studyHubNotesArePerChapterJsonAndSeparateFromMarkdownNotes() {
+        m_app->studyHub->selectSection(1);
+        auto* noteViews = m_app->studyHub->findChild<QStackedWidget*>("studyHubNoteViews");
+        QVERIFY(noteViews);
+        if (noteViews->currentIndex() != 1) click(modeTab(m_app->studyHub, "My notes"));
         const QString sessionNotes = QString::fromStdString(m_app->context().log.notes());
         auto* hubNotes = m_app->studyHub->notesEditor();
         auto* hubSummary = m_app->studyHub->noteSummaryEditor();
@@ -1428,10 +1604,18 @@ private slots:
         QDir(dir).removeRecursively();
 
         click(findButton(m_app->exportPage, "Export workbook"));
-        QVERIFY2(QFile::exists(dir + "/" + base + ".xlsx"), qPrintable("no workbook in " + dir));
-        QCOMPARE(QString::fromStdString(m_app->context().log.lastExport().path), dir + "/" + base + ".xlsx");
-        QCOMPARE(QString::fromStdString(m_app->context().log.lastExport().format), QString("Excel (.xlsx)"));
-        QVERIFY(allLabelTexts(m_app->exportPage).contains(base + ".xlsx"));      // the recent-export card
+        const QString workbookPath = dir + "/" + base + ".xls";
+        QVERIFY2(QFile::exists(workbookPath), qPrintable("no workbook in " + dir));
+        QCOMPARE(QString::fromStdString(m_app->context().log.lastExport().path), workbookPath);
+        QCOMPARE(QString::fromStdString(m_app->context().log.lastExport().format), QString("Excel (.xls)"));
+        QVERIFY(allLabelTexts(m_app->exportPage).contains(base + ".xls"));       // the recent-export card
+        QFile workbook(workbookPath);
+        QVERIFY(workbook.open(QIODevice::ReadOnly));
+        const QByteArray workbookBytes = workbook.readAll();
+        QVERIFY(workbookBytes.startsWith("<?xml version=\"1.0\""));             // Excel 2003 SpreadsheetML, not renamed OOXML
+        QVERIFY(workbookBytes.contains("<?mso-application progid=\"Excel.Sheet\"?>"));
+        QVERIFY(workbookBytes.contains("<Worksheet ss:Name=\"Measurements\">"));
+        QVERIFY(!workbookBytes.startsWith("PK"));
 
         click(findButton(m_app->exportPage, "Export as CSV instead"));
         QVERIFY2(QFile::exists(dir + "/" + base + ".csv"), qPrintable("no CSV in " + dir));

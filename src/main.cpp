@@ -36,6 +36,7 @@ static void takeScreenshots(QApplication& app, phy104::App& application, const Q
     const UiLanguage originalLanguage = LanguageManager::instance().language();
     auto setScreenshotLanguage = [&](UiLanguage language) {
         LanguageManager::instance().setLanguage(language);
+        ThemeManager::instance().apply(app, ThemeManager::instance().isDark());
         LanguageManager::instance().apply(&window);
         window.setCurrentPage(0);
         app.processEvents();
@@ -77,6 +78,11 @@ static void takeScreenshots(QApplication& app, phy104::App& application, const Q
     window.setCurrentPage(1);
     click(application.refraction, "TIR");
     grab("state_tir");
+    setScreenshotLanguage(UiLanguage::Arabic);
+    window.setCurrentPage(1);
+    grab("state_tir_arabic");
+    setScreenshotLanguage(UiLanguage::English);
+    window.setCurrentPage(1);
     click(application.refraction, "Refraction");
     window.setCurrentPage(2);
     click(application.lenses, "Mirror");
