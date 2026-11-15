@@ -152,7 +152,7 @@ jobs:
     steps:
       - name: Install Arch runtime dependencies
         run: |
-          pacman -Syu --noconfirm --needed fuse2 gcc-libs libglvnd fontconfig freetype2 libxkbcommon
+          pacman -Syu --noconfirm --needed fuse2 gcc-libs harfbuzz libglvnd fontconfig freetype2 libxkbcommon
 
       - uses: actions/download-artifact@v4
         with:
