@@ -24,7 +24,7 @@ concurrency:
 jobs:
   linux-appimage:
     name: Linux · x86_64 · AppImage
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -42,7 +42,7 @@ jobs:
           fi
           sudo apt-get install -y --no-install-recommends \
             build-essential cmake ninja-build qt6-base-dev qt6-base-dev-tools qt6-svg-dev \
-            libgl1-mesa-dev libegl1-mesa-dev libfuse2 curl desktop-file-utils 2>&1 | tee apt-install.log
+            libgl1-mesa-dev libegl1-mesa-dev curl desktop-file-utils 2>&1 | tee apt-install.log
           install_status=${PIPESTATUS[0]}
           if [ "$install_status" -ne 0 ]; then
             tail -n 25 apt-install.log | while IFS= read -r line; do
@@ -135,6 +135,21 @@ jobs:
           ./dist/PHY104OpticalAssistant-${APP_VERSION}-Linux-x86_64.AppImage \
             --screenshots build/smoke-appimage
           test -s build/smoke-appimage/dashboard_arabic.png
+
+      - name: Smoke-test the AppImage on Arch Linux
+        run: |
+          docker run --rm \
+            --env APP_VERSION="$APP_VERSION" \
+            --volume "$PWD:/workspace" \
+            --workdir /workspace \
+            archlinux:latest \
+            bash -euo pipefail -c '
+              pacman -Syu --noconfirm --needed fuse2 libglvnd fontconfig freetype2 libxkbcommon
+              APPIMAGE_EXTRACT_AND_RUN=1 QT_QPA_PLATFORM=offscreen \
+                "./dist/PHY104OpticalAssistant-${APP_VERSION}-Linux-x86_64.AppImage" \
+                --screenshots build/smoke-arch
+              test -s build/smoke-arch/dashboard_arabic.png
+            '
 
       - uses: actions/upload-artifact@v4
         with:
