@@ -23,6 +23,7 @@
 #include <QUrl>
 #include <QToolButton>
 #include <QVBoxLayout>
+#include <utility>
 
 namespace phy104 {
 
@@ -137,7 +138,9 @@ QString MarkdownWorkspace::toPreviewMarkdown(const QString& markdown) {
     static const QRegularExpression paren("\\\\\\(\\s*([^\\n]*?)\\s*\\\\\\)");
     QStringList out;
     bool fenced = false;
-    for (QString line : markdown.split('\n')) {
+    const QStringList lines = markdown.split('\n');
+    for (const QString& sourceLine : std::as_const(lines)) {
+        QString line = sourceLine;
         if (line.trimmed().startsWith("```")) fenced = !fenced;
         if (!fenced) {
             line.replace(block, "`\\1`");
@@ -316,11 +319,12 @@ void MarkdownWorkspace::insertTemplate() {
     const QString prefix = (emptyDoc || startOfLine) ? QString() : QString("\n\n");
     c.beginEditBlock();
     c.insertText(prefix);
-    const int start = c.position();
+    const qsizetype start = c.position();
     const QString content = problemTemplate();
     c.insertText(content);
-    const int firstBullet = content.indexOf("- ");
-    c.setPosition(start + (firstBullet >= 0 ? firstBullet + 2 : content.size())); // cursor after the first bullet marker
+    const qsizetype firstBullet = content.indexOf("- ");
+    const qsizetype firstInputPosition = start + (firstBullet >= 0 ? firstBullet + 2 : content.size());
+    c.setPosition(static_cast<int>(firstInputPosition)); // QTextCursor uses int positions; the built-in template is short.
     c.endEditBlock();
     m_editor->setTextCursor(c);
     m_editor->setFocus();
@@ -356,8 +360,9 @@ void MarkdownWorkspace::setMode(Mode mode) {
 }
 
 void MarkdownWorkspace::updateStats() {
+    static const QRegularExpression whitespace("\\s+");
     const QString text = markdown();
-    const int words = static_cast<int>(text.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts).size());
+    const int words = static_cast<int>(text.split(whitespace, Qt::SkipEmptyParts).size());
     m_stats->setText(QString("%1 words · %2 characters · %3 lines").arg(words).arg(text.size()).arg(m_editor->document()->blockCount()));
 }
 
@@ -376,7 +381,9 @@ QString MarkdownWorkspace::withFormulaImages(const QString& markdown, QList<QPai
     };
     QStringList out;
     bool fenced = false;
-    for (QString line : markdown.split('\n')) {
+    const QStringList lines = markdown.split('\n');
+    for (const QString& sourceLine : std::as_const(lines)) {
+        QString line = sourceLine;
         if (line.trimmed().startsWith("```")) fenced = !fenced;
         if (!fenced) {
             static const QRegularExpression emptyAlt("!\\[\\s*\\]\\(");   // QTextDocument drops images whose alt text is empty
@@ -403,7 +410,7 @@ void MarkdownWorkspace::renderPreview() {
     QList<QPair<QString, QPixmap>> resources;
     const QString source = withFormulaImages(markdown(), resources);
     m_preview->document()->setMarkdown(source);
-    for (const auto& [name, pix] : resources)                       // resources are added after setMarkdown (it clears the document)
+    for (const auto& [name, pix] : std::as_const(resources))       // resources are added after setMarkdown (it clears the document)
         m_preview->document()->addResource(QTextDocument::ImageResource, QUrl(name), pix);
     restylePreview();
     m_preview->verticalScrollBar()->setValue(scroll);
@@ -438,7 +445,7 @@ void MarkdownWorkspace::restylePreview() {
     }
     QTextCursor c(doc);
     c.beginEditBlock();
-    for (const Job& j : jobs) {
+    for (const Job& j : std::as_const(jobs)) {
         c.setPosition(j.pos);
         c.setPosition(j.pos + j.len, QTextCursor::KeepAnchor);
         c.mergeCharFormat(j.fmt);
