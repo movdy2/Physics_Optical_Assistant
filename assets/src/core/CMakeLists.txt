@@ -10,7 +10,7 @@ add_library(phy104_core STATIC
     NumberFormat.cpp
     ExperimentReports.cpp
     SessionLog.cpp
-    XlsxWriter.cpp
+    XlsWriter.cpp
     DataExport.cpp
     EquationText.cpp
 )

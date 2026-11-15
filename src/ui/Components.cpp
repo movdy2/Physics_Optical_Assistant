@@ -1,6 +1,7 @@
 #include "Components.h"
 #include "ExpressionEvaluator.h"
 #include "Icons.h"
+#include "LanguageManager.h"
 #include "ThemeManager.h"
 
 #include <QButtonGroup>
@@ -15,6 +16,7 @@
 #include <QToolButton>
 #include <QWheelEvent>
 #include <QPushButton>
+#include <QSizePolicy>
 #include <QStyle>
 #include <QVBoxLayout>
 #include <cmath>
@@ -248,18 +250,51 @@ LcdRegisterView::LcdRegisterView(QWidget* parent) : QFrame(parent) {
     m_layout->setSpacing(4);
 }
 
+void LcdRegisterView::updateTextAlignment() {
+    const bool rtl = LanguageManager::instance().isArabic();
+    for (QLabel* label : findChildren<QLabel*>()) {
+        const QString name = label->objectName();
+        if (name == "lcdTitle") {
+            const bool mode = label->property("lcdMode").toBool();
+            const Qt::Alignment horizontal = mode
+                ? (rtl ? Qt::AlignLeft : Qt::AlignRight)
+                : (rtl ? Qt::AlignRight : Qt::AlignLeft);
+            label->setAlignment(horizontal | Qt::AlignVCenter);
+        } else if (name == "lcdLine" || name == "lcdCaption" || name == "lcdBig" || name == "lcdFoot") {
+            label->setAlignment((rtl ? Qt::AlignRight : Qt::AlignLeft) | Qt::AlignTop);
+        }
+    }
+}
+
+void LcdRegisterView::changeEvent(QEvent* event) {
+    QFrame::changeEvent(event);
+    if (event->type() == QEvent::LayoutDirectionChange)
+        updateTextAlignment();
+}
+
 void LcdRegisterView::setRegister(const LcdRegister& reg) {
     clearLayout(m_layout);
+    const auto prepareText = [](QLabel* label) {
+        label->setWordWrap(true);
+        label->setMinimumWidth(0);
+        label->setTextFormat(Qt::PlainText);
+    };
 
     auto* top = new QHBoxLayout;
     auto* title = new QLabel(QString::fromStdString(reg.title));
     title->setObjectName("lcdTitle");
+    title->setWordWrap(true);
+    title->setMinimumWidth(0);
+    title->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Minimum);
     ThemeManager::polishLcdFont(title);
     auto* mode = new QLabel(reg.isError ? "● ERR" : "● " + QString::fromStdString(reg.mode));
     mode->setObjectName("lcdTitle");
+    mode->setProperty("lcdMode", true);
+    mode->setWordWrap(true);
+    mode->setMinimumWidth(0);
+    mode->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
     ThemeManager::polishLcdFont(mode);
-    top->addWidget(title);
-    top->addStretch();
+    top->addWidget(title, 1);
     top->addWidget(mode);
     m_layout->addLayout(top);
 
@@ -275,17 +310,21 @@ void LcdRegisterView::setRegister(const LcdRegister& reg) {
     for (const std::string& line : reg.lines) {
         auto* l = new QLabel(QString::fromStdString(line));
         l->setObjectName("lcdLine");
+        prepareText(l);
         ThemeManager::polishLcdFont(l);
-        l->setTextFormat(Qt::PlainText); // keep source text available to the language catalog
         m_layout->addWidget(l);
     }
     if (!reg.resultValue.empty()) {
         m_layout->addSpacing(2);
         auto* cap = new QLabel(QString::fromStdString(reg.resultLabel));
         cap->setObjectName("lcdCaption");
+        prepareText(cap);
         ThemeManager::polishLcdFont(cap);
         auto* big = new QLabel(QString::fromStdString(reg.resultValue));
         big->setObjectName("lcdBig");
+        big->setWordWrap(true);
+        big->setMinimumWidth(0);
+        big->setTextFormat(Qt::PlainText);
         ThemeManager::polishLcdFont(big);
         m_layout->addWidget(cap);
         m_layout->addWidget(big);
@@ -294,9 +333,10 @@ void LcdRegisterView::setRegister(const LcdRegister& reg) {
     addDivider(125);
     auto* foot = new QLabel(QString::fromStdString(reg.footer));
     foot->setObjectName("lcdFoot");
-    foot->setTextFormat(Qt::PlainText);
+    prepareText(foot);
     ThemeManager::polishLcdFont(foot);
     m_layout->addWidget(foot);
+    updateTextAlignment();
 }
 
 // ---------------------------------------------------------------------------- NoticeCard

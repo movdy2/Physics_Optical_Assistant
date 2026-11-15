@@ -7,19 +7,25 @@
 #include "ThemeManager.h"
 #include "VirtualKeyboard.h"
 
+#include <QAbstractItemView>
 #include <QAbstractSpinBox>
 #include <QApplication>
 #include <QButtonGroup>
 #include <QComboBox>
+#include <QFileInfo>
+#include <QFrame>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
+#include <QListWidget>
 #include <QPainter>
-#include <QShortcut>
 #include <QPushButton>
+#include <QScrollArea>
+#include <QShortcut>
 #include <QStackedWidget>
 #include <QStatusBar>
 #include <QStyle>
+#include <QTime>
 #include <QTimer>
 #include <QVBoxLayout>
 
@@ -76,7 +82,7 @@ private:
 
 MainWindow::MainWindow(AppContext* ctx, const std::vector<KeyboardGroup>& keyboardLayout, QWidget* parent)
     : QMainWindow(parent), m_ctx(ctx) {
-    setWindowTitle("PHY104 Optical Assistant — " + ctx->sessionFile);
+    setWindowTitle(QString());
     const auto applyWindowIcon = [this] {
         const Theme& t = ThemeManager::instance().theme();
         setWindowIcon(Icons::get("scan-line", t.amber, t.amber, 64));     // taskbar / alt-tab icon
@@ -99,61 +105,70 @@ MainWindow::MainWindow(AppContext* ctx, const std::vector<KeyboardGroup>& keyboa
     sl->setContentsMargins(0, 0, 0, 0);
     sl->setSpacing(0);
 
+    // Keep the small app mark, but remove the sidebar/window title block.
     auto* brand = new QWidget;
-    auto* bl = new QVBoxLayout(brand);
-    bl->setContentsMargins(20, 22, 20, 18);
-    bl->setSpacing(2);
-    auto* logoRow = new QHBoxLayout;
-    logoRow->setSpacing(8);
+    brand->setObjectName("sidebarMark");
+    auto* bl = new QHBoxLayout(brand);
+    bl->setContentsMargins(20, 16, 20, 10);
     auto* logo = new QLabel;
-    logo->setPixmap(Icons::pixmap("scan-line", ThemeManager::instance().theme().amber, 28));
+    logo->setPixmap(Icons::pixmap("scan-line", ThemeManager::instance().theme().amber, 24));
     logo->setAlignment(Qt::AlignVCenter);
-    auto* name = new QLabel("PHY104");
-    name->setObjectName("brandName");
-    name->setAlignment(Qt::AlignVCenter);
-    logoRow->addWidget(logo);
-    logoRow->addWidget(name);
-    logoRow->addStretch();
-    auto* sub = new QLabel("Optical Assistant");
-    sub->setObjectName("brandSub");
-    auto* tag = new QLabel("COMPUTATIONAL OPTICS / v1.4");
-    tag->setObjectName("brandTag");
-    bl->addLayout(logoRow);
-    bl->addSpacing(6);
-    bl->addWidget(sub);
-    bl->addWidget(tag);
+    bl->addWidget(logo);
+    bl->addStretch();
     sl->addWidget(brand);
 
+    auto* navigation = new QWidget;
+    navigation->setObjectName("navigationContents");
+    auto* navigationLayout = new QVBoxLayout(navigation);
+    navigationLayout->setContentsMargins(0, 0, 0, 0);
+    navigationLayout->setSpacing(0);
     m_modulesHeader = new QLabel("EXPERIMENTS");
     m_modulesHeader->setObjectName("navSection");
-    sl->addWidget(m_modulesHeader);
+    navigationLayout->addWidget(m_modulesHeader);
     auto* navHolder = new QWidget;
     m_modules = new QVBoxLayout(navHolder);
     m_modules->setContentsMargins(12, 0, 12, 0);
     m_modules->setSpacing(4);
-    sl->addWidget(navHolder);
+    navigationLayout->addWidget(navHolder);
 
     m_toolsHeader = new QLabel("TOOLS");
     m_toolsHeader->setObjectName("navSection");
-    sl->addWidget(m_toolsHeader);
+    navigationLayout->addWidget(m_toolsHeader);
     auto* toolsHolder = new QWidget;
     m_tools = new QVBoxLayout(toolsHolder);
     m_tools->setContentsMargins(12, 0, 12, 0);
     m_tools->setSpacing(2);
-    sl->addWidget(toolsHolder);
-    sl->addStretch(1);
+    navigationLayout->addWidget(toolsHolder);
+    navigationLayout->addStretch(1);
 
-    auto* session = new QWidget;
-    auto* ssl = new QVBoxLayout(session);
-    ssl->setContentsMargins(20, 0, 20, 16);
-    ssl->setSpacing(4);
-    auto* cap = new QLabel(QString("LAB SESSION / %1").arg(ctx->log.sessionNumber(), 2, 10, QChar('0')));
-    cap->setObjectName("sessionCap");
-    m_engine = new QLabel("● ENGINE READY");
-    m_engine->setObjectName("engineReady");
-    ssl->addWidget(cap);
-    ssl->addWidget(m_engine);
-    sl->addWidget(session);
+    auto* navigationScroll = new QScrollArea;
+    navigationScroll->setObjectName("navigationScroll");
+    navigationScroll->setFrameShape(QFrame::NoFrame);
+    navigationScroll->setWidgetResizable(true);
+    navigationScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    navigationScroll->setWidget(navigation);
+    sl->addWidget(navigationScroll, 1);
+
+    auto* activity = new QWidget;
+    activity->setObjectName("activityPanel");
+    auto* activityLayout = new QVBoxLayout(activity);
+    activityLayout->setContentsMargins(14, 8, 14, 10);
+    activityLayout->setSpacing(4);
+    auto* activityTitle = new QLabel("RECENT ACTIVITY");
+    activityTitle->setObjectName("activityTitle");
+    m_activityLog = new QListWidget;
+    m_activityLog->setObjectName("activityLog");
+    m_activityLog->setSelectionMode(QAbstractItemView::NoSelection);
+    m_activityLog->setFocusPolicy(Qt::NoFocus);
+    m_activityLog->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_activityLog->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_activityLog->setTextElideMode(Qt::ElideRight);
+    m_activityLog->setWordWrap(false);
+    m_activityLog->setMinimumHeight(56);
+    m_activityLog->setMaximumHeight(74);
+    activityLayout->addWidget(activityTitle);
+    activityLayout->addWidget(m_activityLog);
+    sl->addWidget(activity);
     root->addWidget(sidebar);
 
     // ------------------------------------------------------------------ pages + keyboard
@@ -204,9 +219,29 @@ MainWindow::MainWindow(AppContext* ctx, const std::vector<KeyboardGroup>& keyboa
     statusBar()->addPermanentWidget(m_languageButton);
     statusBar()->addPermanentWidget(m_keyboardButton);
     statusBar()->addPermanentWidget(m_themeButton);
-    statusBar()->addPermanentWidget(plain("Qt 6 · Offline"));
-    statusBar()->addPermanentWidget(plain("|"));
-    statusBar()->addPermanentWidget(plain("PHY104 / Semester 02"));
+
+    addActivity("Application ready");
+    m_lastRunCount = ctx->log.savedCalculations();
+    const auto recentRuns = ctx->log.recent(2);
+    for (auto it = recentRuns.rbegin(); it != recentRuns.rend(); ++it)
+        addActivity("Calculated", QString("%1 · %2").arg(QString::fromStdString(SessionLog::runLabel(it->id)),
+                                                         QString::fromStdString(it->experiment)));
+    if (ctx->log.hasExport()) addActivity("Exported", QFileInfo(QString::fromStdString(ctx->log.lastExport().path)).fileName());
+    connect(ctx, &AppContext::runsChanged, this, [this] {
+        const int count = m_ctx->log.savedCalculations();
+        if (count > m_lastRunCount && !m_ctx->log.runs().empty()) {
+            const RunRecord& run = m_ctx->log.runs().back();
+            addActivity("Calculated", QString("%1 · %2").arg(QString::fromStdString(SessionLog::runLabel(run.id)),
+                                                               QString::fromStdString(run.experiment)));
+        } else if (count < m_lastRunCount) {
+            addActivity("Removed saved calculation");
+        }
+        m_lastRunCount = count;
+    });
+    connect(ctx, &AppContext::exportRecorded, this, [this] {
+        addActivity("Exported", QFileInfo(QString::fromStdString(m_ctx->log.lastExport().path)).fileName());
+    });
+    connect(ctx, &AppContext::notesAppended, this, [this] { addActivity("Sent result to Notes"); });
 
     m_messageTimer = new QTimer(this);
     m_messageTimer->setSingleShot(true);
@@ -223,6 +258,7 @@ MainWindow::MainWindow(AppContext* ctx, const std::vector<KeyboardGroup>& keyboa
         ThemeManager::instance().apply(*qApp, ThemeManager::instance().isDark());
         refreshStatus();
         language.apply(this);
+        refreshActivityLog();
         refreshLanguageButton();
     });
     connect(m_themeButton, &QPushButton::clicked, this, [this] { emit themeToggled(!ThemeManager::instance().isDark()); });
@@ -262,7 +298,9 @@ void MainWindow::triggerPrimaryAction() {
     for (QPushButton* b : page->findChildren<QPushButton*>()) {
         if (!b->isVisibleTo(page) || !b->isEnabled()) continue;
         const QString text = b->text();
-        if (text.startsWith("Calculate") || text == "Solve" || text == "Evaluate") { b->click(); return; }
+        if (b->property("primaryAction").toBool() ||
+            text == LanguageManager::instance().text("Solve") ||
+            text == LanguageManager::instance().text("Evaluate")) { b->click(); return; }
     }
 }
 
@@ -277,6 +315,32 @@ void MainWindow::openReportPage() {
 }
 
 QString MainWindow::statusLeftText() const { return m_statusLeft->text(); }
+
+QString MainWindow::pageName(int index) const {
+    for (const NavEntry& entry : m_nav)
+        if (entry.page == index)
+            if (const auto* button = static_cast<const NavButton*>(entry.button)) return button->title();
+    return {};
+}
+
+void MainWindow::addActivity(const QString& action, const QString& detail) {
+    if (!m_activityLog) return;
+    m_activityEntries.insert(m_activityEntries.begin(), {action, detail, QTime::currentTime().toString("HH:mm")});
+    if (m_activityEntries.size() > 3) m_activityEntries.resize(3);
+    refreshActivityLog();
+}
+
+void MainWindow::refreshActivityLog() {
+    if (!m_activityLog) return;
+    m_activityLog->clear();
+    for (const ActivityEntry& entry : m_activityEntries) {
+        QString text = LanguageManager::instance().text(entry.action);
+        if (!entry.detail.isEmpty()) text += " · " + LanguageManager::instance().text(entry.detail);
+        auto* item = new QListWidgetItem(entry.time + "  " + text);
+        item->setToolTip(item->text());
+        m_activityLog->addItem(item);
+    }
+}
 
 /// First usable input field of the current page (for the on-screen keyboard when nothing is focused).
 QLineEdit* MainWindow::fallbackField() const {
@@ -294,8 +358,7 @@ QLineEdit* MainWindow::fallbackField() const {
 
 void MainWindow::refreshStatus() {
     BasePage::StatusInfo info;
-    bool paused = false;
-    if (auto* page = qobject_cast<BasePage*>(m_stack->currentWidget())) { info = page->statusInfo(); paused = page->isPaused(); }
+    if (auto* page = qobject_cast<BasePage*>(m_stack->currentWidget())) info = page->statusInfo();
     m_statusLeft->setText(m_transient.isEmpty() ? info.left : m_transient);
     m_statusMid->setText(info.mid);
     m_statusRight->setText(info.right);
@@ -304,10 +367,6 @@ void MainWindow::refreshStatus() {
         l->style()->unpolish(l);
         l->style()->polish(l);
     }
-    m_engine->setText(paused ? "● CALCULATION PAUSED" : "● ENGINE READY");
-    m_engine->setProperty("paused", paused);
-    m_engine->style()->unpolish(m_engine);
-    m_engine->style()->polish(m_engine);
 }
 
 void MainWindow::showMessage(const QString& text) {
@@ -346,15 +405,17 @@ void MainWindow::addNavButton(const QString& title, const QString& icon, int pag
     m_navGroup->addButton(b);
     (section == 0 ? m_modules : m_tools)->addWidget(b);
     m_nav.push_back({b, icon, pageIndex});
-    connect(b, &QPushButton::clicked, this, [this, pageIndex] { m_stack->setCurrentIndex(pageIndex); });
+    connect(b, &QPushButton::clicked, this, [this, pageIndex] { setCurrentPage(pageIndex); });
     if (m_nav.size() == 1) b->setChecked(true);
 }
 
 void MainWindow::setCurrentPage(int index) {
     if (index < 0 || index >= m_stack->count()) return;
+    const bool changed = index != m_stack->currentIndex();
     m_stack->setCurrentIndex(index);
     for (const NavEntry& e : m_nav)
         if (e.page == index) { e.button->setChecked(true); break; }
+    if (changed) addActivity("Opened", pageName(index));
 }
 
 void MainWindow::refreshIcons() {

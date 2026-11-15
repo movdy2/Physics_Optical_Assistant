@@ -36,6 +36,7 @@ App::App(const Paths& paths) {
     JsonPresetsRepository presetsRepo(d + "/optics_presets.json");
     JsonReferenceRepository referenceRepo(d + "/reference.json");
     JsonStudyHubRepository studyHubRepo(d + "/study_hub.json");
+    JsonStudyNotesRepository studyNotesRepo(d + "/notes.json");
 
     // ---- business layer
     m_engine = std::make_shared<FormulaEngine>(std::make_unique<JsonFormulaRepository>(d + "/formulas.json"),
@@ -79,7 +80,7 @@ App::App(const Paths& paths) {
     m_window->addPage("Equation Lab", "square-function", equationLab, 1);
     diagrams = new DiagramsPage;
     const QString studyHubNotes = QFileInfo(paths.sessionFile).absolutePath() + "/study_hub_notes.json";
-    studyHub = new StudyHubPage(studyHubRepo.loadAll(), m_context.get(), diagrams, studyHubNotes);
+    studyHub = new StudyHubPage(studyHubRepo.loadAll(), studyNotesRepo.loadAll(), m_context.get(), diagrams, studyHubNotes);
     m_window->addPage("Study Hub", "book-open", studyHub, 1);                                // chapters, notes, setups
     solver = new SolverPage(m_engine, m_manager, m_solver, m_context.get());
     m_window->addPage("Formula Solver", "sigma", solver, 1);
@@ -99,7 +100,7 @@ App::App(const Paths& paths) {
         if (!page) continue;
         QObject::connect(page, &BasePage::exportFormatRequested, m_window.get(), [this, exportIndex](int format) {
             if (format == 0) exportPage->showPdfReport();
-            else exportPage->setFormat(format == 1);        // 1 = Excel (.xlsx), 2 = CSV (.csv)
+            else exportPage->setFormat(format == 1);        // 1 = Excel (.xls), 2 = CSV (.csv)
             m_window->setCurrentPage(exportIndex);
         });
     }

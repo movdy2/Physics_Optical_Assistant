@@ -161,9 +161,10 @@ QWidget* ExperimentPage::chartWidget() const {
     return nullptr;
 }
 
-void ExperimentPage::buildButtons(QVBoxLayout* fields, const QString& hint, bool withSend) {
+void ExperimentPage::buildButtons(QVBoxLayout* fields, const QString& hint) {
     m_calc = new QPushButton("Calculate && Simulate");
     m_calc->setObjectName("primary");
+    m_calc->setProperty("primaryAction", true);
     m_reset = new QPushButton("Reset parameters");
     m_reset->setObjectName("secondary");
     m_restore = new QPushButton;
@@ -175,22 +176,21 @@ void ExperimentPage::buildButtons(QVBoxLayout* fields, const QString& hint, bool
     m_hint->setWordWrap(true);
     m_hintText = hint;
     fields->addSpacing(2);
-    if (withSend) {                                                  // design: Calculate & Simulate | Send to Notes side by side
-        auto* send = new QPushButton("Send to\nNotes");
-        send->setObjectName("outlineAmber");
-        send->setCursor(Qt::PointingHandCursor);
-        send->setMinimumHeight(44);
-        m_calc->setText("Calculate &&\nSimulate");
-        m_calc->setMinimumHeight(44);
-        auto* row = new QHBoxLayout;
-        row->setSpacing(8);
-        row->addWidget(m_calc);
-        row->addWidget(send);
-        fields->addLayout(row);
-        connect(send, &QPushButton::clicked, this, [this] { sendToNotes(); });
-    } else {
-        fields->addWidget(m_calc);
-    }
+    // One shared placement for every experiment: calculate and append the latest valid result.
+    auto* send = new QPushButton("Send to\nNotes");
+    send->setObjectName("sendToNotes");
+    send->setAccessibleName("Send to Notes");
+    send->setCursor(Qt::PointingHandCursor);
+    send->setMinimumHeight(44);
+    send->setToolTip("Append the latest valid result to session Notes.");
+    m_calc->setText("Calculate &&\nSimulate");
+    m_calc->setMinimumHeight(44);
+    auto* row = new QHBoxLayout;
+    row->setSpacing(8);
+    row->addWidget(m_calc);
+    row->addWidget(send);
+    fields->addLayout(row);
+    connect(send, &QPushButton::clicked, this, [this] { sendToNotes(); });
     fields->addWidget(m_reset);
     fields->addWidget(m_restore);
     fields->addWidget(m_hint);
@@ -261,7 +261,7 @@ void ExperimentPage::showRegisters(LcdRegisterView* a, LcdRegisterView* b, const
 
 // ============================================================================ Refraction & TIR
 RefractionPage::RefractionPage(AppContext* ctx, QWidget* parent)
-    : ExperimentPage("Refraction & TIR", "EXPERIMENT 01 / Snell's law and the critical angle", "Refraction & TIR", ctx, parent) {
+    : ExperimentPage("Refraction & TIR", "Snell's law and the critical angle", "Refraction & TIR", ctx, parent) {
     auto cols = addThreeColumns();
     auto* controls = new Panel("Experiment controls");
     controls->body()->setSpacing(10);
@@ -468,7 +468,7 @@ void RefractionPage::apply(bool record) {
 
 // ============================================================================ Lenses & Mirrors
 LensesPage::LensesPage(AppContext* ctx, QWidget* parent)
-    : ExperimentPage("Lenses & Mirrors", "EXPERIMENT 02 / Gaussian optics · real-is-positive sign convention", "Lenses & Mirrors", ctx, parent) {
+    : ExperimentPage("Lenses & Mirrors", "Gaussian optics · real-is-positive sign convention", "Lenses & Mirrors", ctx, parent) {
     auto cols = addThreeColumns();
     auto* controls = new Panel("Experiment controls");
     controls->body()->setSpacing(10);
@@ -710,7 +710,7 @@ void LensesPage::apply(bool record) {
 
 // ============================================================================ Prisms
 PrismsPage::PrismsPage(AppContext* ctx, QWidget* parent)
-    : ExperimentPage("Prisms", "EXPERIMENT 03 / Refraction through a prism · minimum deviation", "Prisms", ctx, parent) {
+    : ExperimentPage("Prisms", "Refraction through a prism · minimum deviation", "Prisms", ctx, parent) {
     auto cols = addThreeColumns();
     auto* controls = new Panel("Experiment controls");
     controls->body()->setSpacing(10);
@@ -900,7 +900,7 @@ void PrismsPage::apply(bool record) {
 
 // ============================================================================ Wave interference
 WavePage::WavePage(AppContext* ctx, QWidget* parent)
-    : ExperimentPage("Wave Interference (Double-Slit)", "EXPERIMENT 04 / Young's double-slit experiment · coherent monochromatic light", "Wave Interference", ctx, parent) {
+    : ExperimentPage("Wave Interference", "Young's double-slit experiment · coherent monochromatic light", "Wave Interference", ctx, parent) {
     auto cols = addThreeColumns();
     auto* controls = new Panel("Experiment controls");
     controls->body()->setSpacing(10);

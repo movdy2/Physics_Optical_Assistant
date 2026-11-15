@@ -8,6 +8,7 @@
 
 class QComboBox;
 class QLabel;
+class QLineEdit;
 class QListWidget;
 class QPlainTextEdit;
 class QPushButton;
@@ -22,12 +23,13 @@ class DiagramsPage;
 class ModeTabs;
 class Panel;
 
-/// Study Hub: chapters with summaries, rules and constants, per-chapter notes and optical setups.
+/// Study Hub: chapter guides, a structured study-note catalog, autosaved personal notes and optical setups.
 class StudyHubPage : public BasePage {
     Q_OBJECT
 public:
-    explicit StudyHubPage(std::vector<StudyTopic> topics, AppContext* context,
-                          DiagramsPage* opticalSetups, QString notesFilePath, QWidget* parent = nullptr);
+    explicit StudyHubPage(std::vector<StudyTopic> topics, std::vector<StudyNote> studyNotes,
+                          AppContext* context, DiagramsPage* opticalSetups, QString notesFilePath,
+                          QWidget* parent = nullptr);
     ~StudyHubPage() override;
 
     QListWidget* topicList() const { return m_list; }
@@ -47,8 +49,18 @@ public slots:
 
 private:
     std::vector<StudyTopic> m_topics;
+    std::vector<StudyNote> m_studyMaterials;
     ModeTabs* m_sections = nullptr;
     QStackedWidget* m_sectionStack = nullptr;
+    ModeTabs* m_noteViews = nullptr;
+    QStackedWidget* m_noteStack = nullptr;
+    QLineEdit* m_studyMaterialSearch = nullptr;
+    QComboBox* m_studyMaterialChapterFilter = nullptr;
+    QListWidget* m_studyMaterialList = nullptr;
+    Panel* m_studyMaterialListPanel = nullptr;
+    QLabel* m_studyMaterialMeta = nullptr;
+    QLabel* m_studyMaterialTitle = nullptr;
+    QVBoxLayout* m_studyMaterialBody = nullptr;
     QListWidget* m_list = nullptr;
     QLabel* m_chapter = nullptr;
     QLabel* m_title = nullptr;
@@ -71,6 +83,8 @@ private:
     Panel* m_rulesPanel = nullptr;
 
     QString noteKey(const StudyTopic& topic) const;
+    void filterStudyMaterials();
+    void showStudyMaterial(int row);
     void loadCurrentNote();
     void saveCurrentNote();
 };

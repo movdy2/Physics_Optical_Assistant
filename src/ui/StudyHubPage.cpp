@@ -4,6 +4,7 @@
 #include "Components.h"
 #include "DiagramsPage.h"
 #include "JsonRepositories.h"
+#include "LanguageManager.h"
 #include "LatexRenderer.h"
 
 #include <QAbstractItemView>
@@ -14,15 +15,18 @@
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
+#include <QLineEdit>
 #include <QListWidget>
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QRegularExpression>
 #include <QScrollArea>
 #include <QSet>
+#include <QSizePolicy>
 #include <QSplitter>
 #include <QStringList>
 #include <QStackedWidget>
+#include <QSignalBlocker>
 #include <QTableWidget>
 #include <QTimer>
 #include <QVector>
@@ -92,10 +96,11 @@ QString extractNoteSummary(const QString& source) {
 
 } // namespace
 
-StudyHubPage::StudyHubPage(std::vector<StudyTopic> topics, AppContext* context,
-                           DiagramsPage* opticalSetups, QString notesFilePath, QWidget* parent)
+StudyHubPage::StudyHubPage(std::vector<StudyTopic> topics, std::vector<StudyNote> studyNotes,
+                           AppContext* context, DiagramsPage* opticalSetups, QString notesFilePath, QWidget* parent)
     : BasePage("Study Hub", "STUDY / Chapters, JSON notes and optical setups", context, parent),
-      m_topics(std::move(topics)), m_notesFilePath(std::move(notesFilePath)) {
+      m_topics(std::move(topics)), m_studyMaterials(std::move(studyNotes)),
+      m_notesFilePath(std::move(notesFilePath)) {
     m_sections = new ModeTabs({"Chapters", "Notes", "Optical Setups"});
     m_sections->setObjectName("studyHubTabs");
     content()->addWidget(m_sections);
@@ -177,7 +182,86 @@ StudyHubPage::StudyHubPage(std::vector<StudyTopic> topics, AppContext* context,
     columns->addWidget(constantsColumn);
     m_sectionStack->addWidget(chaptersPage);
 
-    // ---------------------------------------------------------------- per-chapter notes and editable summaries in a separate JSON file
+    // ---------------------------------------------------------------- Notes: read-only study catalog plus the existing personal note editor
+    auto* notesPage = new QWidget;
+    auto* notesPageLayout = new QVBoxLayout(notesPage);
+    notesPageLayout->setContentsMargins(0, 0, 0, 0);
+    notesPageLayout->setSpacing(8);
+    m_noteViews = new ModeTabs({"Study material", "My notes"});
+    m_noteViews->setObjectName("studyHubNoteTabs");
+    notesPageLayout->addWidget(m_noteViews);
+    m_noteStack = new QStackedWidget;
+    m_noteStack->setObjectName("studyHubNoteViews");
+    notesPageLayout->addWidget(m_noteStack, 1);
+
+    auto* catalogPage = new QWidget;
+    auto* catalogLayout = new QVBoxLayout(catalogPage);
+    catalogLayout->setContentsMargins(0, 0, 0, 0);
+    catalogLayout->setSpacing(10);
+    auto* catalogFilters = new QHBoxLayout;
+    catalogFilters->setContentsMargins(0, 0, 0, 0);
+    catalogFilters->setSpacing(10);
+    m_studyMaterialSearch = new QLineEdit;
+    m_studyMaterialSearch->setObjectName("studyMaterialSearch");
+    m_studyMaterialSearch->setPlaceholderText("Search notes by title, chapter or content…");
+    m_studyMaterialSearch->setClearButtonEnabled(true);
+    catalogFilters->addWidget(m_studyMaterialSearch, 1);
+    m_studyMaterialChapterFilter = new QComboBox;
+    m_studyMaterialChapterFilter->setObjectName("studyMaterialChapterFilter");
+    m_studyMaterialChapterFilter->addItem("All chapters", QString());
+    QSet<QString> studyChapters;
+    for (const StudyNote& note : m_studyMaterials) {
+        const QString chapterName = QString::fromStdString(note.chapter);
+        if (studyChapters.contains(chapterName)) continue;
+        studyChapters.insert(chapterName);
+        m_studyMaterialChapterFilter->addItem(chapterName, chapterName);
+    }
+    catalogFilters->addWidget(m_studyMaterialChapterFilter);
+    catalogLayout->addLayout(catalogFilters);
+
+    auto* catalogColumns = new QHBoxLayout;
+    catalogColumns->setContentsMargins(0, 0, 0, 0);
+    catalogColumns->setSpacing(12);
+    m_studyMaterialListPanel = new Panel("Study materials", QString::number(m_studyMaterials.size()));
+    m_studyMaterialListPanel->setMinimumWidth(250);
+    m_studyMaterialListPanel->setMaximumWidth(330);
+    m_studyMaterialList = new QListWidget;
+    m_studyMaterialList->setObjectName("studyMaterialList");
+    m_studyMaterialList->setMinimumHeight(160);
+    m_studyMaterialListPanel->body()->addWidget(m_studyMaterialList, 1);
+    catalogColumns->addWidget(m_studyMaterialListPanel);
+
+    auto* materialDetail = new Panel("Study note");
+    m_studyMaterialMeta = new QLabel;
+    m_studyMaterialMeta->setObjectName("studyMaterialMeta");
+    m_studyMaterialMeta->setWordWrap(true);
+    m_studyMaterialMeta->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    m_studyMaterialTitle = new QLabel;
+    m_studyMaterialTitle->setObjectName("studyMaterialTitle");
+    m_studyMaterialTitle->setWordWrap(true);
+    m_studyMaterialTitle->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    auto* materialScroll = new QScrollArea;
+    materialScroll->setObjectName("studyMaterialDetailScroll");
+    materialScroll->setWidgetResizable(true);
+    materialScroll->setFrameShape(QFrame::NoFrame);
+    materialScroll->viewport()->setAutoFillBackground(false);
+    auto* materialBody = new QWidget;
+    materialBody->setObjectName("studyMaterialDetailBody");
+    m_studyMaterialBody = new QVBoxLayout(materialBody);
+    m_studyMaterialBody->setContentsMargins(0, 0, 0, 0);
+    m_studyMaterialBody->setSpacing(10);
+    materialScroll->setWidget(materialBody);
+    materialDetail->body()->addWidget(m_studyMaterialMeta);
+    materialDetail->body()->addWidget(m_studyMaterialTitle);
+    materialDetail->body()->addWidget(materialScroll, 1);
+    catalogColumns->addWidget(materialDetail, 1);
+    catalogLayout->addLayout(catalogColumns, 1);
+    m_noteStack->addWidget(catalogPage);
+
+    // ---------------------------------------------------------------- per-chapter personal notes and editable summaries in a separate JSON file
+    auto* personalNotesPage = new QWidget;
+    auto* personalNotesLayout = new QVBoxLayout(personalNotesPage);
+    personalNotesLayout->setContentsMargins(0, 0, 0, 0);
     auto* notesPanel = new Panel("Chapter notes", "JSON · NOTES + SUMMARIES · AUTOSAVED");
     m_noteChapter = new QComboBox;
     m_noteChapter->setObjectName("studyHubNoteChapter");
@@ -216,7 +300,9 @@ StudyHubPage::StudyHubPage(std::vector<StudyTopic> topics, AppContext* context,
     notesPanel->body()->addWidget(labeled("Chapter", m_noteChapter));
     notesPanel->body()->addWidget(noteEditors, 1);
     notesPanel->body()->addWidget(m_noteStatus);
-    m_sectionStack->addWidget(notesPanel);
+    personalNotesLayout->addWidget(notesPanel, 1);
+    m_noteStack->addWidget(personalNotesPage);
+    m_sectionStack->addWidget(notesPage);
 
     if (!loadStudyHubNotes(m_notesFilePath, m_studyNotes, &m_notesLoadError)) {
         m_notesLoadFailed = true;
@@ -250,6 +336,13 @@ StudyHubPage::StudyHubPage(std::vector<StudyTopic> topics, AppContext* context,
     if (m_notesLoadFailed)
         m_noteStatus->setText("Notes are read-only; the JSON file could not be loaded and was left unchanged. " + m_notesLoadError);
 
+    connect(m_noteViews, &ModeTabs::currentChanged, m_noteStack, &QStackedWidget::setCurrentIndex);
+    connect(m_studyMaterialSearch, &QLineEdit::textChanged, this, [this](const QString&) { filterStudyMaterials(); });
+    connect(m_studyMaterialChapterFilter, qOverload<int>(&QComboBox::currentIndexChanged),
+            this, [this](int) { filterStudyMaterials(); });
+    connect(m_studyMaterialList, &QListWidget::currentRowChanged, this, &StudyHubPage::showStudyMaterial);
+    filterStudyMaterials();
+
     // ---------------------------------------------------------------- full optical setup gallery
     m_sectionStack->addWidget(opticalSetups);
 
@@ -264,6 +357,107 @@ QString StudyHubPage::noteKey(const StudyTopic& topic) const {
     if (!topic.id.empty()) return QString::fromStdString(topic.id);
     if (!topic.chapter.empty()) return QString::fromStdString(topic.chapter);
     return QString::fromStdString(topic.title);
+}
+
+void StudyHubPage::filterStudyMaterials() {
+    if (!m_studyMaterialList) return;
+    const QString query = m_studyMaterialSearch->text().trimmed().toCaseFolded();
+    const QString selectedChapter = m_studyMaterialChapterFilter->currentData().toString();
+    const int previousIndex = m_studyMaterialList->currentItem()
+                                  ? m_studyMaterialList->currentItem()->data(Qt::UserRole).toInt() : -1;
+    const QSignalBlocker blocker(m_studyMaterialList);
+    m_studyMaterialList->clear();
+
+    int selectedRow = -1;
+    for (std::size_t i = 0; i < m_studyMaterials.size(); ++i) {
+        const StudyNote& note = m_studyMaterials[i];
+        const QString chapter = QString::fromStdString(note.chapter);
+        if (!selectedChapter.isEmpty() && chapter != selectedChapter) continue;
+
+        QStringList searchable{QString::fromStdString(note.id), chapter, QString::fromStdString(note.type),
+                               QString::fromStdString(note.title)};
+        for (const std::string& line : note.content) searchable.push_back(QString::fromStdString(line));
+        for (const std::string& equation : note.equations) searchable.push_back(QString::fromStdString(equation));
+        if (!query.isEmpty() && !searchable.join(QLatin1Char(' ')).toCaseFolded().contains(query)) continue;
+
+        auto* item = new QListWidgetItem(QString::fromStdString(note.title));
+        item->setData(Qt::UserRole, static_cast<int>(i));
+        item->setToolTip(chapter + " · " + QString::fromStdString(note.type));
+        const int row = m_studyMaterialList->count();
+        m_studyMaterialList->addItem(item);
+        if (static_cast<int>(i) == previousIndex) selectedRow = row;
+    }
+
+    if (selectedRow < 0 && m_studyMaterialList->count() > 0) selectedRow = 0;
+    m_studyMaterialList->setCurrentRow(selectedRow);
+    m_studyMaterialListPanel->setMeta(QStringLiteral("%1 / %2")
+                                          .arg(m_studyMaterialList->count())
+                                          .arg(static_cast<qulonglong>(m_studyMaterials.size())));
+    showStudyMaterial(selectedRow);
+}
+
+void StudyHubPage::showStudyMaterial(int row) {
+    clearLayout(m_studyMaterialBody);
+    if (row < 0 || row >= m_studyMaterialList->count()) {
+        m_studyMaterialMeta->clear();
+        m_studyMaterialTitle->setText(LanguageManager::instance().text("No study materials match your filters."));
+        return;
+    }
+
+    const int index = m_studyMaterialList->item(row)->data(Qt::UserRole).toInt();
+    if (index < 0 || index >= static_cast<int>(m_studyMaterials.size())) return;
+    const StudyNote& note = m_studyMaterials[static_cast<std::size_t>(index)];
+    const QString chapter = QString::fromStdString(note.chapter);
+    const QString type = QString::fromStdString(note.type);
+    m_studyMaterialMeta->setText(chapter + "  ·  " + type.toUpper() + "  ·  " + QString::fromStdString(note.id));
+    m_studyMaterialTitle->setText(QString::fromStdString(note.title));
+
+    auto* pointsHeading = new QLabel(LanguageManager::instance().text("Key points"));
+    pointsHeading->setObjectName("sectionTitle");
+    m_studyMaterialBody->addWidget(pointsHeading);
+    for (const std::string& line : note.content) {
+        const QString text = QString::fromStdString(line);
+        auto* point = new QLabel(QStringLiteral("•  ") + text);
+        point->setObjectName("studyMaterialPoint");
+        point->setProperty("studyNoteContent", text);
+        point->setWordWrap(true);
+        point->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+        point->setTextInteractionFlags(Qt::TextSelectableByMouse);
+        m_studyMaterialBody->addWidget(point);
+    }
+
+    if (!note.equations.empty()) {
+        auto* divider = new QFrame;
+        divider->setObjectName("studyMaterialEquationDivider");
+        divider->setFrameShape(QFrame::HLine);
+        m_studyMaterialBody->addWidget(divider);
+        auto* equationsHeading = new QLabel(LanguageManager::instance().text("Equations"));
+        equationsHeading->setObjectName("sectionTitle");
+        m_studyMaterialBody->addWidget(equationsHeading);
+        for (const std::string& source : note.equations) {
+            auto* equationScroll = new QScrollArea;
+            equationScroll->setObjectName("studyMaterialEquationScroll");
+            equationScroll->setWidgetResizable(false);
+            equationScroll->setMinimumWidth(0);
+            equationScroll->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+            equationScroll->setFrameShape(QFrame::NoFrame);
+            equationScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+            equationScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+            auto* equation = new LatexWidget;
+            equation->setObjectName("studyMaterialEquation");
+            equation->setProperty("rawEquation", QString::fromStdString(source));
+            equation->setAlignLeft(true);
+            equation->setPointSize(15.0);
+            equation->setLatex(QString::fromStdString(source));
+            const QSize equationSize = equation->sizeHint();
+            equation->setFixedSize(equationSize);
+            equationScroll->setFixedHeight(qMax(58, equationSize.height() + 20));
+            equationScroll->setWidget(equation);
+            m_studyMaterialBody->addWidget(equationScroll);
+        }
+    }
+    m_studyMaterialBody->addStretch(1);
 }
 
 void StudyHubPage::loadCurrentNote() {

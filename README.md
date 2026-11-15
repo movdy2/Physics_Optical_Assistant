@@ -38,15 +38,17 @@ into the session, into every snapshot's `notesContent`, and into the `.phy` file
 | **Lenses & Mirrors** | thin lens and spherical mirror (same equations), principal rays, image properties |
 | **Prisms** | ray path, minimum deviation, deviation curve, dispersion mode (red / λ / violet rays) |
 | **Wave Interference** | Young's double slit: wavefronts, fringes, intensity profile, 6 light-source presets |
-| **Polarization**, **Single slit**, **Grating**, **Thin film**, **Michelson**, **Newton's rings** | the six screens of the second Figma batch (Save + export icon, Send to Notes); **every tab of every screen works** (thin-film transmission **and its colour swatch**, Michelson fringe count, grating orders **and resolving power**, slit geometry **and the two-slit envelope**, Malus/Brewster) and Newton's viewing-mode dropdown switches to the transmitted rings |
+| **Polarization**, **Single slit**, **Grating**, **Thin film**, **Michelson**, **Newton's rings** | the six screens of the second Figma batch; **every tab of every screen works** (thin-film transmission **and its colour swatch**, Michelson fringe count, grating orders **and resolving power**, slit geometry **and the two-slit envelope**, Malus/Brewster) and Newton's viewing-mode dropdown switches to the transmitted rings |
 | **Thick Lens & Aberration** | a real glass element: signed `R₁ R₂`, centre thickness, aperture → paraxial power, **principal planes**, BFL/FFL, imaging from `H₂`, **third-order spherical aberration** (`ΔSA ∝ D²`) and a **Spectrum** tab with the Cauchy focal spread and Abbe number |
 | **Notes** | the clean Markdown study workspace of the design: editor + snippet toolbar + live LaTeX preview, autosaved; **⌨ Keyboard** opens the scientific keyboard (from `keyboard.json`) and types LaTeX straight into the note |
-| **Page actions** | every main-page header uses the same **Save** button plus one **Export** menu for PDF report / Excel (.xlsx) / CSV (.csv); all formats open the unified Export destination |
+| **Page actions** | every main-page header uses the same **Save** button plus one **Export** menu for PDF report / Excel (.xls) / CSV (.csv); all formats open the unified Export destination |
 | **Language** | the status-bar toggle switches between English and Arabic, remembers the choice, and sets Arabic pages right-to-left; diagrams, charts and report labels are localized while equations and numeric input stay left-to-right |
 | *Tools:* **Export** | one sidebar destination with **Series data** (full CSV/Excel tables, workbook settings and Print…) and **PDF report** (academic lab-report layout, session metadata, numbered experiments, figure captions, page-numbered PDF and Print…); recent exports are remembered in the `.phy` session |
 | *Tools:* **Formula Solver** | 42 formulas in 7 chapters: search, chapter filter, paging, LaTeX, LCD input/answer |
 | *Tools:* **Calculator** | clean expression → result layout with recent history, DEG/RAD, `Ans`, and a focused math keypad (numbers, operators, parentheses, powers, roots, trig and logs); no extra physics-variable browser |
-| *Tools:* **Study Hub** | tabs for ten chapters (summary, rules and chapter constants), shared autosaving Notes, and six Optical Setups (PNG export); the Notes shortcut stays in the sidebar, and global Constants are no longer a Study Hub tab |
+| *Tools:* **Study Hub** | ten chapter summaries/rules/constants, a searchable 20-note study catalog for Chapters 1–5, separate per-chapter personal notes with summaries and autosave, and six Optical Setups (PNG export); the Notes shortcut stays in the sidebar, and global Constants are no longer a Study Hub tab |
+
+All 11 experiment pages share the same three-column template and aligned **Calculate & Simulate** / **Send to Notes** actions. The Excel option writes Excel 2003 SpreadsheetML XML with an `.xls` suffix (not an OOXML ZIP renamed to `.xls`); CSV remains a separate export.
 
 Arabic mode uses bundled offline catalogs for navigation, controls, experiment diagrams and charts, SVG captions, and PDF report labels. The built-in starter notes are translated only while untouched; student-authored notes are never rewritten. Scientific notation and numeric fields remain left-to-right, and uncatalogued lesson prose or formula data may remain in English.
 
@@ -82,14 +84,14 @@ test on pull requests and configured branch pushes; the Linux job also publishes
 | `F11` | full screen (the window starts maximised) |
 
 Developer option: `PHY104OpticalAssistant --screenshots <folder>` drives the UI (saves runs, exports a workbook,
-triggers error states) and writes a PNG of every page in both themes, plus English (`dashboard_updated_header.png`) and Arabic RTL (`dashboard_arabic.png`) dashboard captures.
+triggers error states) and writes a PNG of every page in both themes, plus English (`dashboard_updated_header.png`) and Arabic RTL (`dashboard_arabic.png`) dashboard and TIR/LCD captures (`state_tir_arabic.png`).
 
 ## Layers
 
 ```
 Presentation  src/ui            Qt Widgets: pages, components, canvases, charts, LaTeX renderer, theme
 Business      src/core          pure C++ (no Qt): physics, ExperimentReports, SolverEngine, FormulaManager,
-                                MathCalculator, SessionLog, DataExport + XlsxWriter, ExpressionEvaluator ...
+                                MathCalculator, SessionLog, DataExport + XlsWriter, ExpressionEvaluator ...
 Data          src/data + data/  JSON repositories (formulas, variables, constants, chapters, keyboard,
                                 optics presets, formula reference) and the .phy session file
 Assets        assets/           fonts, Lucide icons, SVG diagrams (generated by tools/make_diagrams.py)

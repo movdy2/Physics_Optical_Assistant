@@ -10,6 +10,7 @@
 #include <QJsonParseError>
 #include <QSaveFile>
 #include <cmath>
+#include <stdexcept>
 #include <utility>
 
 namespace phy104 {
@@ -136,6 +137,34 @@ std::vector<StudyTopic> JsonStudyHubRepository::loadAll() const {
         topics.push_back(std::move(topic));
     }
     return topics;
+}
+
+std::vector<StudyNote> JsonStudyNotesRepository::loadAll() const {
+    const QJsonObject root = JsonLoader::loadObject(m_path);
+    const QJsonValue notesValue = root.value("notes");
+    if (!notesValue.isArray())
+        throw std::runtime_error("Missing or invalid notes array in " + m_path.toStdString());
+
+    std::vector<StudyNote> notes;
+    const QJsonArray array = notesValue.toArray();
+    notes.reserve(static_cast<std::size_t>(array.size()));
+    for (const QJsonValue& item : array) {
+        if (!item.isObject())
+            throw std::runtime_error("Invalid study note in " + m_path.toStdString() + ": expected an object");
+        const QJsonObject object = item.toObject();
+        if (!object.value("content").isArray() || !object.value("equations").isArray())
+            throw std::runtime_error("Invalid study note in " + m_path.toStdString() + ": content and equations must be arrays");
+
+        StudyNote note;
+        note.id = str(object, "id");
+        note.chapter = str(object, "chapter");
+        note.type = str(object, "type");
+        note.title = str(object, "title");
+        note.content = strList(object.value("content"));
+        note.equations = strList(object.value("equations"));
+        notes.push_back(std::move(note));
+    }
+    return notes;
 }
 
 bool loadStudyHubNotes(const QString& path, QMap<QString, StudyHubNote>& notes, QString* error) {

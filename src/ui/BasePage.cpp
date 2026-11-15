@@ -51,12 +51,12 @@ BasePage::BasePage(const QString& title, const QString& subtitle, AppContext* co
         m_exportButton->setObjectName("exportMenu");
         m_exportButton->setCursor(Qt::PointingHandCursor);
         m_exportButton->setPopupMode(QToolButton::InstantPopup);
-        m_exportButton->setToolTip("Export: PDF report, Excel (.xlsx) or CSV (.csv)");
+        m_exportButton->setToolTip("Export: PDF report, Excel (.xls) or CSV (.csv)");
         m_exportButton->setText("Export");
         m_exportButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
         m_exportButton->setIconSize(QSize(18, 18));
         auto* exportMenu = new QMenu(m_exportButton);
-        for (const auto& entry : {std::pair<const char*, int>{"PDF report…", 0}, {"Excel (.xlsx)…", 1}, {"CSV (.csv)…", 2}}) {
+        for (const auto& entry : {std::pair<const char*, int>{"PDF report…", 0}, {"Excel (.xls)…", 1}, {"CSV (.csv)…", 2}}) {
             QAction* action = exportMenu->addAction(QString::fromUtf8(entry.first));
             const int format = entry.second;
             connect(action, &QAction::triggered, this, [this, format] { emit exportFormatRequested(format); });

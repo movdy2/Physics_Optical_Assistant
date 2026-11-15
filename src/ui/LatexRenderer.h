@@ -9,7 +9,7 @@ namespace phy104 {
 
 /// Small LaTeX layout engine built on QPainter (Qt has no LaTeX support).
 /// Supported: letters/digits, + - = ( ) [ ] , ' ^ _ {..}, \frac, \sqrt, \left..\right,
-/// \text \mathrm, \vec, Greek letters, \sin \cos \tan \log \ln, \times \cdot \circ \infty \pm ...
+/// \text \mathrm, \vec \hat, Greek letters, \sin \cos \tan \log \ln, \times \cdot \circ \infty \pm \iff \dots \lfloor \rfloor ...
 /// Output is a transparent high-DPI pixmap, so it scales smoothly on any screen.
 class LatexRenderer {
 public:

@@ -49,7 +49,7 @@ protected:
     QString lastRunLabel() const;               // "RUN 021" for this experiment, or ""
     void setPanels(Panel* diagram, Panel* chart, Panel* results, const QString& diagramMeta, const QString& chartMeta);
     void refreshMetas(bool paused);
-    void buildButtons(QVBoxLayout* fields, const QString& hint, bool sendToNotes = false);   // Calculate [+ Send to Notes] / Reset / Restore + hint
+    void buildButtons(QVBoxLayout* fields, const QString& hint);                         // Calculate + Send to Notes / Reset / Restore + hint
     void sendToNotes();                                            // appends the last valid result to the session notes
     void setNormalHint(const QString& text);
     virtual void apply(bool record) = 0;

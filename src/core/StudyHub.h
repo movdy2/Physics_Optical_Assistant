@@ -26,6 +26,16 @@ struct StudyTopic {
     std::vector<StudyConstant> constants;
 };
 
+/// One read-only study note from data/notes.json, with its chapter, category, key points and equations.
+struct StudyNote {
+    std::string id;
+    std::string chapter;
+    std::string type;
+    std::string title;
+    std::vector<std::string> content;
+    std::vector<std::string> equations;
+};
+
 /// User-authored Study Hub notes; the summary is kept separately from the full note text.
 struct StudyHubNote {
     std::string text;

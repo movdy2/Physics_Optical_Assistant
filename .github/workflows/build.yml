@@ -73,6 +73,7 @@ jobs:
           ./build/src/PHY104OpticalAssistant --screenshots build/screenshots
           test -s build/screenshots/dashboard_updated_header.png
           test -s build/screenshots/dashboard_arabic.png
+          test -s build/screenshots/state_tir_arabic.png
 
       - name: Upload UI screenshots
         if: always() && steps.capture_screenshots.outcome == 'success'

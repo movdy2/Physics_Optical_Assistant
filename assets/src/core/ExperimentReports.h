@@ -58,6 +58,7 @@ struct DataSeries {
     std::string note;                   // "sin θ is dimensionless"
     std::vector<std::string> headers;
     std::vector<std::vector<double>> rows;
+    std::vector<std::pair<std::string, std::string>> analysis{};
 };
 
 constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
