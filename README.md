@@ -1,6 +1,6 @@
 # PHY104 Optical Assistant
 
-**A bilingual, offline optics lab and study companion for PHY104.** Built with C++20 and Qt 6 for Windows and Linux. No account, database, or internet connection is needed.
+**A  no Ai Assistant, offline optics lab and study companion for PHY104.** Built with C++20 and Qt 6 for Windows and Linux. No account, database, or internet connection is needed .
 
 [![Build](https://github.com/movdy2/phy104-sim/actions/workflows/build.yml/badge.svg)](https://github.com/movdy2/phy104-sim/actions/workflows/build.yml)
 [![Latest release](https://img.shields.io/github/v/release/movdy2/phy104-sim?display_name=tag)](https://github.com/movdy2/phy104-sim/releases/latest)
@@ -100,6 +100,12 @@ Linux and Windows Qt builds and the core-only tests run in GitHub Actions.
 - `tests/` — core, data, UI, and interaction tests
 
 The built-in formulas, constants, chapters, keyboard definitions, and optics presets are in `data/`. Session files are stored locally in the application's `.phy` format. Font and icon notices are in [`assets/fonts/LICENSES.txt`](assets/fonts/LICENSES.txt) and alongside the bundled Noto Sans Arabic font.
+
+
+
+
+
+اههداء الى 🦤🧢
 
 ---
 
