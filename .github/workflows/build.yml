@@ -86,6 +86,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && inputs.publish_screenshots
         run: |
           cp build/screenshots/dashboard_updated_header.png docs/screenshots/
+          cp build/screenshots/dashboard_arabic.png docs/screenshots/dashboard_arabic.png
           cp build/screenshots/00_dark.png docs/screenshots/dashboard.png
           cp build/screenshots/01_dark.png docs/screenshots/refraction_tir.png
           cp build/screenshots/02_dark.png docs/screenshots/lenses_mirrors.png
@@ -105,6 +106,21 @@ jobs:
             exit 0
           fi
           git commit -m "Refresh UI screenshots"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      # On request, keep the Arabic dashboard screenshot on the selected branch even if ctest fails.
+      - name: Publish Arabic dashboard screenshot
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.publish_screenshots && steps.capture_screenshots.outcome == 'success'
+        run: |
+          cp build/screenshots/dashboard_arabic.png docs/screenshots/dashboard_arabic.png
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/screenshots/dashboard_arabic.png
+          if git diff --cached --quiet; then
+            echo "Arabic dashboard screenshot is already current."
+            exit 0
+          fi
+          git commit -m "Add Arabic dashboard screenshot"
           git push origin "HEAD:${GITHUB_REF_NAME}"
 
       # a failing test shows up in the PR page, not only in the (large) job log
