@@ -30,10 +30,27 @@ jobs:
 
       - name: Install Qt and AppImage runtime dependencies
         run: |
-          sudo apt-get update
+          set +e
+          sudo apt-get update 2>&1 | tee apt-update.log
+          update_status=${PIPESTATUS[0]}
+          if [ "$update_status" -ne 0 ]; then
+            tail -n 25 apt-update.log | while IFS= read -r line; do
+              line="${line//'%'/'%25'}"
+              echo "::error title=apt-get update::$line"
+            done
+            exit "$update_status"
+          fi
           sudo apt-get install -y --no-install-recommends \
             build-essential cmake ninja-build qt6-base-dev qt6-base-dev-tools qt6-svg-dev \
-            libgl1-mesa-dev libegl1-mesa-dev libfuse2 curl desktop-file-utils
+            libgl1-mesa-dev libegl1-mesa-dev libfuse2 curl desktop-file-utils 2>&1 | tee apt-install.log
+          install_status=${PIPESTATUS[0]}
+          if [ "$install_status" -ne 0 ]; then
+            tail -n 25 apt-install.log | while IFS= read -r line; do
+              line="${line//'%'/'%25'}"
+              echo "::error title=apt-get install::$line"
+            done
+            exit "$install_status"
+          fi
 
       - name: Select package version
         shell: bash
@@ -141,8 +158,15 @@ jobs:
         run: |
           python -m pip install --quiet --disable-pip-version-check "aqtinstall==3.3.*" py7zr
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python -m aqt install-qt windows desktop 6.8.3 win64_msvc2022_64 --outputdir C:/Qt --modules qtsvg
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m aqt install-qt windows desktop 6.8.3 win64_msvc2022_64 --outputdir C:/Qt 2>&1 |
+            Tee-Object -FilePath qtinstall-package.log
+          if ($LASTEXITCODE -ne 0) {
+            Get-Content qtinstall-package.log -Tail 25 | ForEach-Object {
+              $line = $_.Replace("%", "%25").Replace("`r", "%0D").Replace("`n", "%0A")
+              Write-Host "::error title=Qt install::$line"
+            }
+            exit 1
+          }
           "QT_ROOT_DIR=C:/Qt/6.8.3/msvc2022_64" >> $env:GITHUB_ENV
           "C:/Qt/6.8.3/msvc2022_64/bin" >> $env:GITHUB_PATH
 
