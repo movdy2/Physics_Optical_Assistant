@@ -11,7 +11,7 @@
 #include "SessionLog.h"
 #include "WaveExperiments.h"
 #include "ReportDocument.h"
-#include "XlsxWriter.h"
+#include "XlsWriter.h"
 #include "LatexFormatter.h"
 #include "MathCalculator.h"
 #include "PhysicsCalculator.h"
@@ -428,12 +428,9 @@ int main() {
         log.restoreSnapshots(restored);
         CHECK(log.snapshot("Prisms")->notesContent == "changed");                      // loaded snapshots are re-stamped
     }
-    // --- export: CRC, CSV, workbook
+    // --- export: UTF-8 CSV and Excel 2003 SpreadsheetML (.xls)
     {
-        const std::string check = "123456789";
-        CHECK(XlsxWriter::crc32(reinterpret_cast<const std::uint8_t*>(check.data()), check.size()) == 0xCBF43926u);
-        CHECK(XlsxWriter::columnName(0) == "A" && XlsxWriter::columnName(25) == "Z" && XlsxWriter::columnName(27) == "AB");
-        CHECK(XlsxWriter::xmlEscape("a<b&\"c\">") == "a&lt;b&amp;&quot;c&quot;&gt;");
+        CHECK(XlsWriter::xmlEscape("a<b&\"c\">") == "a&lt;b&amp;&quot;c&quot;&gt;");
         auto series = ER::refractionSweep({});
         const std::string csv = DataExport::toCsv(series);
         CHECK(csv.find("\nθ₁ (°),θ₂ (°),sin θ₁,sin θ₂,σ θ₂ (°),σ sin θ₁,σ sin θ₂\n") != std::string::npos);
@@ -442,18 +439,39 @@ int main() {
         const std::string csvTir = DataExport::toCsv(ER::refractionSweep(dense));
         CHECK(csvTir.find("30,,0.5,1.2,,0,0\n") != std::string::npos);         // TIR row: empty angle/σ, not "nan"
         CHECK(csvTir.find("nan") == std::string::npos);
-        SessionLog log; log.setNotes("line one\nline two");
-        log.setSnapshot({"Refraction & TIR", {{"n₁", "1.5"}}, {ER::refraction({}).registers[0]}, "x", {}, ""});
+
+        SessionLog log;
+        log.setNotes("line one\nline two");
+        const char* experiments[] = {"Refraction & TIR", "Lenses & Mirrors", "Prisms", "Wave Interference",
+                                      "Polarization (Malus & Brewster)", "Single-Slit Diffraction", "Diffraction Grating",
+                                      "Thin-Film Interference", "Michelson Interferometry", "Newton's Rings",
+                                      "Thick Lens & Aberration"};
+        for (const char* name : experiments) {
+            LcdRegister step;
+            step.title = "CALCULATION";
+            step.lines = {"01 input accepted"};
+            log.setSnapshot({name, {{"Index", "1.5"}}, {step}, "result", {}, ""});
+        }
         auto sheets = DataExport::workbookSheets(log, series, {});
         CHECK(sheets.size() == 5 && sheets[0].name == "Parameters" && sheets[2].name == "Measurements" &&
               sheets[3].name == "Analysis" && sheets[4].name == "Notes");
+        CHECK(sheets[0].rows.size() == 12);                                      // header + all 11 experiment snapshots
+        CHECK(sheets[1].rows.size() == 12);                                      // header + one result step per experiment
+        CHECK(std::get<std::string>(sheets[0].rows.back()[0].value) == "Thick Lens & Aberration");
+        CHECK(std::get<std::string>(sheets[1].rows.back()[0].value) == "Thick Lens & Aberration");
         ExportOptions only; only.parameters = only.steps = only.notes = false;
         CHECK(DataExport::workbookSheets(log, series, only).size() == 2);
+
         const auto bytes = DataExport::buildWorkbook(log, series, {});
-        CHECK(bytes.size() > 500 && bytes[0] == 'P' && bytes[1] == 'K');
+        const std::string xml(bytes.begin(), bytes.end());
+        CHECK(bytes.size() > 500 && xml.rfind("<?xml version=\"1.0\" encoding=\"UTF-8\"?>", 0) == 0);
+        CHECK(xml.find("<?mso-application progid=\"Excel.Sheet\"?>") != std::string::npos);
+        CHECK(xml.find("<Worksheet ss:Name=\"Measurements\">") != std::string::npos);
+        CHECK(xml.find("ss:Type=\"Number\">") != std::string::npos);
+        CHECK(xml.find("θ₁ (°)") != std::string::npos && xml.find("ss:StyleID=\"Header\"") != std::string::npos);
         CHECK(DataExport::describeWorkbook(log, series, {}).rfind("5 sheets · 8 measurements · ", 0) == 0);
-        CHECK(DataExport::suggestedFileName(series, ".xlsx") == "PHY104_refraction.xlsx");
-        if (FILE* f = std::fopen("/tmp/phy104_test.xlsx", "wb")) { std::fwrite(bytes.data(), 1, bytes.size(), f); std::fclose(f); }
+        CHECK(DataExport::suggestedFileName(series, ".xls") == "PHY104_refraction.xls");
+        if (FILE* f = std::fopen("/tmp/phy104_test.xls", "wb")) { std::fwrite(bytes.data(), 1, bytes.size(), f); std::fclose(f); }
     }
 
     // ====================================================================== equation text (Equation Lab)

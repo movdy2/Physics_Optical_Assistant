@@ -52,6 +52,13 @@ public:
     virtual std::vector<StudyTopic> loadAll() const = 0;
 };
 
+/// Read-only structured study-note catalog from data/notes.json.
+class IStudyNotesRepository {
+public:
+    virtual ~IStudyNotesRepository() = default;
+    virtual std::vector<StudyNote> loadAll() const = 0;
+};
+
 /// Saves/loads the lab session (runs + notes) - the "optics_lab.phy" file.
 class ISessionStore {
 public:

@@ -64,6 +64,15 @@ private:
     QString m_path;
 };
 
+/// Read-only data/notes.json catalog, kept separate from user-authored Study Hub notes.
+class JsonStudyNotesRepository : public IStudyNotesRepository {
+public:
+    explicit JsonStudyNotesRepository(QString path) : m_path(std::move(path)) {}
+    std::vector<StudyNote> loadAll() const override;
+private:
+    QString m_path;
+};
+
 /// Separate user-writable JSON file: chapter key -> full note text and its optional summary.
 /// Returns false for malformed/unsupported files without modifying `notes`, so user data is not silently discarded.
 bool loadStudyHubNotes(const QString& path, QMap<QString, StudyHubNote>& notes, QString* error = nullptr);

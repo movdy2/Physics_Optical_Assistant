@@ -64,8 +64,14 @@ const QHash<QString, QString>& arabicCatalog() {
         {QStringLiteral("Export"), QStringLiteral("تصدير")},
         {QStringLiteral("EXPERIMENTS"), QStringLiteral("التجارب")},
         {QStringLiteral("TOOLS"), QStringLiteral("الأدوات")},
-        {QStringLiteral("LAB SESSION"), QStringLiteral("جلسة المختبر")},
-        {QStringLiteral("● ENGINE READY"), QStringLiteral("● المحرك جاهز")},
+        {QStringLiteral("RECENT ACTIVITY"), QStringLiteral("النشاط الأخير")},
+        {QStringLiteral("Application ready"), QStringLiteral("التطبيق جاهز")},
+        {QStringLiteral("Opened"), QStringLiteral("فُتحت صفحة")},
+        {QStringLiteral("Calculated"), QStringLiteral("أُجري حساب")},
+        {QStringLiteral("Exported"), QStringLiteral("تم التصدير")},
+        {QStringLiteral("Sent result to Notes"), QStringLiteral("أُرسلت النتيجة إلى الملاحظات")},
+        {QStringLiteral("Removed saved calculation"), QStringLiteral("حُذف حساب محفوظ")},
+        {QStringLiteral("Append the latest valid result to session Notes."), QStringLiteral("أضف أحدث نتيجة صالحة إلى ملاحظات الجلسة.")},
         {QStringLiteral("● CALCULATION PAUSED"), QStringLiteral("● الحساب متوقف مؤقتًا")},
         {QStringLiteral("Ready"), QStringLiteral("جاهز")},
         {QStringLiteral("Double precision"), QStringLiteral("دقة مزدوجة")},
@@ -73,13 +79,13 @@ const QHash<QString, QString>& arabicCatalog() {
         {QStringLiteral("⌨ Keyboard"), QStringLiteral("⌨ لوحة المفاتيح")},
         {QStringLiteral("☾ Dark"), QStringLiteral("☾ داكن")},
         {QStringLiteral("☀ Light"), QStringLiteral("☀ فاتح")},
-        {QStringLiteral("Qt 6 · Offline"), QStringLiteral("Qt 6 · دون اتصال")},
-        {QStringLiteral("PHY104 / Semester 02"), QStringLiteral("PHY104 / الفصل 02")},
+        {QStringLiteral("Send to Notes"), QStringLiteral("إرسال إلى الملاحظات")},
+
         {QStringLiteral("Save"), QStringLiteral("حفظ")},
         {QStringLiteral("Save session"), QStringLiteral("حفظ الجلسة")},
-        {QStringLiteral("Export: PDF report, Excel (.xlsx) or CSV (.csv)"), QStringLiteral("تصدير: تقرير PDF أو Excel (.xlsx) أو CSV (.csv)")},
+        {QStringLiteral("Export: PDF report, Excel (.xls) or CSV (.csv)"), QStringLiteral("تصدير: تقرير PDF أو Excel (.xls) أو CSV (.csv)")},
         {QStringLiteral("PDF report…"), QStringLiteral("تقرير PDF…")},
-        {QStringLiteral("Excel (.xlsx)…"), QStringLiteral("ملف Excel (.xlsx)…")},
+        {QStringLiteral("Excel (.xls)…"), QStringLiteral("ملف Excel (.xls)…")},
         {QStringLiteral("CSV (.csv)…"), QStringLiteral("ملف CSV (.csv)…")},
         {QStringLiteral("Print…"), QStringLiteral("طباعة…")},
         {QStringLiteral("Save PDF"), QStringLiteral("حفظ PDF")},
@@ -133,7 +139,7 @@ const QHash<QString, QString>& arabicCatalog() {
         {QStringLiteral("Series description"), QStringLiteral("وصف السلسلة")},
         {QStringLiteral("Full preview"), QStringLiteral("معاينة كاملة")},
         {QStringLiteral("Export settings"), QStringLiteral("إعدادات التصدير")},
-        {QStringLiteral("Excel (.xlsx)"), QStringLiteral("Excel (.xlsx)")},
+        {QStringLiteral("Excel (.xls)"), QStringLiteral("Excel (.xls)")},
         {QStringLiteral("CSV (.csv)"), QStringLiteral("CSV (.csv)")},
         {QStringLiteral("Documents / PHY104"), QStringLiteral("المستندات / PHY104")},
         {QStringLiteral("Choose folder…"), QStringLiteral("اختيار مجلد…")},
@@ -317,12 +323,8 @@ const QHash<QString, QString>& arabicCatalog() {
         {QStringLiteral("SYMMETRIC PASSAGE"), QStringLiteral("مسار متماثل")},
         {QStringLiteral("7 COLOURS · 400–700 NM"), QStringLiteral("7 ألوان · 400–700 nm")},
         {QStringLiteral("EXPERIMENT MODULES"), QStringLiteral("وحدات التجارب")},
-        {QStringLiteral("EXPERIMENT 01 / Snell's law and the critical angle"), QStringLiteral("التجربة 01 / قانون سنيل والزاوية الحرجة")},
-        {QStringLiteral("EXPERIMENT 02 / Gaussian optics · real-is-positive sign convention"), QStringLiteral("التجربة 02 / بصريات غاوس · اصطلاح الإشارة: الحقيقي موجب")},
-        {QStringLiteral("EXPERIMENT 03 / Refraction through a prism · minimum deviation"), QStringLiteral("التجربة 03 / الانكسار في موشور · أقل انحراف")},
-        {QStringLiteral("EXPERIMENT 04 / Young's double-slit experiment · coherent monochromatic light"), QStringLiteral("التجربة 04 / تجربة شقّي يونغ · ضوء أحادي اللون ومترابط")},
         {QStringLiteral("Current: (%1, %2) cm"), QStringLiteral("الحالي: (%1، %2) cm")},
-        {QStringLiteral("LAB SESSION / %1"), QStringLiteral("جلسة المختبر / %1")},
+
         {QStringLiteral("Session saved · %1"), QStringLiteral("تم حفظ الجلسة · %1")},
         {QStringLiteral("Last saved · %1"), QStringLiteral("آخر حفظ · %1")},
         {QStringLiteral("Search by name or ID…"), QStringLiteral("ابحث بالاسم أو المعرّف…")},
@@ -538,8 +540,6 @@ void LanguageManager::setLanguage(UiLanguage language) {
 QString LanguageManager::text(const QString& source) const {
     if (source.isEmpty()) return source;
     if (isArabic()) {
-        const QString appTitle = QStringLiteral("PHY104 Optical Assistant — ");
-        if (source.startsWith(appTitle)) return QStringLiteral("مساعد PHY104 البصري — ") + source.mid(appTitle.size());
         const auto& catalog = arabicCatalog();
         const auto it = catalog.constFind(source);
         if (it != catalog.cend()) return it.value();
@@ -549,8 +549,6 @@ QString LanguageManager::text(const QString& source) const {
         if (patterned != source) return patterned;
         return translateEmbedded(source);
     }
-    const QString arabicTitle = QStringLiteral("مساعد PHY104 البصري — ");
-    if (source.startsWith(arabicTitle)) return QStringLiteral("PHY104 Optical Assistant — ") + source.mid(arabicTitle.size());
     const auto it = englishCatalog().constFind(source);
     return it == englishCatalog().cend() ? source : it.value();
 }

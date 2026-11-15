@@ -27,7 +27,7 @@ QString ExportService::fileStem(const QString& requestedName, const QString& fal
     };
 
     const auto stripKnownSuffix = [](QString name) {
-        for (const QString& suffix : {QStringLiteral(".xlsx"), QStringLiteral(".csv"), QStringLiteral(".pdf")}) {
+        for (const QString& suffix : {QStringLiteral(".xlsx"), QStringLiteral(".xls"), QStringLiteral(".csv"), QStringLiteral(".pdf")}) {
             if (name.endsWith(suffix, Qt::CaseInsensitive)) {
                 name.chop(suffix.size());
                 break;

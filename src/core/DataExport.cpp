@@ -1,5 +1,6 @@
 #include "DataExport.h"
 
+#include <array>
 #include <cmath>
 #include <cstdio>
 
@@ -25,6 +26,12 @@ std::string seriesPrefix(const DataSeries& s) {
     return base.empty() ? "series" : base;
 }
 
+constexpr std::array<const char*, 11> kExperimentNames{
+    "Refraction & TIR", "Lenses & Mirrors", "Prisms", "Wave Interference", "Polarization (Malus & Brewster)",
+    "Single-Slit Diffraction", "Diffraction Grating", "Thin-Film Interference", "Michelson Interferometry",
+    "Newton's Rings", "Thick Lens & Aberration"
+};
+
 } // namespace
 
 std::string toCsv(const DataSeries& series) {
@@ -48,58 +55,58 @@ std::string toCsv(const DataSeries& series) {
     return out;
 }
 
-std::vector<XlsxSheet> workbookSheets(const SessionLog& log, const DataSeries& series, const ExportOptions& opt) {
-    std::vector<XlsxSheet> sheets;
+std::vector<SpreadsheetSheet> workbookSheets(const SessionLog& log, const DataSeries& series, const ExportOptions& opt) {
+    std::vector<SpreadsheetSheet> sheets;
 
     if (opt.parameters) {
-        XlsxSheet s{"Parameters", {}};
-        s.rows.push_back({XlsxCell("Experiment", true), XlsxCell("Parameter", true), XlsxCell("Value", true)});
-        for (const char* name : {"Refraction & TIR", "Lenses & Mirrors", "Prisms", "Wave Interference"}) {
+        SpreadsheetSheet s{"Parameters", {}};
+        s.rows.push_back({SpreadsheetCell("Experiment", true), SpreadsheetCell("Parameter", true), SpreadsheetCell("Value", true)});
+        for (const char* name : kExperimentNames) {
             if (const Snapshot* snap = log.snapshot(name))
                 for (const auto& [key, value] : snap->parameters)
-                    s.rows.push_back({XlsxCell(snap->experiment), XlsxCell(key), XlsxCell(value)});
+                    s.rows.push_back({SpreadsheetCell(snap->experiment), SpreadsheetCell(key), SpreadsheetCell(value)});
         }
         sheets.push_back(std::move(s));
     }
     if (opt.steps) {
-        XlsxSheet s{"Steps", {}};
-        s.rows.push_back({XlsxCell("Experiment", true), XlsxCell("Register", true), XlsxCell("Line", true)});
-        for (const char* name : {"Refraction & TIR", "Lenses & Mirrors", "Prisms", "Wave Interference"}) {
+        SpreadsheetSheet s{"Steps", {}};
+        s.rows.push_back({SpreadsheetCell("Experiment", true), SpreadsheetCell("Register", true), SpreadsheetCell("Line", true)});
+        for (const char* name : kExperimentNames) {
             const Snapshot* snap = log.snapshot(name);
             if (!snap) continue;
             for (const auto& reg : snap->registers) {
-                for (const auto& line : reg.lines) s.rows.push_back({XlsxCell(snap->experiment), XlsxCell(reg.title), XlsxCell(line)});
+                for (const auto& line : reg.lines) s.rows.push_back({SpreadsheetCell(snap->experiment), SpreadsheetCell(reg.title), SpreadsheetCell(line)});
                 if (!reg.resultValue.empty())
-                    s.rows.push_back({XlsxCell(snap->experiment), XlsxCell(reg.title), XlsxCell(reg.resultLabel + " = " + reg.resultValue)});
+                    s.rows.push_back({SpreadsheetCell(snap->experiment), SpreadsheetCell(reg.title), SpreadsheetCell(reg.resultLabel + " = " + reg.resultValue)});
             }
         }
         sheets.push_back(std::move(s));
     }
     if (opt.measurements) {
-        XlsxSheet s{"Measurements", {}};
-        std::vector<XlsxCell> header;
+        SpreadsheetSheet s{"Measurements", {}};
+        std::vector<SpreadsheetCell> header;
         for (const auto& h : series.headers) header.emplace_back(h, true);
         s.rows.push_back(header);
         for (const auto& row : series.rows) {
-            std::vector<XlsxCell> cells;
+            std::vector<SpreadsheetCell> cells;
             for (double v : row) cells.emplace_back(v);
             s.rows.push_back(cells);
         }
         sheets.push_back(std::move(s));
     }
     if (opt.measurements && !series.analysis.empty()) {
-        XlsxSheet s{"Analysis", {}};
-        s.rows.push_back({XlsxCell("Quantity", true), XlsxCell("Value / method", true)});
+        SpreadsheetSheet s{"Analysis", {}};
+        s.rows.push_back({SpreadsheetCell("Quantity", true), SpreadsheetCell("Value / method", true)});
         for (const auto& [name, value] : series.analysis)
-            s.rows.push_back({XlsxCell(name), XlsxCell(value)});
+            s.rows.push_back({SpreadsheetCell(name), SpreadsheetCell(value)});
         sheets.push_back(std::move(s));
     }
     if (opt.notes) {
-        XlsxSheet s{"Notes", {}};
-        s.rows.push_back({XlsxCell("Session notes", true)});
+        SpreadsheetSheet s{"Notes", {}};
+        s.rows.push_back({SpreadsheetCell("Session notes", true)});
         std::string line;
         for (char c : log.notes() + "\n") {
-            if (c == '\n') { s.rows.push_back({XlsxCell(line)}); line.clear(); } else line += c;
+            if (c == '\n') { s.rows.push_back({SpreadsheetCell(line)}); line.clear(); } else line += c;
         }
         sheets.push_back(std::move(s));
     }
@@ -108,8 +115,8 @@ std::vector<XlsxSheet> workbookSheets(const SessionLog& log, const DataSeries& s
 
 std::vector<std::uint8_t> buildWorkbook(const SessionLog& log, const DataSeries& series, const ExportOptions& opt) {
     auto sheets = workbookSheets(log, series, opt);
-    if (sheets.empty()) sheets.push_back({"Empty", {{XlsxCell("Nothing selected")}}});
-    return XlsxWriter::build(sheets);
+    if (sheets.empty()) sheets.push_back({"Empty", {{SpreadsheetCell("Nothing selected")}}});
+    return XlsWriter::build(sheets);
 }
 
 std::string describeWorkbook(const SessionLog& log, const DataSeries& series, const ExportOptions& opt) {

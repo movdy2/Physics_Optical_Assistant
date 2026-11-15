@@ -6,6 +6,7 @@
 #include <QList>
 
 class QButtonGroup;
+class QEvent;
 class QHBoxLayout;
 class QLabel;
 class QLineEdit;
@@ -105,7 +106,10 @@ class LcdRegisterView : public QFrame {
 public:
     explicit LcdRegisterView(QWidget* parent = nullptr);
     void setRegister(const LcdRegister& reg);
+protected:
+    void changeEvent(QEvent* event) override;
 private:
+    void updateTextAlignment();
     QVBoxLayout* m_layout;
 };
 

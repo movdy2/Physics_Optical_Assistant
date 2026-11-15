@@ -127,6 +127,8 @@ Box makeDelimiter(QChar kind, qreal top, qreal bottom, qreal size) {
         else if (kind == ')') { path.moveTo(x + dw * 0.2, y0); path.quadTo(x + dw * 1.1, ym, x + dw * 0.2, y1); }
         else if (kind == '[') { path.moveTo(x + dw * 0.8, y0); path.lineTo(x + dw * 0.25, y0); path.lineTo(x + dw * 0.25, y1); path.lineTo(x + dw * 0.8, y1); }
         else if (kind == ']') { path.moveTo(x + dw * 0.2, y0); path.lineTo(x + dw * 0.75, y0); path.lineTo(x + dw * 0.75, y1); path.lineTo(x + dw * 0.2, y1); }
+        else if (kind == QChar(0x230A)) { path.moveTo(x + dw * 0.8, y0); path.lineTo(x + dw * 0.25, y0); path.lineTo(x + dw * 0.25, y1); path.lineTo(x + dw, y1); }
+        else if (kind == QChar(0x230B)) { path.moveTo(x + dw * 0.2, y0); path.lineTo(x + dw * 0.75, y0); path.lineTo(x + dw * 0.75, y1); path.lineTo(x, y1); }
         else                  { path.moveTo(x + dw / 2, y0); path.lineTo(x + dw / 2, y1); }
         p.save();
         QPen pen = p.pen(); pen.setWidthF(0.06 * size); p.setPen(pen); p.setBrush(Qt::NoBrush);
@@ -153,6 +155,28 @@ Box makeVec(const Box& c, qreal size) {
     return r;
 }
 
+Box makeHat(const Box& c, qreal size) {
+    Box r = c;
+    const qreal height = 0.22 * size;
+    r.a = c.a + height;
+    r.paint = [=](QPainter& p, qreal x, qreal base) {
+        c.paint(p, x, base);
+        if (c.w <= 0) return;
+        const qreal margin = qMin(0.13 * size, 0.18 * c.w);
+        const qreal y = base - c.a - 0.04 * size;
+        QPainterPath hat;
+        hat.moveTo(x + margin, y);
+        hat.lineTo(x + c.w / 2, y - 0.16 * size);
+        hat.lineTo(x + c.w - margin, y);
+        p.save();
+        QPen pen = p.pen(); pen.setWidthF(0.055 * size); pen.setJoinStyle(Qt::MiterJoin); p.setPen(pen);
+        p.setBrush(Qt::NoBrush);
+        p.drawPath(hat);
+        p.restore();
+    };
+    return r;
+}
+
 // ------------------------------------------------------------------ parser
 const std::map<QString, QString> kGreekLower = {
     {"alpha", "α"}, {"beta", "β"}, {"gamma", "γ"}, {"delta", "δ"}, {"epsilon", "ε"}, {"varepsilon", "ε"},
@@ -165,7 +189,8 @@ const std::map<QString, QString> kGreekUpper = {
 const std::map<QString, QString> kSymbols = {          // upright symbols: command -> text, kind
     {"times", "×"}, {"cdot", "·"}, {"circ", "°"}, {"infty", "∞"}, {"pm", "±"}, {"approx", "≈"},
     {"neq", "≠"}, {"leq", "≤"}, {"geq", "≥"}, {"propto", "∝"}, {"partial", "∂"}, {"degree", "°"},
-    {"div", "÷"}, {"int", "∫"}, {"to", "→"}, {"rightarrow", "→"}};
+    {"div", "÷"}, {"int", "∫"}, {"to", "→"}, {"rightarrow", "→"}, {"iff", "⇔"},
+    {"dots", "…"}, {"ldots", "…"}, {"cdots", "⋯"}, {"lfloor", "⌊"}, {"rfloor", "⌋"}};
 const char* const kFunctions[] = {"sin", "cos", "tan", "sec", "csc", "cot", "arcsin", "arccos", "arctan",
                                   "log", "ln", "max", "min", "exp", "sinh", "cosh", "tanh"};
 
@@ -347,13 +372,17 @@ private:
             return {text(raw, false), Kind::Ord};
         }
         if (name == "vec" || name == "overrightarrow") return {makeVec(parseArg(), m_size), Kind::Ord};
+        if (name == "hat" || name == "widehat") return {makeHat(parseArg(), m_size), Kind::Ord};
 
         if (kGreekLower.count(name)) return {text(kGreekLower.at(name), true), Kind::Ord};
         if (kGreekUpper.count(name)) return {text(kGreekUpper.at(name), false), Kind::Ord};
         if (kSymbols.count(name)) {
             const bool bin = (name == "times" || name == "cdot" || name == "pm" || name == "div");
-            const bool rel = (name == "approx" || name == "neq" || name == "leq" || name == "geq" || name == "propto");
-            return {text(kSymbols.at(name), false), bin ? Kind::Bin : (rel ? Kind::Rel : Kind::Ord)};
+            const bool rel = (name == "approx" || name == "neq" || name == "leq" || name == "geq" ||
+                              name == "propto" || name == "iff");
+            const Kind kind = bin ? Kind::Bin : (rel ? Kind::Rel :
+                              (name == "lfloor" ? Kind::Open : (name == "rfloor" ? Kind::Close : Kind::Ord)));
+            return {text(kSymbols.at(name), false), kind};
         }
         for (const char* f : kFunctions)
             if (name == f) return {text(name, false), Kind::Func};
@@ -369,7 +398,13 @@ private:
 
     QChar readDelimiter() {
         if (atEnd()) { fail("Missing delimiter"); return '.'; }
-        if (peek() == '\\') { ++m_i; const QString n = readCommandName(); return n == "{" ? QChar('(') : QChar('.'); }
+        if (peek() == '\\') {
+            ++m_i;
+            const QString name = readCommandName();
+            if (name == "lfloor") return QChar(0x230A);
+            if (name == "rfloor") return QChar(0x230B);
+            return name == "{" ? QChar('(') : QChar('.');
+        }
         const QChar c = peek(); ++m_i;
         return c;
     }

@@ -31,7 +31,7 @@ struct Snapshot {
 /// so it is still there after a restart.
 struct ExportRecord {
     std::string path;           // full path of the file
-    std::string format;         // "Excel (.xlsx)" or "CSV (.csv)"
+    std::string format;         // "Excel (.xls)" or "CSV (.csv)"; older sessions may store .xlsx
     std::string series;         // id of the exported DataSeries, e.g. "refraction"
     std::string when;           // "13 Nov 2026 · 01:42"
     int rows = 0;

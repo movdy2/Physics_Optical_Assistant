@@ -108,9 +108,9 @@ ExportPage::ExportPage(AppContext* ctx, QWidget* parent)
 
     // ---------------------------------------------------------------- right: settings + recent export
     auto* settings = new Panel("Export settings", "LOCAL");
-    m_format = new ModeTabs({"Excel (.xlsx)", "CSV (.csv)"});
+    m_format = new ModeTabs({"Excel (.xls)", "CSV (.csv)"});
     m_format->setObjectName("seriesFormatTabs");
-    m_fileName = new UnitField(".xlsx");
+    m_fileName = new UnitField(".xls");
     m_folder = new QComboBox;
     m_folder->addItem("Documents / PHY104", QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/PHY104");
     m_folder->addItem("Desktop", QStandardPaths::writableLocation(QStandardPaths::DesktopLocation));
@@ -322,15 +322,15 @@ void ExportPage::refreshRecent() {
     m_recent->setRecord(m_ctx->log.lastExport());
 }
 
-void ExportPage::setFormat(bool xlsx) {
-    m_format->setCurrent(xlsx ? 0 : 1);      // setCurrent does not emit currentChanged
+void ExportPage::setFormat(bool excel) {
+    m_format->setCurrent(excel ? 0 : 1);      // setCurrent does not emit currentChanged
     onFormatChanged();
     showDataExport();
 }
 
 void ExportPage::onFormatChanged() {
     const bool excel = m_format->current() == 0;
-    m_fileName->setUnit(excel ? ".xlsx" : ".csv");
+    m_fileName->setUnit(excel ? ".xls" : ".csv");
     m_primary->setText(excel ? "Export workbook" : "Export CSV");
     m_secondary->setText(excel ? "Export as CSV instead" : "Export workbook instead");
     for (auto* c : {m_chkParams, m_chkSteps, m_chkNotes}) c->setEnabled(excel);   // CSV is the series only
@@ -338,19 +338,19 @@ void ExportPage::onFormatChanged() {
     if (m_exportModes->current() == 0) onExportPaneChanged();
 }
 
-bool ExportPage::exportAs(bool xlsx) {
+bool ExportPage::exportAs(bool excel) {
     const Snapshot* snap = currentSnapshot();
     if (!snap || snap->series.rows.empty()) { emit m_ctx->message("Nothing to export yet"); return false; }
     const DataSeries& s = snap->series;
     const QString dir = destinationFolder();
     if (dir.isEmpty()) { emit m_ctx->message("Choose a destination folder first"); return false; }
 
-    const QString extension = xlsx ? ".xlsx" : ".csv";
+    const QString extension = excel ? ".xls" : ".csv";
     const QString fallback = QString::fromStdString(DataExport::suggestedFileName(s, extension.toStdString()));
     const QString path = ExportService::outputPath(dir, m_fileName->text(), fallback, extension);
     const ExportOptions options{m_chkParams->isChecked(), m_chkSteps->isChecked(),
                                 m_chkData->isChecked(), m_chkNotes->isChecked()};
-    const auto format = xlsx ? SeriesExportFormat::Workbook : SeriesExportFormat::Csv;
+    const auto format = excel ? SeriesExportFormat::Workbook : SeriesExportFormat::Csv;
     QString error;
     if (!ExportService::writeSeriesFile(path, m_ctx->log, s, format, options, &error)) {
         emit m_ctx->message(error);
@@ -358,7 +358,7 @@ bool ExportPage::exportAs(bool xlsx) {
     }
 
     const ExportRecord rec = ExportService::makeRecord(
-        path, xlsx ? "Excel (.xlsx)" : "CSV (.csv)", s.id,
+        path, excel ? "Excel (.xls)" : "CSV (.csv)", s.id,
         static_cast<int>(s.rows.size()), static_cast<int>(s.headers.size()));
     m_ctx->recordExport(rec);
     refreshRecent();
