@@ -31,6 +31,7 @@ namespace phy104 {
 MarkdownEditor::MarkdownEditor(QWidget* parent) : QPlainTextEdit(parent) {
     setObjectName("mdEditor");
     QFont f(ThemeManager::uiFont());
+    f.setFamilies(ThemeManager::uiFontFamilies());
     f.setPixelSize(13);
     setFont(f);
     setTabStopDistance(fontMetrics().horizontalAdvance(' ') * 4);
@@ -298,7 +299,7 @@ QWidget* MarkdownWorkspace::buildToolbar() {
         QAction* a = menu->addAction(f.name);
         connect(a, &QAction::triggered, this, [this, n = QString(f.name), fm = QString(f.formula)] {
             if (m_mode == Preview) setMode(Split);
-            snippet("\n### " + n + "\n- $" + fm + "$\n");
+            snippet("\n### " + LanguageManager::instance().text(n) + "\n- $" + fm + "$\n");
         });
     }
     formulas->setMenu(menu);
@@ -373,6 +374,7 @@ QString MarkdownWorkspace::withFormulaImages(const QString& markdown, QList<QPai
     static const QRegularExpression paren("\\\\\\(\\s*([^\\n]*?)\\s*\\\\\\)");
     const MarkdownPalette pal = m_highlighter->palette();
     QFont f(ThemeManager::uiFont());
+    f.setFamilies(ThemeManager::uiFontFamilies());
     f.setPixelSize(16);
     auto image = [&](const QString& formula) {
         const QString name = QString("latex://%1").arg(resources.size());

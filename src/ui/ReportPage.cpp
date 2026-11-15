@@ -327,7 +327,10 @@ bool ReportPage::renderTo(QPrinter& printer) {
     if (page.width() < 120 || bodyHeight < 120) return false;
 
     QTextDocument doc;
-    doc.setDefaultFont(QFont("Inter", 10));
+    QFont bodyFont;
+    bodyFont.setFamilies(ThemeManager::uiFontFamilies());
+    bodyFont.setPointSize(10);
+    doc.setDefaultFont(bodyFont);
     doc.setDocumentMargin(0);
     doc.setPageSize(QSizeF(page.width(), bodyHeight));
     for (auto it = images.cbegin(); it != images.cend(); ++it)
@@ -343,7 +346,8 @@ bool ReportPage::renderTo(QPrinter& printer) {
         if (pageIndex > 0 && !printer.newPage()) { painter.end(); return false; }
         painter.save();
         painter.setPen(accent);
-        QFont headerFont("Inter");
+        QFont headerFont;
+        headerFont.setFamilies(ThemeManager::uiFontFamilies());
         headerFont.setPointSize(8);
         headerFont.setWeight(QFont::DemiBold);
         painter.setFont(headerFont);
@@ -366,7 +370,8 @@ bool ReportPage::renderTo(QPrinter& printer) {
         const qreal footerRuleY = page.bottom() - footerHeight + 1;
         painter.drawLine(QPointF(page.left(), footerRuleY), QPointF(page.right(), footerRuleY));
         painter.setPen(muted);
-        QFont footerFont("Inter");
+        QFont footerFont;
+        footerFont.setFamilies(ThemeManager::uiFontFamilies());
         footerFont.setPointSize(8);
         painter.setFont(footerFont);
         const QRectF footer(page.left(), footerRuleY + 2, page.width(), footerHeight - 2);
