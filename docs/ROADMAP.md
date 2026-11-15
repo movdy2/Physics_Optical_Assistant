@@ -28,7 +28,8 @@
   drops a run and autosaves.
 * **Keyboard shortcuts**: Ctrl+S save, Ctrl+Enter calculate/solve, Ctrl+P PDF report, Ctrl+1..9 pages, Ctrl+Tab next
   page, F11 full screen; the pages fill the window (tested at 1920 px wide).
-* **CI**: GitHub Actions build matrix (Linux Qt 6 + ctest, Windows MSVC + Qt 6.7.2, Qt-free `g++` core test).
+* **CI**: GitHub Actions build matrix (Linux Qt 6 + ctest, Windows MSVC + Qt 6.8.3, Qt-free `g++` core test).
+* **Packaging**: version-tagged GitHub Releases bundle a Linux x86_64 AppImage and Windows x64 NSIS installer plus portable ZIP; pull requests and manual runs upload test artifacts.
 * Session file (`.phy`, format version 6): runs (with their sweep), notes, snapshots (parameters + calculator registers),
   equations and the recent export. The removed Draw Space sketch is no longer saved; legacy drawing payloads are ignored.
 * **Experiment extras** (v2.8): **Thick Lens & Aberration** page (power with a finite thickness, principal planes,
@@ -66,4 +67,3 @@
    Ctrl+Tab, F11 - are done).
 6. Units: unit dropdown per field (nm/µm/mm/cm/m), significant-figures setting, copy-as-LaTeX for every register.
 7. Accessibility and polish: high-contrast theme, font-size setting, window-size tests (1080x700), and expand Arabic UI coverage to remaining lesson prose and dynamic captions.
-8. Packaging: Windows installer (windeployqt + NSIS), Linux AppImage (the GitHub Actions build matrix is done).
