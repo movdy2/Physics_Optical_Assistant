@@ -136,27 +136,40 @@ jobs:
             --screenshots build/smoke-appimage
           test -s build/smoke-appimage/dashboard_arabic.png
 
-      - name: Smoke-test the AppImage on Arch Linux
-        run: |
-          docker run --rm \
-            --env APP_VERSION="$APP_VERSION" \
-            --volume "$PWD:/workspace" \
-            --workdir /workspace \
-            archlinux:latest \
-            bash -euo pipefail -c '
-              pacman -Syu --noconfirm --needed fuse2 libglvnd fontconfig freetype2 libxkbcommon
-              APPIMAGE_EXTRACT_AND_RUN=1 QT_QPA_PLATFORM=offscreen \
-                "./dist/PHY104OpticalAssistant-${APP_VERSION}-Linux-x86_64.AppImage" \
-                --screenshots build/smoke-arch
-              test -s build/smoke-arch/dashboard_arabic.png
-            '
-
       - uses: actions/upload-artifact@v4
         with:
           name: release-linux-appimage
           path: dist/*.AppImage
           if-no-files-found: error
           retention-days: 14
+
+  arch-appimage-smoke:
+    name: Arch Linux · AppImage smoke test
+    needs: [linux-appimage]
+    runs-on: ubuntu-24.04
+    container:
+      image: archlinux:latest
+    steps:
+      - name: Install Arch runtime dependencies
+        run: |
+          pacman -Syu --noconfirm --needed fuse2 gcc-libs libglvnd fontconfig freetype2 libxkbcommon
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-linux-appimage
+          path: dist
+
+      - name: Run the AppImage in Arch Linux
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          appimage="$(find dist -maxdepth 1 -type f -name '*.AppImage' -print -quit)"
+          test -n "$appimage"
+          chmod +x "$appimage"
+          mkdir -p build/smoke-arch
+          "$appimage" --screenshots build/smoke-arch
+          test -s build/smoke-arch/dashboard_arabic.png
 
   windows-installer:
     name: Windows · x64 · installer and portable ZIP
@@ -264,7 +277,7 @@ jobs:
   publish-release:
     name: Publish GitHub Release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [linux-appimage, windows-installer]
+    needs: [linux-appimage, arch-appimage-smoke, windows-installer]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
