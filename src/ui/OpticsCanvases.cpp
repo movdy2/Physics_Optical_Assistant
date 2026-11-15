@@ -1,4 +1,5 @@
 #include "OpticsCanvases.h"
+#include "ExperimentReports.h"
 #include "ThickLens.h"
 #include "PhysicsCalculator.h"
 #include "LanguageManager.h"
@@ -16,6 +17,7 @@
 #include <optional>
 
 namespace phy104 {
+namespace ER = ExperimentReports;
 namespace PC = PhysicsCalculator;
 namespace TL = ThickLens;
 namespace {
@@ -96,7 +98,7 @@ QString describeImage(const PC::ImageResult& img) {
     if (LanguageManager::instance().isArabic()) {
         const QString kind = LanguageManager::instance().text(img.real ? "REAL" : "VIRTUAL");
         const QString orientation = LanguageManager::instance().text(img.upright ? "UPRIGHT" : "INVERTED");
-        const QString size = LanguageManager::instance().text(QString::fromStdString(sizeDescription(m)));
+        const QString size = LanguageManager::instance().text(QString::fromStdString(ER::sizeDescription(m)));
         return kind + " · " + orientation + " · " + size;
     }
     return QString(img.real ? "Real" : "Virtual") + " · " + (img.upright ? "upright" : "inverted") + " · " +
