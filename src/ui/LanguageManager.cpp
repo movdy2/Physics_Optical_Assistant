@@ -539,6 +539,33 @@ void LanguageManager::setLanguage(UiLanguage language) {
 
 QString LanguageManager::text(const QString& source) const {
     if (source.isEmpty()) return source;
+
+    // Study Hub bullet labels keep the sentence itself as their translation key; translate the
+    // decorative prefix separately so all 20 catalog paragraphs can use the existing lesson catalog.
+    const QString bulletPrefix = QStringLiteral("•  ");
+    if (source.startsWith(bulletPrefix)) {
+        const QString body = source.mid(bulletPrefix.size());
+        const QString translatedBody = text(body);
+        if (translatedBody != body) return bulletPrefix + translatedBody;
+    }
+
+    const auto translateSeparatedParts = [this](const QString& value) {
+        for (const QString& separator : {QStringLiteral("  ·  "), QStringLiteral(" · ")}) {
+            if (!value.contains(separator)) continue;
+            const QStringList parts = value.split(separator, Qt::KeepEmptyParts);
+            if (parts.size() < 2 || parts.size() > 3) continue;
+            QStringList translatedParts;
+            bool changed = false;
+            for (const QString& part : parts) {
+                const QString translated = text(part);
+                changed |= translated != part;
+                translatedParts.push_back(translated);
+            }
+            if (changed) return translatedParts.join(separator);
+        }
+        return value;
+    };
+
     if (isArabic()) {
         const auto& catalog = arabicCatalog();
         const auto it = catalog.constFind(source);
@@ -547,10 +574,13 @@ QString LanguageManager::text(const QString& source) const {
         if (folded != foldedArabicCatalog().cend()) return folded.value();
         const QString patterned = translatePattern(source);
         if (patterned != source) return patterned;
+        const QString separated = translateSeparatedParts(source);
+        if (separated != source) return separated;
         return translateEmbedded(source);
     }
     const auto it = englishCatalog().constFind(source);
-    return it == englishCatalog().cend() ? source : it.value();
+    if (it != englishCatalog().cend()) return it.value();
+    return translateSeparatedParts(source);
 }
 
 void LanguageManager::translateValue(QObject* owner, const char* field, const QString& value,

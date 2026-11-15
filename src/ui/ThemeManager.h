@@ -2,6 +2,7 @@
 #include <QColor>
 #include <QFont>
 #include <QObject>
+#include <QStringList>
 
 class QApplication;
 class QLineEdit;
@@ -43,6 +44,8 @@ public:
 
     static void loadFonts();                       // call once, before creating widgets
     static QString uiFont() { return "Inter"; }
+    /// Shared sans-serif and glyph fallback order for English, Arabic and custom-painted UI text.
+    static QStringList uiFontFamilies() { return {uiFont(), "Noto Sans Arabic", "DejaVu Sans", "Segoe UI", "Arial"}; }
     static QString monoFont() { return "JetBrains Mono"; }
 
     void apply(QApplication& app, bool dark);

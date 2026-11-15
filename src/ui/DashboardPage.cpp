@@ -296,7 +296,7 @@ void DashboardPage::refresh() {
         run->setForeground(t.dim);
         auto* exp = new QTableWidgetItem(QString::fromStdString(r.description));
         exp->setForeground(t.text);
-        QFont f = exp->font(); f.setFamily(ThemeManager::uiFont()); f.setPixelSize(12); f.setWeight(QFont::Normal); exp->setFont(f);
+        QFont f = exp->font(); f.setFamilies(ThemeManager::uiFontFamilies()); f.setPixelSize(12); f.setWeight(QFont::Normal); exp->setFont(f);
         auto* res = new QTableWidgetItem(QString::fromStdString(r.result));
         res->setForeground(t.sage);
         auto* st = new QTableWidgetItem(r.valid ? "● Valid" : "● Invalid");
