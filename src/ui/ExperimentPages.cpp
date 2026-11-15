@@ -165,10 +165,13 @@ void ExperimentPage::buildButtons(QVBoxLayout* fields, const QString& hint) {
     m_calc = new QPushButton("Calculate && Simulate");
     m_calc->setObjectName("primary");
     m_calc->setProperty("primaryAction", true);
+    m_calc->setProperty("controlId", QStringLiteral("calculate"));
     m_reset = new QPushButton("Reset parameters");
     m_reset->setObjectName("secondary");
+    m_reset->setProperty("controlId", QStringLiteral("resetParameters"));
     m_restore = new QPushButton;
     m_restore->setObjectName("primary");
+    m_restore->setProperty("controlId", QStringLiteral("restoreInput"));
     m_restore->hide();
     for (auto* b : {m_calc, m_reset, m_restore}) b->setCursor(Qt::PointingHandCursor);
     m_hint = new QLabel(hint);

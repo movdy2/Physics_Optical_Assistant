@@ -50,6 +50,7 @@ ThemeManager& ThemeManager::instance() {
 
 void ThemeManager::loadFonts() {
     for (const char* f : {":/fonts/Inter-Regular.otf", ":/fonts/Inter-Medium.otf", ":/fonts/Inter-SemiBold.otf",
+                          ":/fonts/NotoSansArabic.ttf",
                           ":/fonts/JetBrainsMono-Regular.ttf", ":/fonts/JetBrainsMono-Bold.ttf",
                           ":/fonts/DSEG7Classic-Bold.ttf", ":/fonts/DSEG14Classic-Bold.ttf"})
         QFontDatabase::addApplicationFont(f);
