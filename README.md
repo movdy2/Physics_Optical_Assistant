@@ -1,6 +1,6 @@
 # PHY104 Optical Assistant
 
-**A  no Ai Assistant, offline optics lab and study companion for PHY104.** Built with C++20 and Qt 6 for Windows and Linux. No account, database, or internet connection is needed .
+**An offline optics lab and study companion for PHY104.** Built with C++20 and Qt 6 for Windows and Linux. The app needs no AI service, account, database, or internet connection.
 
 [![Build](https://github.com/movdy2/phy104-sim/actions/workflows/build.yml/badge.svg)](https://github.com/movdy2/phy104-sim/actions/workflows/build.yml)
 [![Latest release](https://img.shields.io/github/v/release/movdy2/phy104-sim?display_name=tag)](https://github.com/movdy2/phy104-sim/releases/latest)
@@ -101,12 +101,26 @@ Linux and Windows Qt builds and the core-only tests run in GitHub Actions.
 
 The built-in formulas, constants, chapters, keyboard definitions, and optics presets are in `data/`. Session files are stored locally in the application's `.phy` format. Font and icon notices are in [`assets/fonts/LICENSES.txt`](assets/fonts/LICENSES.txt) and alongside the bundled Noto Sans Arabic font.
 
+## Project credits
 
+Created for the PHY104 course at Zewail University of Science and Technology by [**Movdy2**](https://github.com/movdy2), with a contribution from **Ahmed Samir**. Scientific supervision and review were provided by **Dr. Ashraf**, the course instructor.
 
+The interface design was prepared with Figma AI. AI tools also helped speed up development and troubleshoot issues; the app itself runs locally and does not depend on an AI service.
 
+## عن المشروع
 
-اههداء الى 🦤🧢
+<div dir="rtl" align="right">
+<p>مشروع <strong>فيزياء 104</strong> أعدّه <strong>Movdy2</strong> بمساهمة <strong>أحمد سمير</strong> لمقرر فيزياء 104 في جامعة زويل للعلوم والتكنولوجيا، بإشراف علمي ومراجعة من الدكتور أشرف، مدرّس المقرر.</p>
 
----
+<p>يهدف البرنامج إلى مساعدة الطلاب والمدرّسين وأعضاء هيئة التدريس على تطبيق قوانين المقرر واستكشاف تجاربه. وهو بيئة تعليمية متكاملة، لا مجرد أداة واحدة، ويضم:</p>
 
-Created by [**Movdy (@movdy2)**](https://github.com/movdy2).
+<ul>
+<li><strong>محلّل المعادلات (Formula Solver):</strong> يضم قوانين المقرر ويساعد على حل المسائل بإدخال المعطيات والتعويض بها.</li>
+<li><strong>11 تجربة فيزيائية</strong> مستمدة من المقرر.</li>
+<li>أدوات لتدوين الملاحظات والعمل على المسائل، وملخصات أُعدّت يدويًا للمراجعة.</li>
+</ul>
+
+<p>أُعدّ التصميم باستخدام <strong>Figma AI</strong>، واستُعين بأدوات الذكاء الاصطناعي لتسريع التطوير والمساعدة في معالجة بعض المشكلات. وقد بُذل جهد كبير في إنجاز المشروع، مع بقاء التطبيق نفسه قابلًا للاستخدام دون اتصال بالإنترنت أو خدمات ذكاء اصطناعي.</p>
+
+<p><strong>إهداء إلى 🦤🧢</strong></p>
+</div>
