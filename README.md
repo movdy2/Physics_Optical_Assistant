@@ -30,6 +30,22 @@ More captures are in [`docs/screenshots/`](docs/screenshots/).
 
 See [the Figma-to-code mapping](docs/FIGMA_MAPPING.md) for the screen-by-screen design notes.
 
+## Downloads
+
+A version tag (`v*`) builds and publishes these GitHub Release assets:
+
+- **Linux x86_64:** a single `.AppImage` file.
+- **Windows x64:** a setup `.exe` installer and a portable `.zip` containing the app `.exe`, Qt runtime, and `data/` files. A bare `.exe` by itself is not sufficient to run the Qt application.
+
+After the packaging workflow is merged, publish a release by tagging a merged commit, for example:
+
+```sh
+git tag v2.3.0
+git push origin v2.3.0
+```
+
+Pull requests and manual workflow runs also build downloadable test artifacts in the Actions run; those are not published as GitHub Releases.
+
 ## Build and run
 
 Requirements: CMake 3.21+, a C++20 compiler, and Qt 6 with **Widgets**, **Svg**, and **PrintSupport**. The fonts and icons are bundled in `assets/`.
