@@ -1129,7 +1129,7 @@ private slots:
             const QString notes = QString::fromStdString(context.log.notes());
             QVERIFY2(notes.contains("### " + name), qPrintable("notes missing for " + name + ": " + notes));
         }
-        context.setNotes(previousNotes.toStdString());
+        context.setNotes(previousNotes);
         workspace()->setMarkdown(previousNotes);
     }
 
