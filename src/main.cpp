@@ -33,7 +33,18 @@ static void takeScreenshots(QApplication& app, phy104::App& application, const Q
     auto grab = [&](const QString& name) { app.processEvents(); app.processEvents(); window.grab().save(folder + "/" + name + ".png"); };
     window.setCurrentPage(0);
     ThemeManager::instance().apply(app, true);
+    const UiLanguage originalLanguage = LanguageManager::instance().language();
+    auto setScreenshotLanguage = [&](UiLanguage language) {
+        LanguageManager::instance().setLanguage(language);
+        LanguageManager::instance().apply(&window);
+        window.setCurrentPage(0);
+        app.processEvents();
+    };
+    setScreenshotLanguage(UiLanguage::English);
     grab("dashboard_updated_header");
+    setScreenshotLanguage(UiLanguage::Arabic);
+    grab("dashboard_arabic");
+    setScreenshotLanguage(UiLanguage::English);
     auto click = [&](QWidget* root, const QString& text) {
         for (auto* b : root->findChildren<QPushButton*>()) if (b->text() == text && b->isVisibleTo(&window)) { b->click(); return; }
     };
@@ -85,6 +96,7 @@ static void takeScreenshots(QApplication& app, phy104::App& application, const Q
         if (page == application.equationLab) application.equationLab->findChild<QToolButton*>("fmtAccent")->click();
         grab(name);
     }
+    setScreenshotLanguage(originalLanguage);
 }
 
 int main(int argc, char* argv[]) {
