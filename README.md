@@ -1,121 +1,69 @@
 # PHY104 Optical Assistant
 
-[![build](https://github.com/movdy2/phy104-sim/actions/workflows/build.yml/badge.svg)](https://github.com/movdy2/phy104-sim/actions/workflows/build.yml)
+[![Build](https://github.com/movdy2/phy104-sim/actions/workflows/build.yml/badge.svg)](https://github.com/movdy2/phy104-sim/actions/workflows/build.yml)
 
-Desktop application (C++20, Qt 6 Widgets, CMake, JSON data) for PHY104 - Optics and Wave Optics.
-Windows and Linux, with an offline English/Arabic interface and right-to-left Arabic layout. No database, no network.
-The UI follows the Figma design `optics_lab.phy` (see [docs/FIGMA_MAPPING.md](docs/FIGMA_MAPPING.md)).
+An offline desktop lab notebook and optics simulator for PHY104. Built with C++20 and Qt 6 for Windows and Linux. It includes an English/Arabic interface, right-to-left Arabic layout, and bundled Arabic-capable fonts. No account, database, or network connection is required.
 
 ## Screenshots
 
-| English dashboard | Arabic dashboard (RTL) |
+| English dashboard | Arabic dashboard · RTL |
 |---|---|
-| ![PHY104 Optical Assistant dashboard in English](docs/screenshots/dashboard_updated_header.png) | ![PHY104 Optical Assistant dashboard in Arabic with right-to-left layout](docs/screenshots/dashboard_arabic.png) |
+| ![English dashboard](docs/screenshots/dashboard_updated_header.png) | ![Arabic dashboard in a right-to-left layout](docs/screenshots/dashboard_arabic.png) |
 
-| Refraction & TIR | Lenses & Mirrors |
+| Refraction and total internal reflection | Notes workspace |
 |---|---|
-| ![Refraction and total internal reflection](docs/screenshots/refraction_tir.png) | ![Lens and mirror experiment](docs/screenshots/lenses_mirrors.png) |
-| Prisms | Wave Interference |
-| ![Prism experiment](docs/screenshots/prisms.png) | ![Wave interference experiment](docs/screenshots/wave_interference.png) |
-| Notes workspace | |
-| ![Markdown notes workspace](docs/screenshots/notes_workspace.png) | |
+| ![Refraction and TIR experiment](docs/screenshots/refraction_tir.png) | ![Markdown notes workspace](docs/screenshots/notes_workspace.png) |
 
-## Study workspace (Notes)
-Markdown editor with live preview (Edit / Split / Preview) and Gruvbox colour coding: `#` yellow 18 pt, `##` orange 14 pt,
-`###` green 12 pt, `####` red 11 pt (exam warning), formulas (`$...$`, `$$...$$`, `` `code` ``, bracketed maths) aqua in JetBrains Mono,
-bullets light grey. Snippet toolbar (θ λ φ δ Δ n₁ n₂ sin arcsin ... and a formulas menu) and a **Problem template**
-(`### Given:` / `### Formula:` / `### Substitution & Solution:`). In the preview every formula is drawn as a LaTeX image
-by `LatexRenderer`; Qt's Markdown importer drops images with an empty alt text, so each formula image carries an alt text
-(`![formula](latex://N)`) and an image written as `![](…)` is given one before import. Notes autosave ~0.7 s after typing
-into the session, into every snapshot's `notesContent`, and into the `.phy` file.
-
-## Screens
-
-| Sidebar item | What it does |
+| Calculator | Light theme |
 |---|---|
-| **Dashboard** | 11-experiment count, four featured cards and a **Browse all 11** menu, recent calculations (**Recent / Compare**: overlay two saved runs, delete a run), lab notebook |
-| **Refraction & TIR** | Snell's law and total internal reflection: two incidence cases, regression chart, LCD registers |
-| **Lenses & Mirrors** | thin lens and spherical mirror (same equations), principal rays, image properties |
-| **Prisms** | ray path, minimum deviation, deviation curve, dispersion mode (red / λ / violet rays) |
-| **Wave Interference** | Young's double slit: wavefronts, fringes, intensity profile, 6 light-source presets |
-| **Polarization**, **Single slit**, **Grating**, **Thin film**, **Michelson**, **Newton's rings** | the six screens of the second Figma batch; **every tab of every screen works** (thin-film transmission **and its colour swatch**, Michelson fringe count, grating orders **and resolving power**, slit geometry **and the two-slit envelope**, Malus/Brewster) and Newton's viewing-mode dropdown switches to the transmitted rings |
-| **Thick Lens & Aberration** | a real glass element: signed `R₁ R₂`, centre thickness, aperture → paraxial power, **principal planes**, BFL/FFL, imaging from `H₂`, **third-order spherical aberration** (`ΔSA ∝ D²`) and a **Spectrum** tab with the Cauchy focal spread and Abbe number |
-| **Notes** | the clean Markdown study workspace of the design: editor + snippet toolbar + live LaTeX preview, autosaved; **⌨ Keyboard** opens the scientific keyboard (from `keyboard.json`) and types LaTeX straight into the note |
-| **Page actions** | every main-page header uses the same **Save** button plus one **Export** menu for PDF report / Excel (.xls) / CSV (.csv); all formats open the unified Export destination |
-| **Language** | the status-bar toggle switches between English and Arabic, remembers the choice, and sets Arabic pages right-to-left; diagrams, charts and report labels are localized while equations and numeric input stay left-to-right |
-| *Tools:* **Export** | one sidebar destination with **Series data** (full CSV/Excel tables, workbook settings and Print…) and **PDF report** (academic lab-report layout, session metadata, numbered experiments, figure captions, page-numbered PDF and Print…); recent exports are remembered in the `.phy` session |
-| *Tools:* **Formula Solver** | 42 formulas in 7 chapters: search, chapter filter, paging, LaTeX, LCD input/answer |
-| *Tools:* **Calculator** | clean expression → result layout with recent history, DEG/RAD, `Ans`, and a focused math keypad (numbers, operators, parentheses, powers, roots, trig and logs); no extra physics-variable browser |
-| *Tools:* **Study Hub** | ten chapter summaries/rules/constants, a searchable 20-note study catalog for Chapters 1–5, separate per-chapter personal notes with summaries and autosave, and six Optical Setups (PNG export); the Notes shortcut stays in the sidebar, and global Constants are no longer a Study Hub tab |
+| ![Scientific calculator keypad](docs/screenshots/calculator_keypad.png) | ![Application in the light theme](docs/screenshots/light_theme.png) |
 
-All 11 experiment pages share the same three-column template and aligned **Calculate & Simulate** / **Send to Notes** actions. The Excel option writes Excel 2003 SpreadsheetML XML with an `.xls` suffix (not an OOXML ZIP renamed to `.xls`); CSV remains a separate export.
+More captures are in [`docs/screenshots/`](docs/screenshots/).
 
-Arabic mode uses bundled offline catalogs for navigation, controls, experiment diagrams and charts, SVG captions, and PDF report labels. The built-in starter notes are translated only while untouched; student-authored notes are never rewritten. Scientific notation and numeric fields remain left-to-right, and uncatalogued lesson prose or formula data may remain in English.
+## Features
 
-Common to the experiment pages: live update while typing, **Calculate & Simulate** saves a run to the session,
-**Reset parameters**, invalid input never shows `NaN` - a red field, an `E_...` register with the
-**last valid result retained**, and an explanation card. Session (`optics_lab.phy`) autosaves and is restored on start.
-Light and dark theme (status bar), virtual keyboard (status bar).
+- **11 interactive optics experiments:** refraction/TIR, lenses and mirrors, prisms, double-slit interference, polarization, single-slit diffraction, diffraction grating, thin films, Michelson interferometry, Newton's rings, and thick lenses/aberration.
+- **Study tools:** Markdown Notes with live LaTeX preview and an in-page scientific keyboard; Equation Lab; Study Hub with chapter material and separate personal notes; a 42-formula solver; and a scientific calculator.
+- **Save and export:** calculations and session notes autosave locally. Export measurement data to CSV or Excel-compatible `.xls`, or create and print a PDF lab report.
+- **English and Arabic:** the interface switches language at runtime. Arabic uses a bundled Noto Sans Arabic font and RTL layout; equations and numeric entry stay left-to-right. User-authored notes are not rewritten when changing language.
+- **Themes and diagrams:** dark/light themes, interactive diagrams and plots, and resizable application pages.
 
-## Build
+See [the Figma-to-code mapping](docs/FIGMA_MAPPING.md) for the screen-by-screen design notes.
 
-```
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build
-ctest --test-dir build              # core + real-data round trips + UI/LaTeX/SVG/fonts/colours
-./build/src/PHY104OpticalAssistant  # data/ is copied next to the executable
+## Build and run
+
+Requirements: CMake 3.21+, a C++20 compiler, and Qt 6 with **Widgets**, **Svg**, and **PrintSupport**. The fonts and icons are bundled in `assets/`.
+
+```sh
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel
+ctest --test-dir build --output-on-failure
+./build/src/PHY104OpticalAssistant
 ```
 
-Needs Qt 6 **Widgets and Svg** (Ubuntu: `qt6-base-dev qt6-svg-dev`). Fonts (Inter, JetBrains Mono) and icons
-(Lucide) are bundled in `assets/` - nothing to install. Windows: add `-DCMAKE_PREFIX_PATH=C:/Qt/6.x.x/msvc2019_64`.
-Core only (no Qt): `-DPHY104_BUILD_GUI=OFF`.
-CI (`.github/workflows/build.yml`) builds Linux (Qt 6 + ctest), Windows (MSVC + Qt 6.8.3) and a Qt-free `g++` core
-test on pull requests and configured branch pushes; the Linux job also publishes UI screenshots as an artifact. A manual run can optionally commit the refreshed screenshot set to the selected branch.
+On Ubuntu, install the build dependencies with:
 
-### Keyboard shortcuts
-
-| keys | what it does |
-|---|---|
-| `Ctrl+S` | save the session (`.phy`) |
-| `Ctrl+Enter` | the main action of the page that is showing: **Calculate & Simulate** on the experiment screens, **Solve** on the Formula Solver |
-| `Ctrl+P` | open the **PDF report** mode on Export (preview, Save PDF, Print…) |
-| `Ctrl+1` … `Ctrl+9` | the first nine pages of the sidebar |
-| `Ctrl+Tab` | next page |
-| `F11` | full screen (the window starts maximised) |
-
-Developer option: `PHY104OpticalAssistant --screenshots <folder>` drives the UI (saves runs, exports a workbook,
-triggers error states) and writes a PNG of every page in both themes, plus English (`dashboard_updated_header.png`) and Arabic RTL (`dashboard_arabic.png`) dashboard and TIR/LCD captures (`state_tir_arabic.png`).
-
-## Layers
-
-```
-Presentation  src/ui            Qt Widgets: pages, components, canvases, charts, LaTeX renderer, theme
-Business      src/core          pure C++ (no Qt): physics, ExperimentReports, SolverEngine, FormulaManager,
-                                MathCalculator, SessionLog, DataExport + XlsWriter, ExpressionEvaluator ...
-Data          src/data + data/  JSON repositories (formulas, variables, constants, chapters, keyboard,
-                                optics presets, formula reference) and the .phy session file
-Assets        assets/           fonts, Lucide icons, SVG diagrams (generated by tools/make_diagrams.py)
+```sh
+sudo apt-get install build-essential cmake ninja-build qt6-base-dev qt6-svg-dev libgl1-mesa-dev libegl1-mesa-dev
 ```
 
-`src/core` never includes Qt and reaches files only through the interfaces in `Repositories.h`.
-The pages contain **no physics and no number formatting**: `ExperimentReports` returns the LCD registers,
-notices and chart data as plain structs and the page only displays them.
+For Windows, configure CMake with the path to your Qt 6 MSVC installation, for example `-DCMAKE_PREFIX_PATH=C:/Qt/6.8.3/msvc2022_64`. To build and test only the Qt-free core, configure with `-DPHY104_BUILD_GUI=OFF`.
 
-## Data files (`data/`)
+The Linux and Windows Qt builds and the core-only tests run in GitHub Actions on pull requests. To capture screenshots locally after building, run:
 
-`formulas.json` (42 formulas, equation text + LaTeX + chapter) · `chapters.json` · `variables.json` ·
-`constant.json` · `keyboard.json` · `optics_presets.json` (media with Cauchy dispersion, light sources) ·
-`reference.json` (formula reference topics and the unit-discipline note).
+```sh
+./build/src/PHY104OpticalAssistant --screenshots build/screenshots
+```
 
-### Add a formula (no C++)
-1. Add `{ "id", "name", "equation", "latex", "chapter" }` to `formulas.json` (`chapter` = id from `chapters.json`).
-2. Every variable must exist in `variables.json` (the app and `ctest` warn otherwise).
-3. Optional `"units"` override and `"noSolutionHint"`. Run `ctest`: it solves the formula for every variable.
+## Data and project layout
 
-### Add a medium or light source
-Edit `optics_presets.json`; it appears in the dropdowns. `cauchyA + cauchyB/λ²` (λ in µm) must give `n` at 589.3 nm
-(a test checks this).
+The built-in formulas, variables, constants, chapters, keyboard definitions, and optics presets live in `data/` as JSON. Add formulas in `data/formulas.json` and make sure their variables exist in `data/variables.json`; the test suite checks the real data set. Session files are stored locally in the application's `.phy` format.
 
-## Units
-Units are shown alongside their fields; angles default to degrees, with a DEG/RAD toggle in the calculator. Formula Solver fields accept `550*nm`, `0.5*mm`, `π`, `√(16)`, `c`, `ε₀`.
-Fonts: Inter and JetBrains Mono (SIL OFL), icons: Lucide (ISC) - see `assets/fonts/LICENSES.txt`.
+- `src/ui/` — Qt application, pages, diagrams, plots, themes, and language handling
+- `src/core/` — physics, calculation, reporting, and export logic (no Qt dependency)
+- `src/data/` — JSON repositories and session persistence
+- `data/` — built-in study and experiment data
+- `assets/` — Qt resources, translations, diagrams, fonts, and icons
+- `tests/` — core, data, UI, and interaction tests
+
+Font and icon notices are in [`assets/fonts/LICENSES.txt`](assets/fonts/LICENSES.txt) and alongside the bundled Noto Sans Arabic font.

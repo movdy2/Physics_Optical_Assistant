@@ -35,7 +35,7 @@ struct Theme {
     static Theme gruvboxLight() { return figmaLight(); }
 };
 
-/// Loads the bundled UI, mono and Casio segment fonts, applies palette + style sheet,
+/// Loads the bundled UI, Arabic fallback, mono and Casio segment fonts, applies palette + style sheet,
 /// and announces theme changes.
 class ThemeManager : public QObject {
     Q_OBJECT

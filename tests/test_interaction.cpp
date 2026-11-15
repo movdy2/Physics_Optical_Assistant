@@ -41,6 +41,8 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QFont>
+#include <QFontDatabase>
+#include <QFrame>
 #include <QLabel>
 #include <QLineEdit>
 #include <QKeySequence>
@@ -50,6 +52,9 @@
 #include <QScrollArea>
 #include <QPalette>
 #include <QPlainTextEdit>
+#include <QPoint>
+#include <QRawFont>
+#include <QRect>
 #include <QPushButton>
 #include <QStandardPaths>
 #include <QStackedWidget>
@@ -76,6 +81,12 @@ namespace {
 QPushButton* findButton(QWidget* root, const QString& text) {
     for (auto* b : root->findChildren<QPushButton*>())
         if (b->text().trimmed() == text && b->isVisibleTo(root->window())) return b;
+    return nullptr;
+}
+
+QPushButton* findControl(QWidget* root, const QString& id) {
+    for (auto* button : root->findChildren<QPushButton*>())
+        if (button->property("controlId").toString() == id && button->isVisibleTo(root->window())) return button;
     return nullptr;
 }
 
@@ -140,9 +151,10 @@ void chooseItem(QComboBox* c, int index) {
 
 class InteractionTest : public QObject {
     Q_OBJECT
-    QTemporaryDir m_tmp;
+    std::unique_ptr<QTemporaryDir> m_tmp;
     std::unique_ptr<App> m_app;
 
+    QString sessionFile() const { return m_tmp->path() + "/session.phy"; }
     MainWindow& win() { return m_app->window(); }
     void go(int page) { win().setCurrentPage(page); QApplication::processEvents(); }
     int idx(QWidget* w) { return win().indexOf(w); }
@@ -152,13 +164,24 @@ private slots:
     void initTestCase() {
         QStandardPaths::setTestModeEnabled(true);
         LanguageManager::instance().install(*qApp);
-        LanguageManager::instance().setLanguage(UiLanguage::English);
         ThemeManager::loadFonts();
+    }
+    void init() {
+        m_tmp = std::make_unique<QTemporaryDir>();
+        QVERIFY2(m_tmp->isValid(), "could not create an isolated interaction-test directory");
+        LanguageManager::instance().setLanguage(UiLanguage::English);
         ThemeManager::instance().apply(*qApp, true);
-        m_app = std::make_unique<App>(App::Paths{DATA_DIR, m_tmp.path() + "/session.phy"});
+        m_app = std::make_unique<App>(App::Paths{DATA_DIR, sessionFile()});
+        QObject::connect(&win(), &MainWindow::themeToggled, qApp, [](bool dark) {
+            ThemeManager::instance().apply(*qApp, dark);
+        });
         win().resize(1280, 800);
         win().show();
         QVERIFY(QTest::qWaitForWindowExposed(&win()));
+    }
+    void cleanup() {
+        m_app.reset();
+        m_tmp.reset();
     }
     void cleanupTestCase() { m_app.reset(); }
 
@@ -200,7 +223,7 @@ private slots:
         QVERIFY(activity->count() > 0);
         goTo(m_app->refraction);
         QTRY_VERIFY_WITH_TIMEOUT(activity->item(0)->text().contains("Refraction & TIR"), 1500);
-        click(findButton(m_app->refraction, calcText()));
+        click(findControl(m_app->refraction, "calculate"));
         QTRY_VERIFY_WITH_TIMEOUT(activity->item(0)->text().contains("#"), 1500);
     }
     void dashboardCardsAndButtonsNavigate() {
@@ -287,7 +310,7 @@ private slots:
         QApplication::processEvents();
         QCOMPARE(ctx.log.savedCalculations(), before + 1);
         QVERIFY(ctx.log.runs().back().id < newest);
-        QVERIFY(QFile::exists(m_tmp.path() + "/session.phy"));       // the deletion was written to the .phy file
+        QVERIFY(QFile::exists(sessionFile()));                       // the deletion was written to the .phy file
     }
     void pagesFillTheWindowInsteadOfACentredColumn() {
         win().resize(1920, 1000);                                          // wider than the old 1500 px cap
@@ -340,15 +363,17 @@ private slots:
     }
     void themeButtonTogglesRepeatedly() {
         const bool start = ThemeManager::instance().isDark();
-        for (int i = 0; i < 4; ++i) click(win().themeButton());
+        click(win().themeButton());
+        QCOMPARE(ThemeManager::instance().isDark(), !start);
+        for (int i = 0; i < 3; ++i) click(win().themeButton());
         QCOMPARE(ThemeManager::instance().isDark(), start);          // four toggles: back where we began
         QApplication::processEvents();
     }
     void saveSessionButtonWritesTheFile() {
         go(1);
-        QFile::remove(m_tmp.path() + "/session.phy");
+        QFile::remove(sessionFile());
         click(findButton(m_app->refraction, "Save"));
-        QVERIFY(QFile::exists(m_tmp.path() + "/session.phy"));
+        QVERIFY(QFile::exists(sessionFile()));
     }
 
     // ------------------------------------------------------------------ experiments
@@ -366,12 +391,12 @@ private slots:
     void calculateButtonSavesARun() {
         go(1);
         const int runs = m_app->context().log.savedCalculations();
-        click(findButton(m_app->refraction, "Calculate && Simulate"));
+        click(findControl(m_app->refraction, "calculate"));
         QCOMPARE(m_app->context().log.savedCalculations(), runs + 1);
     }
     void resetButtonRestoresDefaults() {
         go(1);
-        click(findButton(m_app->refraction, "Reset parameters"));
+        click(findControl(m_app->refraction, "resetParameters"));
         auto fields = m_app->refraction->findChildren<UnitField*>();
         QCOMPARE(fields[2]->text(), QString("30.00"));
         QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->refraction), QString("48.5904°"), 1500);
@@ -405,20 +430,20 @@ private slots:
         auto fields = m_app->wave->findChildren<UnitField*>();             // λ, d, L, m
         typeInto(fields[1], "0");
         QTest::qWait(700);
-        auto* calc = findButton(m_app->wave, "Calculate && Simulate");
+        auto* calc = findControl(m_app->wave, "calculate");
         QVERIFY(calc);
         QVERIFY2(!calc->isEnabled(), "Calculate must be disabled while the input is invalid");
-        auto* restore = findButton(m_app->wave, "Restore d = 0.250 mm");
+        auto* restore = findControl(m_app->wave, "restoreInput");
         QVERIFY2(restore, "no Restore button in the invalid state");
         click(restore);
         QTest::qWait(100);
         QCOMPARE(fields[1]->text(), QString("0.250"));
-        QVERIFY(findButton(m_app->wave, "Calculate && Simulate")->isEnabled());
+        QVERIFY(findControl(m_app->wave, "calculate")->isEnabled());
     }
 
     void prismDispersionShowsSevenWavelengthDependentColours() {
         goTo(m_app->prisms);
-        click(findButton(m_app->prisms, "Reset parameters"));
+        click(findControl(m_app->prisms, "resetParameters"));
         auto* canvas = m_app->prisms->findChild<PrismCanvas*>();
         QVERIFY(canvas);
         QCOMPARE(canvas->spectrumPaths().size(), qsizetype(0));
@@ -472,7 +497,7 @@ private slots:
         click(modeTab(m_app->prisms, "Single ray"));
         QCOMPARE(canvas->spectrumPaths().size(), qsizetype(0));
         QCOMPARE(bigValue(m_app->prisms), singleRayResult);      // dispersion does not alter the single-ray calculation
-        click(findButton(m_app->prisms, "Reset parameters"));
+        click(findControl(m_app->prisms, "resetParameters"));
     }
 
     // ------------------------------------------------------------------ calculator
@@ -783,9 +808,9 @@ private slots:
         typeText(w->editor(), QString::fromUtf8("- $n₁ sin θ₁ = n₂ sin θ₂$"));
         w->flush();
         click(findButton(m_app->notes, "Save"));                                   // the button of the page that is showing
-        QVERIFY(QFile::exists(m_tmp.path() + "/session.phy"));
+        QVERIFY(QFile::exists(sessionFile()));
 
-        App second(App::Paths{DATA_DIR, m_tmp.path() + "/session.phy"});           // a fresh start reading the same file
+        App second(App::Paths{DATA_DIR, sessionFile()});                           // a fresh start reading the same file
         auto* w2 = second.notes->findChild<MarkdownWorkspace*>();
         QCOMPARE(w2->markdown(), QString("### Snell's law\n- $n₁ sin θ₁ = n₂ sin θ₂$"));
         const Snapshot* snap = second.context().log.snapshot("Refraction & TIR");
@@ -796,7 +821,6 @@ private slots:
 
 
     // ------------------------------------------------------------------ the six screens of the second Figma batch
-    QString calcText() { return "Calculate &&\nSimulate"; }
     void newScreensShowTheNumbersOfTheDesign() {
         struct Case { QWidget* page; const char* big; };
         const Case cases[] = {{m_app->newton, "1.5492 mm"}, {m_app->thinFilm, "1.0000"}, {m_app->grating, "+17.4576°"},
@@ -840,7 +864,7 @@ private slots:
         QTRY_VERIFY_WITH_TIMEOUT(allLabelTexts(m_app->michelson).contains("Optical bench / piezo scan of M1"), 1500);
         click(modeTab(m_app->michelson, "Displacement"));
         QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->michelson), QString("+2.3704"), 1500);
-        click(findButton(m_app->michelson, "Reset parameters"));                                  // back to the defaults for later tests
+        click(findControl(m_app->michelson, "resetParameters"));                                  // return to the default displacement mode
         QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->michelson), QString("+2.3704"), 1500);
 
         // --- Newton's rings: the viewing-mode dropdown now reaches the physics and the diagram
@@ -879,7 +903,7 @@ private slots:
         QVERIFY(allLabelTexts(m_app->thickLens).join(" ").contains("+10.0628"));              // red focus at 656 nm
         QVERIFY2(allLabelTexts(m_app->thickLens).contains("Thick element / three colours"), "the spectrum title is missing");
         click(modeTab(m_app->thickLens, "Thick lens"));
-        click(findButton(m_app->thickLens, "Reset parameters"));
+        click(findControl(m_app->thickLens, "resetParameters"));
         QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->thickLens), QString("+10.3448 cm"), 1500);
     }
     void filmColoursTabPaintsTheSwatchOfThePhysics() {
@@ -890,7 +914,7 @@ private slots:
         QString swatch = m_app->thinFilm->colourSwatch();
         QVERIFY2(swatch.startsWith('#') && swatch.size() == 7, "no swatch colour for the film");
         QTRY_VERIFY_WITH_TIMEOUT(allLabelTexts(m_app->thinFilm).join(" ").contains("600 nm dominant"), 1500);
-        click(findButton(m_app->thinFilm, "Reset parameters"));                              // back to the reflection tab
+        click(findControl(m_app->thinFilm, "resetParameters"));                              // back to the reflection tab
         QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->thinFilm), QString("1.0000"), 1500);
         QVERIFY(m_app->thinFilm->colourSwatch().isEmpty());
     }
@@ -901,7 +925,7 @@ private slots:
         click(modeTab(m_app->singleSlit, "Envelope"));
         QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->singleSlit, 1), QString("7 bright"), 1500);     // second register: fringe count
         QVERIFY2(allLabelTexts(m_app->singleSlit).contains("Two slits / fringes inside the envelope"), "envelope title missing");
-        click(findButton(m_app->singleSlit, "Reset parameters"));
+        click(findControl(m_app->singleSlit, "resetParameters"));
         QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->singleSlit), QString("0.2865°"), 1500);
 
         // grating: the Resolution tab resolves 600 nm / (1 × 120 lines) in the first order
@@ -910,7 +934,7 @@ private slots:
         click(modeTab(m_app->grating, "Resolution"));
         QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->grating), QString("30 nm"), 1500);           // δλ = 600 / (1 × 20 illuminated lines)
         QVERIFY2(allLabelTexts(m_app->grating).contains("Grating / two lines one Rayleigh step apart"), "resolution title missing");
-        click(findButton(m_app->grating, "Reset parameters"));
+        click(findControl(m_app->grating, "resetParameters"));
         QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->grating), QString("+17.4576°"), 1500);
     }
 
@@ -945,7 +969,7 @@ private slots:
         QCOMPARE(fields.size(), 4);
         typeInto(fields[3], "1.333");                                                        // water instead of glass
         QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->polarization), QString("53.1232°"), 1500);
-        click(findButton(m_app->polarization, "Reset parameters"));
+        click(findControl(m_app->polarization, "resetParameters"));
         QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->polarization), QString("12.5000 W/m²"), 1500);
     }
     void newScreensHaveTheSaveExportHeader() {
@@ -974,6 +998,56 @@ private slots:
                      "a main page is missing the single PDF / Excel / CSV export menu");
         }
     }
+    void arabicLayoutMirrorsShellAndBundledFontCoversArabic() {
+        QVERIFY(QFile::exists(QStringLiteral(":/fonts/NotoSansArabic.ttf")));
+        QVERIFY(QFile::exists(QStringLiteral(":/licenses/NotoSansArabic-OFL.txt")));
+        QVERIFY2(QFontDatabase::families().contains(QStringLiteral("Noto Sans Arabic")),
+                 "the bundled Noto Sans Arabic font was not registered with Qt");
+        const QRawFont arabicFont = QRawFont::fromFont(QFont(QStringLiteral("Noto Sans Arabic")));
+        QVERIFY(arabicFont.isValid());
+        QVERIFY(qApp->font().families().contains(QStringLiteral("Noto Sans Arabic")));
+        QVERIFY(arabicFont.supportsCharacter(0x0627)); // alef
+        QVERIFY(arabicFont.supportsCharacter(0x064A)); // yeh
+
+        auto* sidebar = win().findChild<QFrame*>(QStringLiteral("sidebar"));
+        auto* content = win().findChild<QStackedWidget*>(QStringLiteral("pageStack"));
+        QVERIFY(sidebar && content);
+        auto boundsInWindow = [this](QWidget* widget) {
+            return QRect(widget->mapTo(&win(), QPoint(0, 0)), widget->size());
+        };
+        QApplication::processEvents();
+        const QRect ltrSidebar = boundsInWindow(sidebar);
+        const QRect ltrContent = boundsInWindow(content);
+        QVERIFY2(ltrSidebar.right() < ltrContent.left(), "English layout should place the sidebar to the left of the page");
+
+        auto panelWithTitle = [](QWidget* root, const QString& title) -> Panel* {
+            for (Panel* panel : root->findChildren<Panel*>()) {
+                auto* label = panel->findChild<QLabel*>("panelTitle");
+                if (label && label->text() == title) return panel;
+            }
+            return nullptr;
+        };
+        goTo(m_app->refraction);
+        auto* controls = panelWithTitle(m_app->refraction, QStringLiteral("Experiment controls"));
+        auto* results = panelWithTitle(m_app->refraction, QStringLiteral("Results / Snell's law"));
+        QVERIFY(controls && results);
+        QVERIFY2(boundsInWindow(controls).right() < boundsInWindow(results).left(),
+                 "English experiment columns should place controls before results");
+
+        click(win().languageButton());
+        QTRY_COMPARE_WITH_TIMEOUT(qApp->layoutDirection(), Qt::RightToLeft, 1500);
+        QApplication::processEvents();
+        QCOMPARE(win().layoutDirection(), Qt::RightToLeft);
+        const QRect rtlSidebar = boundsInWindow(sidebar);
+        const QRect rtlContent = boundsInWindow(content);
+        QVERIFY2(rtlContent.right() < rtlSidebar.left(), "Arabic layout should mirror the sidebar to the right of the page");
+        QVERIFY2(boundsInWindow(results).right() < boundsInWindow(controls).left(),
+                 "Arabic experiment columns should mirror results and controls");
+        auto* dashboardTitle = m_app->dashboard->findChild<QLabel*>("pageTitle");
+        QVERIFY(dashboardTitle);
+        QCOMPARE(dashboardTitle->text(), QString("لوحة التحكم"));
+    }
+
     void languageSwitchTranslatesTheShellAndUsesRtl() {
         go(0);
         auto* language = win().languageButton();
@@ -1075,7 +1149,7 @@ private slots:
     void newScreensCalculateAndSendToNotes() {
         goTo(m_app->newton);
         const int runs = m_app->context().log.savedCalculations();
-        click(findButton(m_app->newton, calcText()));
+        click(findControl(m_app->newton, "calculate"));
         QCOMPARE(m_app->context().log.savedCalculations(), runs + 1);
         QCOMPARE(QString::fromStdString(m_app->context().log.runs().back().experiment), QString("Newton's Rings"));
         auto* w = workspace();
@@ -1108,12 +1182,12 @@ private slots:
             QVERIFY(title && subtitle);
             QCOMPARE(title->text(), name);
             QVERIFY2(!subtitle->text().contains("EXPERIMENT", Qt::CaseInsensitive), qPrintable(subtitle->text()));
-            auto* calculate = findButton(page, calcText());
+            auto* calculate = findControl(page, "calculate");
             auto* send = page->findChild<QPushButton*>("sendToNotes");
             QVERIFY(calculate && send && send->isVisibleTo(&win()));
             QCOMPARE(calculate->geometry().top(), send->geometry().top());
 
-            auto* reset = findButton(page, "Reset parameters");
+            auto* reset = findControl(page, "resetParameters");
             QVERIFY(reset);
             click(reset);
             const int before = context.log.savedCalculations();
@@ -1130,13 +1204,16 @@ private slots:
     void newScreensPauseOnInvalidInputAndRestore() {
         goTo(m_app->newton);
         auto fields = m_app->newton->findChildren<UnitField*>();                    // λ, R, m
+        auto* calculate = findControl(m_app->newton, "calculate");
+        QVERIFY(calculate);
         typeInto(fields[2], "2.5");                                                  // order must be an integer
-        QTRY_VERIFY_WITH_TIMEOUT(!findButton(m_app->newton, calcText())->isEnabled(), 1500);
-        QVERIFY2(findButton(m_app->newton, "Restore m = 4"), "no Restore button");
+        QTRY_VERIFY_WITH_TIMEOUT(!calculate->isEnabled(), 1500);
+        auto* restore = findControl(m_app->newton, "restoreInput");
+        QVERIFY2(restore, "no Restore button");
         QVERIFY(m_app->newton->isPaused());
         QVERIFY(!win().findChild<QLabel*>("engineReady"));
-        click(findButton(m_app->newton, "Restore m = 4"));
-        QTRY_VERIFY_WITH_TIMEOUT(findButton(m_app->newton, calcText())->isEnabled(), 1500);
+        click(restore);
+        QTRY_VERIFY_WITH_TIMEOUT(calculate->isEnabled(), 1500);
         QCOMPARE(fields[2]->text(), QString("4"));
         QVERIFY(!win().findChild<QLabel*>("engineReady"));
 
@@ -1144,7 +1221,7 @@ private slots:
         auto g = m_app->grating->findChildren<UnitField*>();                        // N, λ, m, M
         typeInto(g[2], "4");                                                         // order 4 has no real angle
         QTRY_VERIFY_WITH_TIMEOUT(m_app->grating->isPaused(), 1500);
-        click(findButton(m_app->grating, "Restore m = +1"));
+        click(findControl(m_app->grating, "restoreInput"));
         QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->grating, 0), QString("+17.4576°"), 1500);
     }
     void gratingSpinnerSteps() {
@@ -1753,7 +1830,7 @@ private slots:
     }
     void exportPageWritesBothFormatsAndRemembersTheFile() {
         goTo(m_app->exportPage);
-        m_app->exportPage->setFormat(true);                        // the icon test above left the CSV format selected
+        m_app->exportPage->setFormat(true);                        // explicitly select Excel for this test
         const Snapshot* snap = selectedSeries();
         QVERIFY(snap);
         const QString base = "PHY104_" + QString::fromStdString(snap->series.id).section('_', 0, 0);
@@ -1780,9 +1857,15 @@ private slots:
         QVERIFY(allLabelTexts(m_app->exportPage).contains(base + ".csv"));
     }
     void recentExportSurvivesARestart() {
-        QVERIFY(m_app->context().log.hasExport());                              // written by the test above
+        goTo(m_app->exportPage);
+        m_app->exportPage->setFormat(true);
+        const QString dir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/PHY104";
+        QDir(dir).removeRecursively();
+        click(findButton(m_app->exportPage, "Export workbook"));
+        QVERIFY(m_app->context().log.hasExport());
         const QString path = QString::fromStdString(m_app->context().log.lastExport().path);
-        App second(App::Paths{DATA_DIR, m_tmp.path() + "/session.phy"});
+        QVERIFY(QFile::exists(path));
+        App second(App::Paths{DATA_DIR, sessionFile()});
         QVERIFY(second.context().log.hasExport());
         QCOMPARE(QString::fromStdString(second.context().log.lastExport().path), path);
         QStringList texts;
