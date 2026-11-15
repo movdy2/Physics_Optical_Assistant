@@ -25,7 +25,7 @@ QString q(const std::string& s) { return QString::fromStdString(s); }
 }
 
 ThickLensPage::ThickLensPage(AppContext* ctx, QWidget* parent)
-    : ExperimentPage("Thick Lens & Aberration", "EXPERIMENT 11 / A real glass element: two radii, a finite thickness and aperture",
+    : ExperimentPage("Thick Lens & Aberration", "A real glass element: two radii, finite thickness and aperture",
                      "Thick Lens & Aberration", ctx, parent) {
     auto cols = addThreeColumns();
     auto* controls = new Panel("Experiment controls");

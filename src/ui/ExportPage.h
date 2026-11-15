@@ -29,7 +29,7 @@ public:
     QListWidget* seriesList() const { return m_series; }
     QTableWidget* previewTable() const { return m_table; }
     /// Selects the series-export pane and preselects Excel or CSV before the page is shown.
-    void setFormat(bool xlsx);
+    void setFormat(bool excel);
     void showDataExport();
     void showPdfReport();
     void setReportPage(ReportPage* reportPage);
@@ -46,7 +46,7 @@ private slots:
 
 private:
     const Snapshot* currentSnapshot() const;
-    bool exportAs(bool xlsx);
+    bool exportAs(bool excel);
     QString destinationFolder() const;
 
     ModeTabs* m_exportModes = nullptr;

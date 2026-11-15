@@ -16,6 +16,7 @@
 #include <iomanip>
 #include <iostream>
 #include <random>
+#include <set>
 #include <sstream>
 
 using namespace phy104;
@@ -32,13 +33,16 @@ int main() {
         JsonPresetsRepository presetsRepo(dir + "/optics_presets.json");
         JsonReferenceRepository referenceRepo(dir + "/reference.json");
         JsonStudyHubRepository studyHub(dir + "/study_hub.json");
+        JsonStudyNotesRepository studyNotesRepo(dir + "/notes.json");
+        const auto studyMaterials = studyNotesRepo.loadAll();
 
         FormulaEngine engine(std::make_unique<JsonFormulaRepository>(dir + "/formulas.json"), vars, consts);
         SolverEngine solver(consts.loadAll());
 
         std::cout << engine.formulas().size() << " formulas, " << vars.loadAll().size() << " variables, "
                   << consts.loadAll().size() << " constants, " << keyboard.loadAll().size()
-                  << " keyboard groups, " << referenceRepo.loadAll().size() << " reference topics, " << studyHub.loadAll().size() << " study chapters\n";
+                  << " keyboard groups, " << referenceRepo.loadAll().size() << " reference topics, " << studyHub.loadAll().size()
+                  << " study chapters, " << studyMaterials.size() << " structured study notes\n";
 
         for (const auto& w : engine.warnings()) { std::cerr << "DATA WARNING: " << w << "\n"; ++failures; }
 
@@ -59,6 +63,43 @@ int main() {
                 }
                 for (const auto& c : t.constants) expectData(!c.name.empty() && !c.value.empty(), "constant has name + value: " + t.title);
             }
+        }
+
+        // ---- the read-only structured study-note catalog retains every uploaded field ----
+        {
+            auto expectNotesData = [&](bool ok, const std::string& what) {
+                if (!ok) { ++failures; std::cerr << "FAIL: " << what << "\n"; }
+            };
+            expectNotesData(studyMaterials.size() == 20, "the study-note catalog contains all 20 records");
+            const std::vector<std::string> expectedChapters = {
+                "Ch1 Reflection & Refraction", "Ch2 Polarization & EM Waves", "Ch3 Mirrors & Lenses",
+                "Ch4 Wave Optics", "Ch5 Diffraction & Gratings"};
+            std::vector<std::string> chapters;
+            std::set<std::string> ids;
+            std::set<std::string> types;
+            std::size_t contentLines = 0;
+            std::size_t equationLines = 0;
+            for (const StudyNote& note : studyMaterials) {
+                expectNotesData(!note.id.empty() && ids.insert(note.id).second,
+                                "study-note IDs are present and unique: " + note.id);
+                expectNotesData(!note.chapter.empty() && !note.type.empty() && !note.title.empty(),
+                                "study note retains chapter, type and title: " + note.id);
+                expectNotesData(!note.content.empty() && !note.equations.empty(),
+                                "study note retains key points and equations: " + note.id);
+                types.insert(note.type);
+                contentLines += note.content.size();
+                equationLines += note.equations.size();
+                if (chapters.empty() || chapters.back() != note.chapter) chapters.push_back(note.chapter);
+                for (const std::string& line : note.content)
+                    expectNotesData(!line.empty(), "study-note content is non-empty: " + note.id);
+                for (const std::string& equation : note.equations)
+                    expectNotesData(!equation.empty(), "study-note equation is non-empty: " + note.id);
+            }
+            expectNotesData(chapters == expectedChapters, "the catalog covers chapters 1 through 5 in order");
+            expectNotesData(types == std::set<std::string>{"concept", "exam", "summary"},
+                            "all three study-note types are retained");
+            expectNotesData(contentLines == 94 && equationLines == 57,
+                            "all 94 content points and 57 equations from the uploaded catalog are retained");
         }
 
         // ---- user-authored Study Hub notes use an independent, chapter-keyed JSON file ----
@@ -163,8 +204,8 @@ int main() {
             log.setSnapshot({"Refraction & TIR", {{"n₁", "1.5"}, {"θ₁", "30 °"}}, {reg}, "θ₂ = 48.5904°", {}, ""});
             expect(!log.hasExport(), "a fresh session has no recent export");
             ExportRecord recent;
-            recent.path = "/home/student/Documents/PHY104/PHY104_refraction.xlsx";
-            recent.format = "Excel (.xlsx)";
+            recent.path = "/home/student/Documents/PHY104/PHY104_refraction.xls";
+            recent.format = "Excel (.xls)";
             recent.series = "refraction";
             recent.when = "13 Nov 2026 · 01:42";
             recent.rows = 8;

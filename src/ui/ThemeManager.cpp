@@ -96,7 +96,10 @@ void ThemeManager::apply(QApplication& app, bool dark) {
 
 QFont ThemeManager::lcdFont(const QFont& base) {
     QFont font = base;
-    font.setFamilies({"DSEG14 Classic", "JetBrains Mono"});
+    if (LanguageManager::instance().isArabic())
+        font.setFamilies({"Noto Naskh Arabic", "Noto Sans Arabic", "DejaVu Sans", "Segoe UI", "Arial"});
+    else
+        font.setFamilies({"DSEG14 Classic", "JetBrains Mono"});
     return font;
 }
 
@@ -126,9 +129,8 @@ QToolTip { background: @card@; color: @text@; border: 1px solid @amber@; padding
 
 /* ---------- sidebar ---------- */
 QFrame#sidebar { background: @sidebar@; border: none; border-right: 1px solid @border@; }
-QLabel#brandName { font-family: 'JetBrains Mono'; font-size: 22px; font-weight: 700; color: @amber@; }
-QLabel#brandSub  { font-size: 13px; font-weight: 600; color: @text@; }
-QLabel#brandTag  { font-family: 'JetBrains Mono'; font-size: 9px; color: @dim@; }
+QWidget#sidebarMark { background: transparent; }
+QScrollArea#navigationScroll, QWidget#navigationContents { background: transparent; border: none; }
 QLabel#navSection { font-family: 'JetBrains Mono'; font-size: 9px; color: @dim@; padding: 10px 14px 2px 14px; }
 QPushButton#navItem { text-align: left; padding: 0 12px; border: none; border-left: 2px solid transparent; border-radius: 0;
     background: transparent; color: @text@; font-size: 12px; min-height: 40px; }
@@ -138,10 +140,10 @@ QPushButton#navItemSmall { text-align: left; padding: 0 12px; border: none; bord
     background: transparent; color: @text@; font-size: 12px; min-height: 34px; }
 QPushButton#navItemSmall:hover { background: @cardHover@; }
 QPushButton#navItemSmall:checked { background: @amberTint@; border-left: 2px solid @amber@; color: @amber@; font-weight: 500; }
-QLabel#sessionCap { font-family: 'JetBrains Mono'; font-size: 9px; color: @dim@; }
-QLabel#sessionText { font-size: 11px; color: @muted@; }
-QLabel#engineReady { font-family: 'JetBrains Mono'; font-size: 9px; color: @lime@; }
-QLabel#engineReady[paused="true"] { color: @error@; }
+QWidget#activityPanel { background: transparent; border-top: 1px solid @border@; }
+QLabel#activityTitle { font-family: 'JetBrains Mono'; font-size: 9px; color: @dim@; }
+QListWidget#activityLog { background: transparent; color: @muted@; border: none; padding: 0; font-size: 10px; }
+QListWidget#activityLog::item { padding: 2px 0; }
 QLabel#statusText[error="true"] { color: @error@; }
 
 /* ---------- page header ---------- */
@@ -213,8 +215,8 @@ QPushButton#secondary { background: @input@; color: @text@; border: 1px solid @b
 QPushButton#secondary:hover { border-color: @amber@; }
 QPushButton#outline { background: transparent; color: @text@; border: 1px solid @text@; font-weight: 500; font-size: 13px; min-height: 34px; padding: 0 16px; }
 QPushButton#outline:hover { border-color: @amber@; color: @amber@; }
-QPushButton#outlineAmber { background: transparent; color: @amber@; border: 1px solid @amber@; border-radius: 4px; font-weight: 600; font-size: 12px; }
-QPushButton#outlineAmber:hover { background: @amberTint@; }
+QPushButton#outlineAmber, QPushButton#sendToNotes { background: transparent; color: @amber@; border: 1px solid @amber@; border-radius: 4px; font-weight: 600; font-size: 12px; }
+QPushButton#outlineAmber:hover, QPushButton#sendToNotes:hover { background: @amberTint@; }
 QPushButton#modeTab { background: @input@; color: @muted@; border: 1px solid @border@; border-radius: 4px; min-height: 30px; font-size: 12px; }
 QPushButton#modeTab:hover { border-color: @amber@; }
 QPushButton#modeTab:checked { background: @amberTint@; color: @amber@; border: 1px solid @amber@; font-weight: 500; }

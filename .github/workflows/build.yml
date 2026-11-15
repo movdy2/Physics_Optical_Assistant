@@ -37,6 +37,7 @@ jobs:
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
+        id: build
         run: |
           set -o pipefail
           cmake --build build --parallel 2>&1 | tee build.log
@@ -62,14 +63,20 @@ jobs:
           set -o pipefail
           ctest --test-dir build --output-on-failure 2>&1 | tee ctest.log
 
+      # Retain the visual artifact for review even when the tests expose an unrelated regression.
       - name: Capture UI screenshots
+        id: capture_screenshots
+        if: always() && steps.build.outcome == 'success'
         env:
           QT_QPA_PLATFORM: offscreen
         run: |
           ./build/src/PHY104OpticalAssistant --screenshots build/screenshots
           test -s build/screenshots/dashboard_updated_header.png
+          test -s build/screenshots/dashboard_arabic.png
+          test -s build/screenshots/state_tir_arabic.png
 
       - name: Upload UI screenshots
+        if: always() && steps.capture_screenshots.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: ui-screenshots
@@ -80,6 +87,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && inputs.publish_screenshots
         run: |
           cp build/screenshots/dashboard_updated_header.png docs/screenshots/
+          cp build/screenshots/dashboard_arabic.png docs/screenshots/dashboard_arabic.png
           cp build/screenshots/00_dark.png docs/screenshots/dashboard.png
           cp build/screenshots/01_dark.png docs/screenshots/refraction_tir.png
           cp build/screenshots/02_dark.png docs/screenshots/lenses_mirrors.png
@@ -99,6 +107,21 @@ jobs:
             exit 0
           fi
           git commit -m "Refresh UI screenshots"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      # On request, keep the Arabic dashboard screenshot on the selected branch even if ctest fails.
+      - name: Publish Arabic dashboard screenshot
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.publish_screenshots && steps.capture_screenshots.outcome == 'success'
+        run: |
+          cp build/screenshots/dashboard_arabic.png docs/screenshots/dashboard_arabic.png
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/screenshots/dashboard_arabic.png
+          if git diff --cached --quiet; then
+            echo "Arabic dashboard screenshot is already current."
+            exit 0
+          fi
+          git commit -m "Add Arabic dashboard screenshot"
           git push origin "HEAD:${GITHUB_REF_NAME}"
 
       # a failing test shows up in the PR page, not only in the (large) job log

@@ -21,7 +21,7 @@
 * **Markdown Study Workspace** (Notes): Gruvbox highlighter (H1-H4, formulas, bullets), snippet toolbar, problem
   template, Edit/Split/Preview, autosave into `Snapshot.notesContent` and the `.phy` file - and **only** that: the
   formula reference (now on the Formula Solver page) and the export panels were removed.
-* **One export icon** in every page header: PDF report / Excel (.xlsx) / CSV (.csv), opening the matching mode on the
+* **One export icon** in every page header: PDF report / Excel 2003 SpreadsheetML (.xls) / CSV (.csv), opening the matching mode on the
   unified Export destination. Every page fills the whole window (the old 1500-px content cap is gone); the Draw Space page is gone.
 * **Compare saved runs**: dashboard **Recent / Compare** switch - two run pickers overlay their sweeps on one chart
   (kept with the run as `RunRecord::series`, session format version 6); rows are selectable and **Delete selected run**
@@ -38,7 +38,9 @@
   `d/a`) and **Grating Resolution** tab (`R = mN`, Rayleigh `δλ`, free spectral range). Qt-free `ThickLens` and
   `Spectrum` modules, tested in `test_core`.
 * **Study Hub** (v2.7): `data/study_hub.json` is a **JSON array** of ten chapters in course order - summary, rules
-  (formula + why it holds) and the constants of the chapter; the Formula Solver stays a separate page.
+  (formula + why it holds) and the constants of the chapter; the Formula Solver stays a separate page. The Notes section
+  includes the searchable 20-entry `data/notes.json` study catalog (chapters 1–5, key points and rendered equations)
+  alongside the separate per-chapter personal notes and autosaved summaries.
 * **Input stays mode-specific**: Calculator uses plain-text math and its focused keypad; LaTeX stays in Equation Lab and
   Notes. The shared scientific keyboards are unchanged. The light theme is darker and the dark theme's small text is brighter (v2.7).
 * **Unified tools & dashboard (v2.9)**: all main-page headers share **Save + one Export menu** (PDF / Excel / CSV);
