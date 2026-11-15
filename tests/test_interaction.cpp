@@ -29,6 +29,7 @@
 #include "ui/VirtualKeyboard.h"
 
 #include <QApplication>
+#include <QAction>
 #include <QColor>
 #include <QCheckBox>
 #include <QDate>
@@ -52,6 +53,7 @@
 #include <QPushButton>
 #include <QStandardPaths>
 #include <QStackedWidget>
+#include <QStatusBar>
 #include <QTableWidget>
 #include <QTemporaryDir>
 #include <QVBoxLayout>
@@ -553,32 +555,16 @@ private slots:
         const QString all = allLabelTexts(m_app->solver).join("|");
         QVERIFY2(all.contains("Solved"), "Solve showed no success status");
     }
-    // ------------------------------------------------------------------ keyboard
-    void virtualKeyboardInsertsIntoTheFocusedField() {
+    // ------------------------------------------------------------------ bottom-bar keyboard removal
+    void globalVirtualKeyboardIsAbsentFromTheBottomBar() {
         goTo(m_app->solver);
-        click(win().keyboardButton());
-        QVERIFY(win().keyboard()->isVisible());
-        QCOMPARE(win().keyboard()->findChildren<QPushButton*>().size(), 49);
-        QVERIFY(!findButton(win().keyboard(), "n_a"));
-        auto edits = m_app->solver->findChildren<QLineEdit*>("lcdInput");
-        click(edits[0]);
-        edits[0]->clear();
-        click(findButton(win().keyboard(), "π"));
-        QCOMPARE(edits[0]->text(), QString("π"));
-        click(findButton(win().keyboard(), "sin("));
-        QCOMPARE(edits[0]->text(), QString("πsin("));
-        click(win().keyboardButton());
-        QVERIFY(!win().keyboard()->isVisible());
-    }
-    void keyboardWorksEvenBeforeAnyFieldWasClicked() {
-        goTo(m_app->calculator);
-        auto* input = m_app->calculator->findChild<QLineEdit*>("lcdInput");
-        input->clearFocus();
-        input->clear();
-        click(win().keyboardButton());
-        click(findButton(win().keyboard(), "π"));
-        QVERIFY2(!input->text().isEmpty(), "keyboard pressed with no focused field inserted nothing");
-        click(win().keyboardButton());
+        auto* status = win().statusBar();
+        QVERIFY(status);
+        QVERIFY2(!findButton(status, "⌨ Keyboard"), "the bottom-bar keyboard control is still present");
+        for (QPushButton* button : status->findChildren<QPushButton*>())
+            QVERIFY2(!button->text().contains("Keyboard", Qt::CaseInsensitive),
+                     qPrintable("unexpected keyboard control in the status bar: " + button->text()));
+        QVERIFY2(win().findChildren<VirtualKeyboard*>().isEmpty(), "the global keyboard panel is still attached to the window");
     }
 
     // ------------------------------------------------------------------ study workspace (Markdown notes)
@@ -993,13 +979,21 @@ private slots:
         auto* language = win().languageButton();
         QVERIFY(language);
         QCOMPARE(language->text(), QString("العربية"));
+        const QStringList englishUiFontStack = qApp->font().families();
+        const QStringList englishLcdFontStack = ThemeManager::lcdFont().families();
+        QVERIFY(englishUiFontStack.contains("Inter"));
+        auto* notesWorkspace = m_app->notes->findChild<MarkdownWorkspace*>();
+        QVERIFY(notesWorkspace);
+        auto* notesEditor = notesWorkspace->editor();
+        QCOMPARE(notesEditor->font().families(), englishUiFontStack);
 
         click(language);
         QCOMPARE(LanguageManager::instance().language(), UiLanguage::Arabic);
         QCOMPARE(qApp->layoutDirection(), Qt::RightToLeft);
         QCOMPARE(language->text(), QString("English"));
         QCOMPARE(language->accessibleName(), QString("التبديل إلى الإنجليزية"));
-        QVERIFY(qApp->font().families().contains("Noto Naskh Arabic"));
+        QCOMPARE(qApp->font().families(), englishUiFontStack);
+        QCOMPARE(ThemeManager::lcdFont().families(), englishLcdFontStack);
         auto* calculatorInput = m_app->calculator->findChild<QLineEdit*>("lcdInput");
         auto* formulaInput = m_app->solver->findChild<QLineEdit*>("lcdInput");
         auto* unitField = m_app->refraction->findChild<UnitField*>();
@@ -1035,7 +1029,7 @@ private slots:
                   objectName == "lcdBig" || objectName == "lcdFoot") || !label->isVisibleTo(m_app->refraction)) continue;
             ++checkedLcdLabels;
             QVERIFY2(label->wordWrap(), qPrintable("LCD label does not wrap: " + label->text()));
-            QVERIFY(!label->font().families().contains("DSEG14 Classic"));
+            QCOMPARE(label->font().families(), englishLcdFontStack);
             if (objectName != "lcdTitle") QVERIFY(label->alignment().testFlag(Qt::AlignRight));
             if (label->text().contains("الانعكاس الكلي الداخلي")) hasArabicTirResult = true;
             if (label->hasHeightForWidth())
@@ -1402,6 +1396,169 @@ private slots:
         click(modeTab(m_app->studyHub, "My notes"));
         QVERIFY(m_app->studyHub->notesEditor()->isVisibleTo(&win()));
         QVERIFY(m_app->studyHub->noteSummaryEditor()->isVisibleTo(&win()));
+    }
+
+    void arabicLocaleLocalizesAllExperimentsAndStudyNotes() {
+        go(0);
+        auto* language = win().languageButton();
+        QVERIFY(language);
+        if (!LanguageManager::instance().isArabic()) click(language);
+        QCOMPARE(LanguageManager::instance().language(), UiLanguage::Arabic);
+
+        const QStringList arabicExperimentTitles{
+            "الانكسار والانعكاس الكلي الداخلي", "العدسات والمرايا", "الموشورات",
+            "تداخل الموجات (الشق المزدوج)", "الاستقطاب (مالوس وبروستر)", "حيود الشق الواحد",
+            "محزوز الحيود", "تداخل الأغشية الرقيقة", "تداخل ميكلسون", "حلقات نيوتن",
+            "العدسة السميكة والزيغ"};
+        const QList<QWidget*> experimentPages{m_app->refraction, m_app->lenses, m_app->prisms, m_app->wave,
+            m_app->polarization, m_app->singleSlit, m_app->grating, m_app->thinFilm, m_app->michelson,
+            m_app->newton, m_app->thickLens};
+        const auto navigation = win().navButtons();
+        QVERIFY(navigation.size() >= arabicExperimentTitles.size() + 1);
+        for (int i = 0; i < arabicExperimentTitles.size(); ++i) {
+            QCOMPARE(navigation[i + 1]->accessibleName(), arabicExperimentTitles[i]);
+            auto* title = experimentPages[i]->findChild<QLabel*>("pageTitle");
+            QVERIFY(title);
+            QCOMPARE(title->text(), arabicExperimentTitles[i]);
+        }
+
+        auto* experimentMenu = m_app->dashboard->findChild<QMenu*>("allExperimentsMenu");
+        QVERIFY(experimentMenu);
+        const auto actions = experimentMenu->actions();
+        QCOMPARE(actions.size(), 11);
+        const auto hasArabicText = [](const QString& text) {
+            for (const QChar ch : text)
+                if (ch.unicode() >= 0x0600 && ch.unicode() <= 0x06ff) return true;
+            return false;
+        };
+        for (int i = 0; i < actions.size(); ++i) {
+            const QString expected = QString("%1 · %2").arg(i + 1, 2, 10, QChar('0')).arg(arabicExperimentTitles[i]);
+            QCOMPARE(actions[i]->text(), expected);
+            QVERIFY2(hasArabicText(actions[i]->toolTip()), qPrintable("Arabic experiment description missing: " + actions[i]->toolTip()));
+        }
+
+        goTo(m_app->notes);
+        QCOMPARE(m_app->notes->findChild<QLabel*>("pageTitle")->text(), QString("الملاحظات"));
+        QCOMPARE(m_app->notes->findChild<QLabel*>("pageSubtitle")->text(),
+                 QString("مساحة ملاحظات دراسية بتنسيق Markdown / اكتب ملاحظات المختبر وحرّرها واعرضها"));
+        QCOMPARE(m_app->notes->findChild<QLabel*>("panelTitle")->text(), QString("ملاحظات الجلسة"));
+        auto* notesKeyboard = m_app->notes->findChild<QToolButton*>("notesKeyboard");
+        QVERIFY(notesKeyboard);
+        QCOMPARE(notesKeyboard->text(), QString("⌨ لوحة المفاتيح"));
+        QVERIFY(hasArabicText(notesKeyboard->toolTip()));
+        MarkdownWorkspace localizedWorkspace;
+        LanguageManager::instance().apply(&localizedWorkspace);
+        const auto workspaceLabels = localizedWorkspace.findChildren<QLabel*>();
+        bool localizedWorkspaceTitle = false;
+        int localizedCaptionCount = 0;
+        for (QLabel* label : workspaceLabels) {
+            if (label->objectName() != "caption") continue;
+            ++localizedCaptionCount;
+            QVERIFY2(hasArabicText(label->text()), qPrintable("untranslated Notes status label: " + label->text()));
+            if (label->text() == LanguageManager::instance().text("MARKDOWN · FORMULA JOTTER"))
+                localizedWorkspaceTitle = true;
+        }
+        QVERIFY(localizedWorkspaceTitle);
+        QVERIFY(localizedCaptionCount >= 3);
+        int localizedModeCount = 0;
+        for (QPushButton* mode : localizedWorkspace.findChildren<QPushButton*>("modeTab")) {
+            QVERIFY2(hasArabicText(mode->text()), qPrintable("untranslated Notes mode: " + mode->text()));
+            ++localizedModeCount;
+        }
+        QCOMPARE(localizedModeCount, 3);
+        QVERIFY(hasArabicText(localizedWorkspace.editor()->placeholderText()));
+        for (QToolButton* button : localizedWorkspace.findChildren<QToolButton*>())
+            if (!button->toolTip().isEmpty())
+                QVERIFY2(hasArabicText(button->toolTip()), qPrintable("untranslated Notes toolbar help: " + button->toolTip()));
+        QToolButton* formulaMenuButton = nullptr;
+        for (auto* button : localizedWorkspace.findChildren<QToolButton*>("fmt"))
+            if (button->menu()) { formulaMenuButton = button; break; }
+        QVERIFY(formulaMenuButton && formulaMenuButton->menu());
+        for (QAction* action : formulaMenuButton->menu()->actions())
+            QVERIFY2(hasArabicText(action->text()), qPrintable("untranslated Notes formula label: " + action->text()));
+        formulaMenuButton->menu()->actions().first()->trigger();
+        QVERIFY(localizedWorkspace.markdown().contains("### قانون سنيل"));
+
+        QFile lessonTranslations(":/i18n/ar-lessons.json");
+        QVERIFY(lessonTranslations.open(QIODevice::ReadOnly));
+        const QJsonObject arabicLessons = QJsonDocument::fromJson(lessonTranslations.readAll()).object();
+        const auto translated = [&arabicLessons](const QString& source) {
+            return arabicLessons.value(source).toString();
+        };
+        const auto catalog = JsonStudyNotesRepository(QString::fromUtf8(DATA_DIR) + "/notes.json").loadAll();
+        QCOMPARE(static_cast<int>(catalog.size()), 20);
+
+        goTo(m_app->studyHub);
+        m_app->studyHub->selectSection(1);
+        auto* materialList = m_app->studyHub->findChild<QListWidget*>("studyMaterialList");
+        auto* search = m_app->studyHub->findChild<QLineEdit*>("studyMaterialSearch");
+        auto* detailBody = m_app->studyHub->findChild<QWidget*>("studyMaterialDetailBody");
+        auto* noteTitle = m_app->studyHub->findChild<QLabel*>("studyMaterialTitle");
+        auto* noteMeta = m_app->studyHub->findChild<QLabel*>("studyMaterialMeta");
+        QVERIFY(materialList && search && detailBody && noteTitle && noteMeta);
+        QCOMPARE(materialList->count(), 20);
+        auto* bodyLayout = qobject_cast<QVBoxLayout*>(detailBody->layout());
+        QVERIFY(bodyLayout);
+
+        for (int row = 0; row < static_cast<int>(catalog.size()); ++row) {
+            materialList->setCurrentRow(row);
+            QApplication::processEvents();
+            const StudyNote& expected = catalog[static_cast<std::size_t>(row)];
+            const QString title = QString::fromStdString(expected.title);
+            const QString localizedTitle = translated(title);
+            QVERIFY2(!localizedTitle.isEmpty(), qPrintable("missing Arabic study-note title: " + title));
+            QCOMPARE(materialList->item(row)->text(), localizedTitle);
+            QCOMPARE(noteTitle->text(), localizedTitle);
+
+            const QString chapter = QString::fromStdString(expected.chapter);
+            const QString type = QString::fromStdString(expected.type);
+            const QString localizedChapter = translated(chapter);
+            const QString localizedType = translated(type);
+            QVERIFY(!localizedChapter.isEmpty() && !localizedType.isEmpty());
+            QCOMPARE(noteMeta->text(), localizedChapter + "  ·  " + localizedType.toUpper() + "  ·  " +
+                                         QString::fromStdString(expected.id));
+
+            QStringList shownPoints;
+            QStringList rawPoints;
+            QStringList shownEquations;
+            for (int i = 0; i < bodyLayout->count(); ++i) {
+                QWidget* item = bodyLayout->itemAt(i)->widget();
+                if (auto* point = qobject_cast<QLabel*>(item); point && point->objectName() == "studyMaterialPoint") {
+                    shownPoints.push_back(point->text());
+                    rawPoints.push_back(point->property("studyNoteContent").toString());
+                }
+                if (auto* scroll = qobject_cast<QScrollArea*>(item); scroll && scroll->objectName() == "studyMaterialEquationScroll") {
+                    auto* formula = qobject_cast<LatexWidget*>(scroll->widget());
+                    QVERIFY(formula);
+                    shownEquations.push_back(formula->property("rawEquation").toString());
+                }
+            }
+            QStringList expectedArabicPoints;
+            QStringList expectedRawPoints;
+            for (const std::string& line : expected.content) {
+                const QString raw = QString::fromStdString(line);
+                const QString localizedLine = translated(raw);
+                QVERIFY2(!localizedLine.isEmpty(), qPrintable("missing Arabic study-note paragraph: " + raw));
+                expectedArabicPoints.push_back(QStringLiteral("•  ") + localizedLine);
+                expectedRawPoints.push_back(raw);
+            }
+            QStringList expectedEquations;
+            for (const std::string& equation : expected.equations)
+                expectedEquations.push_back(QString::fromStdString(equation));
+            QCOMPARE(shownPoints, expectedArabicPoints);
+            QCOMPARE(rawPoints, expectedRawPoints);                // display localization never mutates source data
+            QCOMPARE(shownEquations, expectedEquations);           // equations remain unchanged
+        }
+
+        const QString arabicSearch = translated(QString::fromStdString(catalog.front().title));
+        QVERIFY(!arabicSearch.isEmpty());
+        search->setText(arabicSearch);
+        QCOMPARE(materialList->count(), 1);                         // Arabic text is searchable too
+        search->clear();
+        QCOMPARE(materialList->count(), 20);
+
+        click(language);
+        QCOMPARE(LanguageManager::instance().language(), UiLanguage::English);
     }
 
     void studyHubNotesArePerChapterJsonAndSeparateFromMarkdownNotes() {

@@ -49,7 +49,7 @@ App::App(const Paths& paths) {
                                              std::make_unique<JsonSessionStore>(paths.sessionFile), "optics_lab.phy");
 
     // ---- presentation layer: the order is the sidebar order of the Figma design
-    m_window = std::make_unique<MainWindow>(m_context.get(), keyboardRepo.loadAll());
+    m_window = std::make_unique<MainWindow>(m_context.get());
     dashboard = new DashboardPage(m_context.get());
     m_window->addPage("Dashboard", "layout-dashboard", dashboard);                          // 0
     refraction = new RefractionPage(m_context.get());
