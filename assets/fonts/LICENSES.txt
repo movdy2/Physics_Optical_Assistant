@@ -1,4 +1,7 @@
-Fonts bundled with PHY104 Optical Assistant (both under the SIL Open Font License 1.1, https://openfontlicense.org):
-  * Inter            - Copyright (c) The Inter Project Authors (https://github.com/rsms/inter)
-  * JetBrains Mono   - Copyright (c) JetBrains s.r.o. (https://github.com/JetBrains/JetBrainsMono)
+Fonts bundled with PHY104 Optical Assistant (under the SIL Open Font License 1.1, https://openfontlicense.org):
+  * Inter              - Copyright (c) The Inter Project Authors (https://github.com/rsms/inter)
+  * JetBrains Mono     - Copyright (c) JetBrains s.r.o. (https://github.com/JetBrains/JetBrainsMono)
+  * Noto Sans Arabic  - Copyright 2022 The Noto Project Authors (https://github.com/notofonts/arabic)
+
+The full Noto Sans Arabic license is in NotoSansArabic-OFL.txt.
 Icons (assets/icons) are from Lucide (https://lucide.dev), ISC License.

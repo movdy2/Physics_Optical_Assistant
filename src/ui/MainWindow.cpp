@@ -173,6 +173,7 @@ MainWindow::MainWindow(AppContext* ctx, QWidget* parent)
     right->setContentsMargins(0, 0, 0, 0);
     right->setSpacing(0);
     m_stack = new QStackedWidget;
+    m_stack->setObjectName("pageStack");
     right->addWidget(m_stack, 1);
     root->addLayout(right, 1);
     setCentralWidget(central);
