@@ -374,9 +374,17 @@ void StudyHubPage::filterStudyMaterials() {
         const QString chapter = QString::fromStdString(note.chapter);
         if (!selectedChapter.isEmpty() && chapter != selectedChapter) continue;
 
-        QStringList searchable{QString::fromStdString(note.id), chapter, QString::fromStdString(note.type),
-                               QString::fromStdString(note.title)};
-        for (const std::string& line : note.content) searchable.push_back(QString::fromStdString(line));
+        QStringList searchable;
+        const auto addSearchTerm = [&searchable](const QString& source) {
+            searchable.push_back(source);
+            const QString localized = LanguageManager::instance().text(source);
+            if (localized != source) searchable.push_back(localized);
+        };
+        addSearchTerm(QString::fromStdString(note.id));
+        addSearchTerm(chapter);
+        addSearchTerm(QString::fromStdString(note.type));
+        addSearchTerm(QString::fromStdString(note.title));
+        for (const std::string& line : note.content) addSearchTerm(QString::fromStdString(line));
         for (const std::string& equation : note.equations) searchable.push_back(QString::fromStdString(equation));
         if (!query.isEmpty() && !searchable.join(QLatin1Char(' ')).toCaseFolded().contains(query)) continue;
 
@@ -393,6 +401,7 @@ void StudyHubPage::filterStudyMaterials() {
     m_studyMaterialListPanel->setMeta(QStringLiteral("%1 / %2")
                                           .arg(m_studyMaterialList->count())
                                           .arg(static_cast<qulonglong>(m_studyMaterials.size())));
+    LanguageManager::instance().apply(m_studyMaterialList);
     showStudyMaterial(selectedRow);
 }
 
@@ -421,7 +430,7 @@ void StudyHubPage::showStudyMaterial(int row) {
         point->setObjectName("studyMaterialPoint");
         point->setProperty("studyNoteContent", text);
         point->setWordWrap(true);
-        point->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+        point->setAlignment(Qt::AlignTop | Qt::AlignLeading);
         point->setTextInteractionFlags(Qt::TextSelectableByMouse);
         m_studyMaterialBody->addWidget(point);
     }
@@ -458,6 +467,9 @@ void StudyHubPage::showStudyMaterial(int row) {
         }
     }
     m_studyMaterialBody->addStretch(1);
+    LanguageManager::instance().apply(m_studyMaterialMeta);
+    LanguageManager::instance().apply(m_studyMaterialTitle);
+    LanguageManager::instance().apply(m_studyMaterialBody->parentWidget());
 }
 
 void StudyHubPage::loadCurrentNote() {

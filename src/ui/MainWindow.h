@@ -1,5 +1,4 @@
 #pragma once
-#include "Models.h"
 
 #include <QList>
 #include <QMainWindow>
@@ -8,7 +7,6 @@
 
 class QButtonGroup;
 class QLabel;
-class QLineEdit;
 class QListWidget;
 class QPushButton;
 class QStackedWidget;
@@ -19,13 +17,12 @@ namespace phy104 {
 
 class AppContext;
 class BasePage;
-class VirtualKeyboard;
 
 /// Figma shell: sidebar (navigation and recent activity) | pages | status bar.
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
-    MainWindow(AppContext* context, const std::vector<KeyboardGroup>& keyboardLayout, QWidget* parent = nullptr);
+    explicit MainWindow(AppContext* context, QWidget* parent = nullptr);
 
     /// Adds a page to the stack. `section` 0 = main module list, 1 = tools list. Returns the stack index.
     int addPage(const QString& title, const QString& icon, QWidget* page, int section = 0);
@@ -38,9 +35,7 @@ public:
     int indexOf(QWidget* page) const;
     QList<QPushButton*> navButtons() const;
     QPushButton* themeButton() const { return m_themeButton; }
-    QPushButton* keyboardButton() const { return m_keyboardButton; }
     QPushButton* languageButton() const { return m_languageButton; }
-    VirtualKeyboard* keyboard() const { return m_keyboard; }
     QListWidget* activityLog() const { return m_activityLog; }
     QString statusLeftText() const;
 
@@ -67,7 +62,6 @@ private:
     void addActivity(const QString& action, const QString& detail = QString());
     void refreshActivityLog();
     QString pageName(int index) const;
-    QLineEdit* fallbackField() const;
 
     AppContext* m_ctx;
     QStackedWidget* m_stack;
@@ -77,7 +71,6 @@ private:
     QButtonGroup* m_navGroup;
     struct NavEntry { QPushButton* button; QString icon; int page; };
     std::vector<NavEntry> m_nav;
-    VirtualKeyboard* m_keyboard;
     QLabel *m_statusLeft, *m_statusMid, *m_statusRight;
     struct ActivityEntry { QString action; QString detail; QString time; };
     QListWidget* m_activityLog;
@@ -85,7 +78,7 @@ private:
     int m_lastRunCount = 0;
     QString m_transient;
     QTimer* m_messageTimer;
-    QPushButton *m_themeButton, *m_keyboardButton, *m_languageButton;
+    QPushButton *m_themeButton, *m_languageButton;
     QStringList m_shortcutKeys;
 };
 

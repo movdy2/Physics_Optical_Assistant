@@ -5,18 +5,14 @@
 #include "Icons.h"
 #include "LanguageManager.h"
 #include "ThemeManager.h"
-#include "VirtualKeyboard.h"
 
 #include <QAbstractItemView>
-#include <QAbstractSpinBox>
 #include <QApplication>
 #include <QButtonGroup>
-#include <QComboBox>
 #include <QFileInfo>
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QLineEdit>
 #include <QListWidget>
 #include <QPainter>
 #include <QPushButton>
@@ -58,6 +54,7 @@ protected:
         const int iconX = rtl ? width() - left - iconSize : left;
         p.drawPixmap(QRect(iconX, (height() - iconSize) / 2, iconSize, iconSize), isChecked() ? m_on : m_off);
         QFont f(ThemeManager::uiFont());
+        f.setFamilies(ThemeManager::uiFontFamilies());
         f.setPixelSize(12);
         f.setWeight(isChecked() ? QFont::Medium : QFont::Normal);
         p.setFont(f);
@@ -80,7 +77,7 @@ private:
 
 } // namespace
 
-MainWindow::MainWindow(AppContext* ctx, const std::vector<KeyboardGroup>& keyboardLayout, QWidget* parent)
+MainWindow::MainWindow(AppContext* ctx, QWidget* parent)
     : QMainWindow(parent), m_ctx(ctx) {
     setWindowTitle(QString());
     const auto applyWindowIcon = [this] {
@@ -171,22 +168,12 @@ MainWindow::MainWindow(AppContext* ctx, const std::vector<KeyboardGroup>& keyboa
     sl->addWidget(activity);
     root->addWidget(sidebar);
 
-    // ------------------------------------------------------------------ pages + keyboard
+    // ------------------------------------------------------------------ pages
     auto* right = new QVBoxLayout;
     right->setContentsMargins(0, 0, 0, 0);
     right->setSpacing(0);
     m_stack = new QStackedWidget;
     right->addWidget(m_stack, 1);
-    m_keyboard = new VirtualKeyboard(keyboardLayout);
-    m_keyboard->setVisible(false);
-    m_keyboard->setFallbackProvider([this] { return fallbackField(); });
-    auto* keyboardFrame = new QFrame;
-    keyboardFrame->setObjectName("card");
-    auto* kl = new QVBoxLayout(keyboardFrame);
-    kl->setContentsMargins(12, 8, 12, 8);
-    kl->addWidget(m_keyboard);
-    keyboardFrame->setVisible(false);
-    right->addWidget(keyboardFrame);
     root->addLayout(right, 1);
     setCentralWidget(central);
 
@@ -208,16 +195,11 @@ MainWindow::MainWindow(AppContext* ctx, const std::vector<KeyboardGroup>& keyboa
     m_languageButton->setObjectName("flat");
     m_languageButton->setFocusPolicy(Qt::NoFocus);
     m_languageButton->setProperty("i18nSkip", true);
-    m_keyboardButton = new QPushButton("⌨ Keyboard");
-    m_keyboardButton->setObjectName("flat");
-    m_keyboardButton->setCheckable(true);
-    m_keyboardButton->setFocusPolicy(Qt::NoFocus);
     m_themeButton = new QPushButton("☾ Dark");
     m_themeButton->setObjectName("flat");
     m_themeButton->setFocusPolicy(Qt::NoFocus);
     refreshLanguageButton();
     statusBar()->addPermanentWidget(m_languageButton);
-    statusBar()->addPermanentWidget(m_keyboardButton);
     statusBar()->addPermanentWidget(m_themeButton);
 
     addActivity("Application ready");
@@ -248,10 +230,6 @@ MainWindow::MainWindow(AppContext* ctx, const std::vector<KeyboardGroup>& keyboa
     m_messageTimer->setInterval(4500);
     connect(m_messageTimer, &QTimer::timeout, this, [this] { m_transient.clear(); refreshStatus(); });
     connect(ctx, &AppContext::message, this, &MainWindow::showMessage);
-    connect(m_keyboardButton, &QPushButton::toggled, this, [this, keyboardFrame](bool on) {
-        keyboardFrame->setVisible(on);
-        m_keyboard->setVisible(on);
-    });
     connect(m_languageButton, &QPushButton::clicked, this, [this] {
         auto& language = LanguageManager::instance();
         language.setLanguage(language.isArabic() ? UiLanguage::English : UiLanguage::Arabic);
@@ -340,20 +318,6 @@ void MainWindow::refreshActivityLog() {
         item->setToolTip(item->text());
         m_activityLog->addItem(item);
     }
-}
-
-/// First usable input field of the current page (for the on-screen keyboard when nothing is focused).
-QLineEdit* MainWindow::fallbackField() const {
-    QWidget* page = m_stack->currentWidget();
-    if (!page) return nullptr;
-    QLineEdit* any = nullptr;
-    for (QLineEdit* e : page->findChildren<QLineEdit*>()) {
-        if (!e->isVisibleTo(page) || !e->isEnabled() || e->isReadOnly()) continue;
-        if (qobject_cast<QAbstractSpinBox*>(e->parentWidget()) || qobject_cast<QComboBox*>(e->parentWidget())) continue;
-        if (e->objectName() == "lcdInput") return e;
-        if (!any) any = e;
-    }
-    return any;
 }
 
 void MainWindow::refreshStatus() {

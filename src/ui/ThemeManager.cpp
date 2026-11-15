@@ -1,5 +1,4 @@
 #include "ThemeManager.h"
-#include "LanguageManager.h"
 
 #include <QApplication>
 #include <QFont>
@@ -73,8 +72,9 @@ void ThemeManager::apply(QApplication& app, bool dark) {
 
     app.setStyle(QStyleFactory::create("Fusion"));
     QFont font(uiFont());
-    if (LanguageManager::instance().isArabic())
-        font.setFamilies({"Inter", "Noto Naskh Arabic", "Noto Sans Arabic", "DejaVu Sans", "Segoe UI", "Arial"});
+    // Keep the same sans-serif fallback stack in both locales. Inter remains the primary face;
+    // an Arabic-capable sans is used only for glyphs Inter does not provide.
+    font.setFamilies(uiFontFamilies());
     font.setPixelSize(13);
     app.setFont(font);
 
@@ -96,10 +96,11 @@ void ThemeManager::apply(QApplication& app, bool dark) {
 
 QFont ThemeManager::lcdFont(const QFont& base) {
     QFont font = base;
-    if (LanguageManager::instance().isArabic())
-        font.setFamilies({"Noto Naskh Arabic", "Noto Sans Arabic", "DejaVu Sans", "Segoe UI", "Arial"});
-    else
-        font.setFamilies({"DSEG14 Classic", "JetBrains Mono"});
+    // DSEG remains the primary LCD face in both locales; the matching sans stack supplies glyphs
+    // it does not contain (including Arabic text) without switching the whole display to another font.
+    QStringList families{"DSEG14 Classic", monoFont()};
+    families.append(uiFontFamilies());
+    font.setFamilies(families);
     return font;
 }
 
@@ -279,12 +280,12 @@ QTableWidget::item { border-bottom: 1px solid @border@; padding: 0 4px; }
 QHeaderView::section { background: transparent; color: @dim@; font-family: 'JetBrains Mono'; font-size: 9px; padding: 6px 4px; border: none; border-bottom: 1px solid @border@; text-align: left; }
 QPlainTextEdit#mdEditor, QPlainTextEdit#studyHubNoteEditor, QPlainTextEdit#studyHubNoteSummaryEditor, QTextBrowser#mdPreview { background: @canvas@; color: @text@; border: 1px solid @border@; border-radius: 4px; padding: 8px; selection-background-color: @amber@; selection-color: @bg@; }
 QPlainTextEdit#mdEditor:focus, QPlainTextEdit#studyHubNoteEditor:focus, QPlainTextEdit#studyHubNoteSummaryEditor:focus { border: 2px solid @amber@; padding: 7px; }
-QToolButton#fmtAccent { background: @amberTint@; border: 1px solid @amber@; border-radius: 3px; padding: 3px 10px; color: @amber@; font-family: 'Inter'; font-weight: 600; }
-QToolButton#fmtAccent { background: transparent; border: 1px solid @border@; border-radius: 3px; padding: 3px 10px; color: @text@; font-family: 'Inter'; font-weight: 600; }
+QToolButton#fmtAccent { background: @amberTint@; border: 1px solid @amber@; border-radius: 3px; padding: 3px 10px; color: @amber@; font-weight: 600; }
+QToolButton#fmtAccent { background: transparent; border: 1px solid @border@; border-radius: 3px; padding: 3px 10px; color: @text@; font-weight: 600; }
 QToolButton#fmtAccent:checked { background: @amberTint@; border-color: @amber@; color: @amber@; }
 QToolButton#fmtAccent:hover { background: @amber@; color: @bg@; }
 QToolButton#fmt::menu-indicator { image: none; }
-QToolButton#notesKeyboard { background: transparent; border: 1px solid @border@; border-radius: 3px; padding: 4px 10px; color: @text@; font-family: 'Inter'; font-weight: 600; }
+QToolButton#notesKeyboard { background: transparent; border: 1px solid @border@; border-radius: 3px; padding: 4px 10px; color: @text@; font-weight: 600; }
 QToolButton#notesKeyboard:hover { background: @amber@; color: @bg@; }
 QToolButton#notesKeyboard:checked { background: @amberTint@; border-color: @amber@; color: @amber@; }
 QTableWidget#previewTable QHeaderView::section { color: @amber@; font-size: 10px; }

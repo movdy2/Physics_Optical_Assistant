@@ -136,7 +136,7 @@ std::string reportHtml(const ReportContent& content, const ReportOptions& o) {
 
     // ---------------------------------------------------------------- academic report style
     h += "<html><head><style>";
-    h += "body { font-family: 'Inter', 'Segoe UI', 'DejaVu Sans', sans-serif; font-size: 10pt; color: #202b38; margin: 0; }";
+    h += "body { font-family: 'Inter', 'Noto Sans Arabic', 'DejaVu Sans', 'Segoe UI', 'Arial', sans-serif; font-size: 10pt; color: #202b38; margin: 0; }";
     h += "h1 { font-size: 23pt; margin: 8pt 0 2pt 0; color: #102a43; }";
     h += "h2 { font-size: 13pt; margin: 16pt 0 5pt 0; color: #07566b; border-bottom: 1px solid #cbd5e1; padding-bottom: 3pt; }";
     h += "h3 { font-size: 10pt; margin: 9pt 0 3pt 0; color: #334e68; }";
