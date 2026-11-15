@@ -37,6 +37,7 @@ jobs:
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
+        id: build
         run: |
           set -o pipefail
           cmake --build build --parallel 2>&1 | tee build.log
@@ -62,14 +63,19 @@ jobs:
           set -o pipefail
           ctest --test-dir build --output-on-failure 2>&1 | tee ctest.log
 
+      # Retain the visual artifact for review even when the tests expose an unrelated regression.
       - name: Capture UI screenshots
+        id: capture_screenshots
+        if: always() && steps.build.outcome == 'success'
         env:
           QT_QPA_PLATFORM: offscreen
         run: |
           ./build/src/PHY104OpticalAssistant --screenshots build/screenshots
           test -s build/screenshots/dashboard_updated_header.png
+          test -s build/screenshots/dashboard_arabic.png
 
       - name: Upload UI screenshots
+        if: always() && steps.capture_screenshots.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: ui-screenshots
