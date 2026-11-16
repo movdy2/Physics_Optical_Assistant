@@ -128,3 +128,5 @@ The built-in formulas, constants, chapters, keyboard definitions, and optics pre
 Created for the PHY104 course at Zewail University of Science and Technology by [**Movdy2**](https://github.com/movdy2), with a contribution from **Ahmed Samir**. Scientific supervision and review were provided by **Dr. Ashraf**, the course instructor.
 
 The interface design was prepared with Figma AI. AI tools also helped speed up development and troubleshoot issues; the app itself runs locally and does not depend on an AI service.
+
+#zewail-city
