@@ -36,7 +36,8 @@ This document lists planned improvements, fixes, and editions for the app, plus 
 - [ ] Add "favorite runs" pinning
 
 ### Arabic Localization
-- [ ] Complete remaining untranslated UI strings
+- [x] Complete remaining untranslated UI strings (all four Arabic JSON files fully translated)
+- [x] Add Arabic translations for new Michelson formulas and variables (ΔOPD, ΔN, fringe visibility)
 - [ ] Add RTL-aware number formatting (Arabic-Indic digits option)
 - [ ] Add Arabic lesson content for all experiments
 
