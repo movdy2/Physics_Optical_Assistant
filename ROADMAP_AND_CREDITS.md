@@ -42,10 +42,10 @@ This document lists planned improvements, fixes, and editions for the app, plus 
 - [ ] Add Arabic lesson content for all experiments
 
 ### Packaging / Release
-- [ ] Build Windows `.exe` installer (requires Qt6 + CI on Windows)
-- [ ] Build Linux `AppImage` (requires linuxdeploy + Qt6)
-- [ ] Add checksums (SHA256) for all release assets
-- [ ] Add release notes per version
+- [x] Build Windows `.exe` installer + portable ZIP (CI: .github/workflows/package.yml windows-installer job, NSIS; builds on v* tags)
+- [x] Build Linux `AppImage` (CI: .github/workflows/package.yml linux-appimage job, linuxdeploy; smoke-tested on Arch; builds on v* tags)
+- [x] Add checksums (SHA256) for all release assets (SHA256SUMS.txt generated and attached to each GitHub Release)
+- [x] Add release notes per version (CHANGELOG.md with v3.0.0 entry and v1.0–v2.9 summary)
 
 ---
 
