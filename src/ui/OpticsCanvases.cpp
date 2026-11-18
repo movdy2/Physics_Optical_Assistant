@@ -798,6 +798,15 @@ void MichelsonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     text(p, QPointF(detector.x() + 12, detector.y() - 8), "Detector", t.muted, 9);
     text(p, QPointF(detector.x() + 12, detector.y() + 7), "I/Imax = " + num(intensity, 4), t.amber, 9);
 
+    // Live fringe counter: ΔN = ΔOPD / λ = 2nΔx / λ — how many fringes have shifted as M2 moves.
+    const double shift = 2 * m_in.n * dxUm * 1e3 / m_in.lambdaNm;
+    text(p, QPointF(detector.x() + 12, detector.y() + 24),
+         "ΔN = " + (shift >= 0 ? "+" : "-") + num(std::fabs(shift), 4) + " fringes",
+         shift >= 0 ? t.lime : t.amber, 10, Qt::AlignLeft, true);
+    text(p, QPointF(detector.x() + 12, detector.y() + 38),
+         "Fringes crossed from zero: " + num(std::fabs(shift), 4),
+         t.muted, 9);
+
     // Circular detector fringes are a schematic radial phase map. At r = 0 it uses the same
     // Δφ = 4πnΔx/λ and normalized intensity as the register above.
     const int size = static_cast<int>(std::min(108.0, a.height() * 0.27));
