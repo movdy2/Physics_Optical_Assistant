@@ -116,7 +116,9 @@ ModelReport michelson(const MichelsonInput& in, const ReportContext& ctx) {
     std::vector<FieldIssue> issues;
     if (in.lambdaNm <= 0) issues.push_back({FieldIds::wavelength, "Enter λ > 0 nm.", "λ"});
     if (in.n < 1) issues.push_back({FieldIds::refractiveIndex, "Enter n ≥ 1.", "n"});
-    const std::string guardText = "Require λ > 0 and n ≥ 1. Equal-amplitude beams give full visibility; unequal beams reduce fringe contrast.";
+    if (in.displacementUm < -2.0 || in.displacementUm > 2.0)
+        issues.push_back({FieldIds::mirrorDisplacement, "Keep the movable mirror stage within −2 to +2 µm.", "Δx"});
+    const std::string guardText = "Require λ > 0 and n ≥ 1. The simulated movable mirror stage travels ±2 µm; equal-amplitude beams give full visibility, while unequal beams reduce fringe contrast.";
     if (!issues.empty())
         return paused(issues.front().label + " out of range", issues, {"λ = " + num(in.lambdaNm) + " nm", "n = " + num(in.n), "ACTION: " + issues.front().message},
                       guardText + "\n\nDiagram, chart and retained results show the last valid run.", ctx);
@@ -189,9 +191,9 @@ ModelReport michelson(const MichelsonInput& in, const ReportContext& ctx) {
 
     ChartData& c = out.chart;
     c.xLabel = "Δx (µm)"; c.yLabel = "I / Imax";
-    c.xMin = -1; c.xMax = 1; c.yMin = 0; c.yMax = 1; c.xTicks = 4; c.yTicks = 2; c.xDecimals = 1; c.yDecimals = 1;
-    for (int k = 0; k <= 400; ++k) {
-        const double x = -1 + k * 0.005;
+    c.xMin = -2; c.xMax = 2; c.yMin = 0; c.yMax = 1; c.xTicks = 4; c.yTicks = 2; c.xDecimals = 1; c.yDecimals = 1;
+    for (int k = 0; k <= 800; ++k) {
+        const double x = -2 + k * 0.005;
         c.curve.push_back({x, (1 + v * std::cos(2 * std::numbers::pi * (2 * in.n * x * 1e3) / in.lambdaNm)) / (1 + v)});
     }
     c.marker = {{in.displacementUm, intensity}};

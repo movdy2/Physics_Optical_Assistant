@@ -7,6 +7,8 @@
 #include <QList>
 #include <QString>
 
+class QMouseEvent;
+
 namespace phy104 {
 
 /// Two incidence cases on one bench: A refraction and B total internal reflection.
@@ -110,12 +112,32 @@ private:
 class MichelsonCanvas : public GridCanvas {
     Q_OBJECT
 public:
-    explicit MichelsonCanvas(QWidget* p = nullptr) : GridCanvas(p) { setMinimumSize(300, 330); }
+    static constexpr double kMaxInteractiveTravelUm = 2.0;
+
+    explicit MichelsonCanvas(QWidget* p = nullptr);
     void setInput(const MichelsonInput& in) { m_in = in; update(); }
+    /// Local position of the draggable M2 mirror (the movable mirror in the project convention), also used
+    /// by the interaction test.
+    QPointF movableMirrorCenter() const;
+
+private:
+    double bsY() const;
+
+signals:
+    void mirrorDisplacementChanged(double displacementUm);
+
 protected:
     void paintDiagram(QPainter& p, const QRectF& area) override;
+    void mousePressEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
+
 private:
+    bool isNearMovableMirror(const QPointF& point) const;
+
     MichelsonInput m_in;
+    bool m_draggingM2 = false;
+    double m_dragOffsetY = 0.0;
 };
 class ThinFilmCanvas : public GridCanvas {
     Q_OBJECT

@@ -8,21 +8,19 @@
 
 #include <QAction>
 #include <QComboBox>
+#include <QEvent>
 #include <QGridLayout>
 #include <QHBoxLayout>
-#include <QHeaderView>
 #include <QLabel>
 #include <QMouseEvent>
+#include <QPalette>
 #include <QPushButton>
+#include <QScrollArea>
 #include <QSignalBlocker>
-#include <QStackedWidget>
-#include <QTableWidget>
 #include <QToolButton>
 #include <QMenu>
 #include <QVBoxLayout>
 #include <algorithm>
-#include <cmath>
-#include <limits>
 
 namespace phy104 {
 namespace {
@@ -92,11 +90,109 @@ QWidget* metricCard(const QString& value, const QString& title, const QString& t
     return card;
 }
 
+/// One row of the activity log sidebar: run number, experiment, result, status.
+class LogRow : public QFrame {
+    Q_OBJECT
+public:
+    explicit LogRow(QWidget* parent = nullptr) : QFrame(parent) {
+        setObjectName("logRow");
+        setCursor(Qt::PointingHandCursor);
+        auto* l = new QHBoxLayout(this);
+        l->setContentsMargins(10, 6, 10, 6);
+        l->setSpacing(8);
+
+        m_run = new QLabel;
+        m_run->setObjectName("logRun");
+        m_run->setMinimumWidth(34);
+        m_run->setAlignment(Qt::AlignCenter | Qt::AlignVCenter);
+
+        m_experiment = new QLabel;
+        m_experiment->setObjectName("logExperiment");
+        m_experiment->setWordWrap(true);
+
+        m_result = new QLabel;
+        m_result->setObjectName("logResult");
+        m_result->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        m_result->setMinimumWidth(70);
+
+        m_status = new QLabel("●");
+        m_status->setObjectName("logStatus");
+        m_status->setMinimumWidth(16);
+
+        l->addWidget(m_run);
+        l->addWidget(m_experiment, 1);
+        l->addWidget(m_result);
+        l->addWidget(m_status);
+    }
+
+    void setRun(const QString& text) { m_run->setText(text); }
+    void setExperiment(const QString& text) { m_experiment->setText(text); }
+    void setResult(const QString& text) { m_result->setText(text); }
+    void setValid(bool valid) {
+        QPalette pal = m_status->palette();
+        pal.setColor(QPalette::WindowText, valid ? ThemeManager::instance().theme().lime : ThemeManager::instance().theme().error);
+        m_status->setPalette(pal);
+    }
+    QString runId() const { return m_runId; }
+    void setRunId(const QString& id) { m_runId = id; }
+
+private:
+    QLabel* m_run;
+    QLabel* m_experiment;
+    QLabel* m_result;
+    QLabel* m_status;
+    QString m_runId;
+};
+
 } // namespace
 
 DashboardPage::DashboardPage(AppContext* ctx, QWidget* parent)
     : BasePage("Dashboard", "Your optical bench / choose an experiment or resume a saved run", ctx, parent) {
 
+    // ===================================================================== three-column layout
+    //   left (fixed): activity log sidebar
+    //   center (flex): featured experiments + browse all
+    //   right (fixed): lab notebook + recent export
+    auto cols = addThreeColumns(260, 260);
+
+    // ===================================================================== left: activity log sidebar
+    auto* logPanel = new Panel("ACTIVITY LOG", "SESSION " + QString::number(ctx->log.sessionNumber()).rightJustified(2, '0'));
+    logPanel->body()->setSpacing(8);
+    logPanel->body()->setContentsMargins(0, 0, 0, 0);
+
+    auto* logHint = new QLabel("Recent calculations — tap a row to reopen");
+    logHint->setObjectName("caption");
+    logHint->setWordWrap(true);
+    logPanel->body()->addWidget(logHint);
+
+    // scrollable log list
+    m_logScroll = new QScrollArea;
+    m_logScroll->setWidgetResizable(true);
+    m_logScroll->setFrameShape(QFrame::NoFrame);
+    m_logScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    m_logList = new QWidget;
+    m_logLayout = new QVBoxLayout(m_logList);
+    m_logLayout->setSpacing(2);
+    m_logLayout->setContentsMargins(0, 0, 0, 0);
+    m_logLayout->addStretch();
+    m_logScroll->setWidget(m_logList);
+    logPanel->body()->addWidget(m_logScroll, 1);
+
+    auto* logButtons = new QHBoxLayout;
+    logButtons->setSpacing(6);
+    m_deleteRun = new QPushButton("Delete selected");
+    m_deleteRun->setObjectName("secondary");
+    m_deleteRun->setEnabled(false);
+    m_clearLog = new QPushButton("Clear all");
+    m_clearLog->setObjectName("flat");
+    logButtons->addWidget(m_deleteRun);
+    logButtons->addWidget(m_clearLog);
+    logPanel->body()->addLayout(logButtons);
+
+    cols.left->addWidget(logPanel, 1);
+
+    // ===================================================================== center: experiments
     // --- metrics
     auto* metrics = new QHBoxLayout;
     metrics->setSpacing(12);
@@ -105,8 +201,9 @@ DashboardPage::DashboardPage(AppContext* ctx, QWidget* parent)
     experimentCount->setObjectName("experimentCount");
     metrics->addWidget(metricCard("00", "SAVED CALCULATIONS", "Current lab session", &m_savedValue));
     metrics->addWidget(metricCard("00", "DATA SERIES", "Ready for Excel / CSV", &m_seriesValue));
-    content()->addLayout(metrics);
+    cols.center->addLayout(metrics);
 
+    // --- browse all experiments
     auto* browseRow = new QHBoxLayout;
     browseRow->addStretch();
     m_browseExperiments = new QToolButton;
@@ -136,7 +233,7 @@ DashboardPage::DashboardPage(AppContext* ctx, QWidget* parent)
         }
     });
     browseRow->addWidget(m_browseExperiments);
-    content()->addLayout(browseRow);
+    cols.center->addLayout(browseRow);
 
     // --- four featured experiment cards
     auto* grid = new QGridLayout;
@@ -177,60 +274,12 @@ DashboardPage::DashboardPage(AppContext* ctx, QWidget* parent)
         connect(card, &ClickableCard::clicked, this, [this, page] { emit openPageRequested(page); });
         grid->addWidget(card, i / 2, i % 2);
     }
-    content()->addLayout(grid, 1);
+    cols.center->addLayout(grid, 1);
 
-    // --- recent calculations + notebook
-    auto* bottom = new QHBoxLayout;
-    bottom->setSpacing(12);
-    auto* recent = new Panel("Recent calculations", "SESSION " + QString::number(ctx->log.sessionNumber()).rightJustified(2, '0'));
-    m_table = new QTableWidget(0, 4);
-    m_table->setHorizontalHeaderLabels({"RUN", "EXPERIMENT", "RESULT", "STATUS"});
-    m_table->verticalHeader()->hide();
-    m_table->horizontalHeader()->setStretchLastSection(true);
-    m_table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
-    m_table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
-    m_table->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
-    m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    m_table->setSelectionMode(QAbstractItemView::SingleSelection);
-    m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_table->setShowGrid(false);
-    m_table->setFocusPolicy(Qt::NoFocus);
-    m_table->setMinimumHeight(150);
-
-    // the same panel switches to "Compare": two saved runs overlaid on one chart
-    m_recentMode = new ModeTabs({"Recent", "Compare"});
-    m_recentStack = new QStackedWidget;
-    m_recentStack->addWidget(m_table);
-    auto* compareBox = new QWidget;
-    auto* cmp = new QVBoxLayout(compareBox);
-    cmp->setContentsMargins(0, 0, 0, 0);
-    cmp->setSpacing(6);
-    auto* pickers = new QHBoxLayout;
-    pickers->setSpacing(8);
-    m_cmpA = new QComboBox;
-    m_cmpB = new QComboBox;
-    pickers->addWidget(labeled("Run A", m_cmpA), 1);
-    pickers->addWidget(labeled("Run B", m_cmpB), 1);
-    cmp->addLayout(pickers);
-    m_cmpChart = new LineChart;
-    m_cmpChart->setMinimumHeight(130);
-    cmp->addWidget(m_cmpChart, 1);
-    m_cmpSummary = new QLabel;
-    m_cmpSummary->setObjectName("hint");
-    m_cmpSummary->setWordWrap(true);
-    cmp->addWidget(m_cmpSummary);
-    m_recentStack->addWidget(compareBox);
-
-    m_deleteRun = new QPushButton("Delete selected run");
-    m_deleteRun->setObjectName("secondary");
-    m_deleteRun->setEnabled(false);
-    recent->body()->setContentsMargins(12, 0, 12, 8);
-    recent->body()->addWidget(m_recentMode);
-    recent->body()->addWidget(m_recentStack, 1);
-    recent->body()->addWidget(m_deleteRun);
-    bottom->addWidget(recent, 3);
-
-    auto* notebook = new Panel("Lab notebook", "AUTOSAVED");
+    // ===================================================================== right: lab notebook + export
+    auto* notebook = new Panel("LAB NOTEBOOK", "AUTOSAVED");
+    notebook->body()->setSpacing(10);
+    notebook->body()->setContentsMargins(0, 0, 0, 0);
     auto* blurb = new QLabel("Review formula references, record observations and export your measured data.");
     blurb->setObjectName("cardText");
     blurb->setWordWrap(true);
@@ -247,22 +296,23 @@ DashboardPage::DashboardPage(AppContext* ctx, QWidget* parent)
     notebook->body()->addLayout(buttons);
     notebook->body()->addWidget(m_lastSaved);
     notebook->body()->addStretch();
-    bottom->addWidget(notebook, 2);
-    content()->addLayout(bottom);
+    cols.right->addWidget(notebook, 1);
 
+    // ===================================================================== connections
     connect(openNotes, &QPushButton::clicked, this, [this] { emit openPageRequested(m_notesPage); });
     connect(exportData, &QPushButton::clicked, this, [this] { emit openPageRequested(m_exportPage); });
-    connect(m_recentMode, &ModeTabs::currentChanged, this, [this](int index) {
-        m_recentStack->setCurrentIndex(index);
-        if (index == 1) refreshCompare();
-    });
-    connect(m_cmpA, &QComboBox::activated, this, [this] { refreshCompare(); });
-    connect(m_cmpB, &QComboBox::activated, this, [this] { refreshCompare(); });
-    connect(m_table, &QTableWidget::itemSelectionChanged, this, [this] {
-        const int row = m_table->currentRow();
-        m_deleteRun->setEnabled(row >= 0 && m_table->item(row, 0) && m_table->item(row, 0)->data(Qt::UserRole).isValid());
-    });
     connect(m_deleteRun, &QPushButton::clicked, this, &DashboardPage::deleteSelectedRun);
+    connect(m_clearLog, &QPushButton::clicked, this, [this] {
+        // delete from newest to oldest so indices stay valid
+        auto runs = m_ctx->log.runs();
+        std::sort(runs.begin(), runs.end(), [](const RunRecord& a, const RunRecord& b) {
+            return a.id > b.id;
+        });
+        for (const auto& r : runs)
+            m_ctx->deleteRun(r.id);
+        m_selectedRunId = -1;
+        refresh();
+    });
     connect(ctx, &AppContext::snapshotChanged, this, &DashboardPage::refresh);
     connect(ctx, &AppContext::runsChanged, this, &DashboardPage::refresh);
     connect(ctx, &AppContext::notesSaved, this, &DashboardPage::refresh);
@@ -270,6 +320,91 @@ DashboardPage::DashboardPage(AppContext* ctx, QWidget* parent)
     refresh();
 }
 
+// ======================================================================== activity log
+void DashboardPage::refreshLog() {
+    const Theme& t = ThemeManager::instance().theme();
+
+    // clear existing rows (keep the stretch)
+    while (m_logLayout->count() > 1) {
+        auto* item = m_logLayout->takeAt(0);
+        if (item->widget()) delete item->widget();
+        delete item;
+    }
+
+    const auto recent = m_ctx->log.recent(10);
+    m_selectedRunId = -1;
+
+    if (recent.empty()) {
+        auto* empty = new QLabel("No activity yet — press Calculate & Simulate");
+        empty->setObjectName("hint");
+        empty->setAlignment(Qt::AlignHCenter);
+        empty->setWordWrap(true);
+        m_logLayout->insertWidget(m_logLayout->count() - 1, empty);
+        m_deleteRun->setEnabled(false);
+        return;
+    }
+
+    for (const RunRecord& r : recent) {
+        auto* row = new LogRow;
+        const QString label = QString::fromStdString(SessionLog::runLabel(r.id));
+        row->setRun(label);
+        row->setRunId(label);
+        row->setExperiment(QString::fromStdString(r.description));
+        row->setResult(QString::fromStdString(r.result));
+        row->setValid(r.valid);
+
+        row->setProperty("runId", r.id);
+        // clicks are handled by the event filter installed on the DashboardPage
+        row->installEventFilter(this);
+
+        m_logLayout->insertWidget(m_logLayout->count() - 1, row);
+    }
+
+    m_deleteRun->setEnabled(m_selectedRunId >= 0);
+}
+
+bool DashboardPage::eventFilter(QObject* obj, QEvent* event) {
+    if (event->type() == QEvent::MouseButtonPress) {
+        if (auto* row = qobject_cast<LogRow*>(obj)) {
+            const int id = row->property("runId").toInt();
+            m_selectedRunId = id;
+            m_deleteRun->setEnabled(id >= 0);
+            // highlight selected row
+            for (int i = 0; i < m_logLayout->count() - 1; ++i) {
+                if (auto* w = m_logLayout->itemAt(i)->widget()) {
+                    w->setProperty("selected", w == row);
+                    w->style()->unpolish(w);
+                    w->style()->polish(w);
+                    w->update();
+                }
+            }
+            // reopen the experiment page by matching the run's experiment name
+            for (const RunRecord& r : m_ctx->log.runs()) {
+                if (r.id == id) {
+                    // find the page index for this experiment
+                    const int page = pageForExperiment(r.experiment);
+                    if (page >= 0) emit openPageRequested(page);
+                    break;
+                }
+            }
+            return true;
+        }
+    }
+    return QWidget::eventFilter(obj, event);
+}
+
+int DashboardPage::pageForExperiment(const std::string& name) const {
+    static const struct { const char* name; int page; } map[] = {
+        {"Refraction & TIR", 1}, {"Lenses & Mirrors", 2}, {"Prisms", 3},
+        {"Wave Interference", 4}, {"Polarization", 5}, {"Single-Slit Diffraction", 6},
+        {"Diffraction Grating", 7}, {"Thin-Film Interference", 8}, {"Michelson Interferometry", 9},
+        {"Newton's Rings", 10}, {"Thick Lens & Aberration", 11}};
+    for (const auto& m : map)
+        if (m.name == name) return m.page;
+    return -1;
+}
+
+// ======================================================================== refresh (metrics + cards)
 void DashboardPage::refresh() {
     const Theme& t = ThemeManager::instance().theme();
     m_savedValue->setText(QString::number(m_ctx->log.savedCalculations()).rightJustified(2, '0'));
@@ -282,129 +417,18 @@ void DashboardPage::refresh() {
     }
     m_seriesValue->setText(QString::number(series).rightJustified(2, '0'));
 
-    const auto recent = m_ctx->log.recent(3);
-    m_table->setRowCount(recent.empty() ? 1 : static_cast<int>(recent.size()));
-    if (recent.empty()) {
-        m_table->setItem(0, 0, new QTableWidgetItem("—"));
-        m_table->setItem(0, 1, new QTableWidgetItem("No saved calculations yet: press Calculate & Simulate"));
-        m_table->item(0, 1)->setForeground(t.dim);
-    }
-    int row = 0;
-    for (const RunRecord& r : recent) {
-        auto* run = new QTableWidgetItem(QString::fromStdString(SessionLog::runLabel(r.id)));
-        run->setData(Qt::UserRole, r.id);
-        run->setForeground(t.dim);
-        auto* exp = new QTableWidgetItem(QString::fromStdString(r.description));
-        exp->setForeground(t.text);
-        QFont f = exp->font(); f.setFamilies(ThemeManager::uiFontFamilies()); f.setPixelSize(12); f.setWeight(QFont::Normal); exp->setFont(f);
-        auto* res = new QTableWidgetItem(QString::fromStdString(r.result));
-        res->setForeground(t.sage);
-        auto* st = new QTableWidgetItem(r.valid ? "● Valid" : "● Invalid");
-        st->setForeground(r.valid ? t.lime : t.error);
-        m_table->setItem(row, 0, run); m_table->setItem(row, 1, exp); m_table->setItem(row, 2, res); m_table->setItem(row, 3, st);
-        ++row;
-    }
-    for (int i = 0; i < m_table->rowCount(); ++i) m_table->setRowHeight(i, 32);
-    const int selected = m_table->currentRow();
-    m_deleteRun->setEnabled(selected >= 0 && m_table->item(selected, 0) && m_table->item(selected, 0)->data(Qt::UserRole).isValid());
+    refreshLog();
+
     const QString when = m_ctx->lastSavedTime();
     m_lastSaved->setText((when == "restored" ? QString("Session restored") : "Last saved " + when) + " · " + m_ctx->sessionFile);
-    refreshCompare();
-}
-
-const RunRecord* DashboardPage::runById(int id) const {
-    for (const RunRecord& r : m_ctx->log.runs())
-        if (r.id == id) return &r;
-    return nullptr;
-}
-
-void DashboardPage::refreshCompare() {
-    const int keepA = m_cmpA->currentData().toInt();
-    const int keepB = m_cmpB->currentData().toInt();
-    QList<const RunRecord*> usable;
-    for (const RunRecord& r : m_ctx->log.runs())
-        if (!r.series.rows.empty() && !r.series.headers.empty()) usable << &r;
-
-    {
-        const QSignalBlocker blockA(m_cmpA), blockB(m_cmpB);
-        m_cmpA->clear();
-        m_cmpB->clear();
-        for (const RunRecord* r : usable) {
-            const QString label = QString::fromStdString(SessionLog::runLabel(r->id)) + " · " + QString::fromStdString(r->experiment);
-            m_cmpA->addItem(label, r->id);
-            m_cmpB->addItem(label, r->id);
-        }
-        const auto restore = [](QComboBox* box, int id, int fromEnd) {
-            if (box->count() == 0) return;
-            int index = -1;
-            for (int i = 0; i < box->count(); ++i)
-                if (box->itemData(i).toInt() == id) index = i;
-            if (index < 0) index = std::max(0, box->count() - fromEnd);
-            box->setCurrentIndex(index);
-        };
-        restore(m_cmpA, keepA, 2);                       // newest pair by default
-        restore(m_cmpB, keepB, 1);
-    }
-
-    const RunRecord* a = runById(m_cmpA->currentData().toInt());
-    const RunRecord* b = runById(m_cmpB->currentData().toInt());
-    const Theme& t = ThemeManager::instance().theme();
-    if (!a || !b) {
-        m_cmpChart->setSeries({});
-        m_cmpChart->setLegend({}, QString());
-        m_cmpSummary->setText("Nothing to compare yet: press Calculate & Simulate on two settings and they appear here.");
-        return;
-    }
-
-    const auto toCurve = [](const DataSeries& series, const QColor& color) {
-        ChartSeries curve;
-        curve.line = true;
-        curve.color = color;
-        for (const auto& row : series.rows)
-            if (row.size() >= 2 && std::isfinite(row[0]) && std::isfinite(row[1])) curve.points << QPointF(row[0], row[1]);
-        return curve;
-    };
-    ChartSeries curveA = toCurve(a->series, t.amber), curveB = toCurve(b->series, t.blue);
-    double xMin = std::numeric_limits<double>::max(), xMax = std::numeric_limits<double>::lowest();
-    double yMin = std::numeric_limits<double>::max(), yMax = std::numeric_limits<double>::lowest();
-    for (const ChartSeries* curve : {&curveA, &curveB}) {
-        for (const QPointF& p : curve->points) {
-            xMin = std::min(xMin, p.x());
-            xMax = std::max(xMax, p.x());
-            yMin = std::min(yMin, p.y());
-            yMax = std::max(yMax, p.y());
-        }
-    }
-    if (curveA.points.isEmpty() || curveB.points.isEmpty() || yMin > yMax) {
-        m_cmpChart->setSeries({});
-        m_cmpSummary->setText("These runs carry no sweep data (they were saved by an older version of the session file).");
-        return;
-    }
-    if (xMax - xMin < 1e-12) xMax = xMin + 1.0;
-    const double pad = yMax > yMin ? (yMax - yMin) * 0.08 : 0.5;
-    const std::string& xName = a->series.headers.size() > 0 ? a->series.headers[0] : a->series.id;
-    const std::string yName = a->series.headers.size() > 1 ? a->series.headers[1] : std::string("value");
-    m_cmpChart->setAxes(xMin, xMax, 4, 2, QString::fromStdString(xName), yMin - pad, yMax + pad, 3, 3, QString::fromStdString(yName));
-    m_cmpChart->setSeries({curveA, curveB});
-    m_cmpChart->setLegend({"A · " + QString::fromStdString(a->experiment), "B · " + QString::fromStdString(b->experiment)},
-                          a->id == b->id ? "same run on both sides" : "two saved sweeps");
-    m_cmpSummary->setText(QString("RUN %1 (%2) · %3 points   vs   RUN %4 (%5) · %6 points%7")
-                              .arg(QString::fromStdString(SessionLog::runLabel(a->id)), QString::fromStdString(a->experiment))
-                              .arg(static_cast<int>(curveA.points.size()))
-                              .arg(QString::fromStdString(SessionLog::runLabel(b->id)), QString::fromStdString(b->experiment))
-                              .arg(static_cast<int>(curveB.points.size()))
-                              .arg(a->id == b->id ? QString()
-                                                  : (a->experiment == b->experiment ? "" : " · different experiments share one axis")));
 }
 
 void DashboardPage::deleteSelectedRun() {
-    const int row = m_table->currentRow();
-    if (row < 0) return;
-    const QTableWidgetItem* item = m_table->item(row, 0);
-    if (!item) return;
-    const int id = item->data(Qt::UserRole).toInt();
-    if (id <= 0) return;
-    if (m_ctx->deleteRun(id)) refresh();
+    if (m_selectedRunId <= 0) return;
+    if (m_ctx->deleteRun(m_selectedRunId)) {
+        m_selectedRunId = -1;
+        refresh();
+    }
 }
 
 } // namespace phy104
