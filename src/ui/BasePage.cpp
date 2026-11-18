@@ -102,6 +102,10 @@ BasePage::Columns BasePage::addThreeColumns(int leftWidth, int rightWidth) {
     auto* row = new QHBoxLayout;
     row->setSpacing(12);
     Columns c;
+    const bool rtl = (layoutDirection() == Qt::RightToLeft);
+    // In RTL mode, swap left/right so the sidebar appears on the right and the notebook on the left.
+    const int firstWidth = rtl ? rightWidth : leftWidth;
+    const int secondWidth = rtl ? leftWidth : rightWidth;
     auto make = [&](int width) {
         auto* col = new QVBoxLayout;
         col->setSpacing(12);
@@ -112,9 +116,17 @@ BasePage::Columns BasePage::addThreeColumns(int leftWidth, int rightWidth) {
         row->addWidget(holder, width > 0 ? 0 : 1);
         return col;
     };
-    c.left = make(leftWidth);
-    c.center = make(0);
-    c.right = make(rightWidth);
+    auto* firstCol = make(firstWidth);
+    auto* centerCol = make(0);
+    auto* lastCol = make(secondWidth);
+    if (rtl) {
+        c.left = lastCol;
+        c.right = firstCol;
+    } else {
+        c.left = firstCol;
+        c.right = lastCol;
+    }
+    c.center = centerCol;
     m_content->addLayout(row, 1);
     return c;
 }
