@@ -197,14 +197,14 @@ std::string reportHtml(const ReportContent& content, const ReportOptions& o) {
             h += "<p class=\"summary\"><b>" + escape(o.labels.result) + "</b><br>" + escape(s.headline) + "</p>";
         if (o.diagrams && !s.diagramKey.empty()) {
             ++figure;
-            h += "<div class=\"figure\"><p><img src=\"" + escape(s.diagramKey) + "\"></p>";
+            h += "<div class=\"figure\"><p><img src=\"" + escape(s.diagramKey) + "\" width=\"" + width + "\"></p>";
             const std::string figureLabel = formatLabel(o.labels.figureFormat, "%1", std::to_string(figure));
             const std::string diagramLabel = formatLabel(o.labels.opticalDiagramFormat, "%1", s.title);
             h += "<p class=\"figure-caption\"><b>" + escape(figureLabel) + "</b> " + escape(diagramLabel) + "</p></div>";
         }
         if (o.charts && !s.chartKey.empty()) {
             ++figure;
-            h += "<div class=\"figure\"><p><img src=\"" + escape(s.chartKey) + "\"></p>";
+            h += "<div class=\"figure\"><p><img src=\"" + escape(s.chartKey) + "\" width=\"" + width + "\"></p>";
             const std::string figureLabel = formatLabel(o.labels.figureFormat, "%1", std::to_string(figure));
             const std::string chartLabel = formatLabel(o.labels.dataChartFormat, "%1", s.title);
             h += "<p class=\"figure-caption\"><b>" + escape(figureLabel) + "</b> " + escape(chartLabel) + "</p></div>";
