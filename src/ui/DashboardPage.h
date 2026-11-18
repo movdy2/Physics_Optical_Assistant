@@ -1,6 +1,9 @@
 #pragma once
 #include "BasePage.h"
 
+#include <QMap>
+
+class QCheckBox;
 class QComboBox;
 class QLabel;
 class QPushButton;
@@ -28,8 +31,10 @@ protected:
 private:
     void refresh();
     void refreshLog();                                    // rebuild the activity-log sidebar rows
+    void refreshComparison();                             // rebuild the run-comparison chart panel
     void deleteSelectedRun();
     int pageForExperiment(const std::string& name) const; // experiment name -> MainWindow page index
+    ChartSeries seriesToChart(const DataSeries& s, const QColor& color) const;
 
     int m_notesPage = 5;
     int m_exportPage = 5;
@@ -47,6 +52,14 @@ private:
     QVBoxLayout* m_logLayout = nullptr;
     QPushButton* m_clearLog = nullptr;
     QPushButton* m_deleteRun = nullptr;
+
+    // run comparison chart (center column)
+    QComboBox* m_comparisonFilter = nullptr;
+    QWidget* m_runListContainer = nullptr;
+    QVBoxLayout* m_runListLayout = nullptr;
+    QScrollArea* m_runScroll = nullptr;
+    LineChart* m_comparisonChart = nullptr;
+    QMap<int, QCheckBox*> m_runCheckboxes;                // run id -> checkbox
 };
 
 } // namespace phy104
