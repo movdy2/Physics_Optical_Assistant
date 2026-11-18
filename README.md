@@ -1,4 +1,4 @@
-# PHY104 Optical Assistant
+# physics Optical Assistant
 
 **An offline optics lab and study companion for PHY104.** Built with C++20 and Qt 6 for Windows and Linux. The app needs no AI service, account, database, or internet connection.
 
