@@ -7,21 +7,22 @@ This document lists planned improvements, fixes, and editions for the app, plus 
 ## 1. Improvements to Do
 
 ### Michelson Interferometer
-- [ ] Add interferogram fringe-count display (live fringe shift counter as M2 moves)
-- [ ] Add refractive-index slider for the medium in one arm (air, water, glass, custom)
-- [ ] Add wavelength presets (He-Ne 632.8 nm, sodium 589 nm, laser diode 650/780 nm)
+- [x] Add interferogram fringe-count display (live fringe shift counter as M2 moves)
+- [x] Add refractive-index slider for the medium in one arm (air, water, glass, custom)
+- [x] Add wavelength presets (He-Ne 632.8 nm, sodium 589 nm, laser diode 650/780 nm)
 - [ ] Add "reset M2 to zero" button
 - [ ] Add export of fringe-shift data to CSV
 - [ ] Add animated fringe playback when dragging M2
 
 ### Visual SFX / Canvas
-- [ ] Add beam path tracing lines (show splitter → mirrors → detector)
+- [x] Add beam path tracing lines (show splitter → mirrors → detector)
 - [ ] Add interference fringe visualization on the detector screen
 - [ ] Add phase difference readout (radians + degrees)
 - [ ] Add dark/light theme toggle for the canvas
 
 ### Formula Solver
-- [ ] Add more physics formulas (Snell's law, lensmaker, thin-film interference, Brewster's angle)
+- [x] Add more physics formulas (Snell's law, lensmaker, thin-film interference, Brewster's angle — already existed)
+- [x] Add Michelson OPD (ΔOPD = 2ny), Michelson fringe count (ΔN = ΔOPD/λ₀), Fringe visibility (V = (Imax−Imin)/(Imax+Imin))
 - [ ] Add formula search with category filters (Optics, Waves, Thermodynamics)
 - [ ] Add "solve for any variable" mode (currently solves for one target)
 - [ ] Add calculation history with timestamps
