@@ -29,8 +29,9 @@ This document lists planned improvements, fixes, and editions for the app, plus 
 - [ ] Add PDF export of solved formulas
 
 ### Dashboard
-- [ ] Add experiment comparison chart (overlay multiple runs)
-- [ ] Add run filtering by experiment type and date range
+- [x] Add experiment comparison chart (overlay multiple runs)
+- [x] Add run filtering by experiment type (comparison dropdown)
+- [ ] Add date range filtering
 - [ ] Add export of activity log to CSV/PDF
 - [ ] Add "favorite runs" pinning
 
