@@ -51,14 +51,14 @@ This document lists planned improvements, fixes, and editions for the app, plus 
 
 ## 2. Fixes to Do
 
-- [ ] Verify mirror displacement range validation (±2 µm) in core physics
-- [ ] Test slider ↔ field bidirectional sync without feedback loops
-- [ ] Validate Casio LCD font fallback chain on systems without the font installed
-- [ ] Fix any RTL layout issues in Arabic dashboard/log panels
-- [ ] Test PDF report page breaks on long Arabic content
-- [ ] Confirm formula copy-to-clipboard works on all platforms
-- [ ] Check recent-formula panel max-8 limit behavior
-- [ ] Validate empty-state message when search returns no results
+- [x] Verify mirror displacement range validation (±2 µm) in core physics
+- [x] Test slider ↔ field bidirectional sync without feedback loops
+- [x] Validate Casio LCD font fallback chain on systems without the font installed
+- [x] Fix RTL layout issues in Arabic dashboard/log panels (addThreeColumns swaps sidebar/notebook positions in RTL mode)
+- [x] Test PDF report page breaks on long Arabic content (@page rule, RTL body direction, page-break-inside: avoid on summaries/figures/LCD registers, page-break-before: always on sections)
+- [x] Confirm formula copy-to-clipboard works on all platforms (QClipboard with "Copied!" confirmation, enabled/disabled state management)
+- [x] Check recent-formula panel max-8 limit behavior (m_recent capped at 8 with removeLast(), empty state shows "(none yet)")
+- [x] Validate empty-state message when search returns no results (m_emptyState shows "No formulas match..." / page label "No formulas found")
 
 ---
 
