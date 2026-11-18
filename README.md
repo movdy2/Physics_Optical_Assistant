@@ -29,7 +29,7 @@
 
 ![PHY104 Optical Assistant dashboard — a project by Movdy](docs/screenshots/readme-cover.png)
 
-## Download v2.3.0
+## Download v2.9.0
 
 | Platform | Download |
 |---|---|
@@ -37,7 +37,7 @@
 | **Windows x64 portable** | [Portable ZIP](https://github.com/movdy2/phy104-sim/releases/download/2.9/PHY104OpticalAssistant-2.9.0-Windows-x64-portable.zip) |
 | **Linux x86_64** | [AppImage](https://github.com/movdy2/phy104-sim/releases/download/2.9/PHY104OpticalAssistant-2.9.0-Linux-x86_64.AppImage) |
 
-See the [v2.3.0 release page](https://github.com/movdy2/phy104-sim/releases/tag/v2.3.0) for all files and release notes.
+See the [v2.9.0 release page](https://github.com/movdy2/phy104-sim/releases/tag/v2.3.0) for all files and release notes.
 
 ### Installation
 
