@@ -8,6 +8,7 @@
 #include <QSignalBlocker>
 #include <QLabel>
 #include <QPushButton>
+#include <QSlider>
 #include <QVBoxLayout>
 #include <cmath>
 
@@ -171,31 +172,74 @@ QString NewtonRingsPage::runDescription() const {
 
 // ============================================================================ Michelson
 MichelsonPage::MichelsonPage(AppContext* ctx, QWidget* parent)
-    : ModelPage("Michelson Interferometry", "Mirror displacement, fringe shift and fringe count", "Michelson Interferometry", ctx, parent) {
+    : ModelPage("Michelson Interferometry", "Drag movable M2 to follow the fringe shift", "Michelson Interferometry", ctx, parent) {
     addTabs({"Displacement", "Fringes"});
     m_lambda = addField(QString::fromLatin1(FieldIds::wavelength), "Wavelength · λ", "nm", 632.8, 2);
     m_dx = addField(QString::fromLatin1(FieldIds::mirrorDisplacement), "Mirror displacement · Δx", "µm", 0.75, 4, true, true, 0.05);
+
+    m_dxSlider = new QSlider(Qt::Horizontal);
+    m_dxSlider->setObjectName("michelsonMirrorSlider");
+    const int sliderLimit = static_cast<int>(std::lround(MichelsonCanvas::kMaxInteractiveTravelUm * 10000.0));
+    m_dxSlider->setRange(-sliderLimit, sliderLimit);                  // 0.1 nm steps, ±2 µm stage travel
+    m_dxSlider->setSingleStep(10);                                    // 1 nm keyboard/page adjustment
+    m_dxSlider->setPageStep(1000);
+    m_dxSlider->setTickPosition(QSlider::TicksBelow);
+    m_dxSlider->setTickInterval(5000);
+    m_dxSlider->setAccessibleName("M2 mirror travel in micrometres");
+    m_dxSlider->setToolTip("Drag the amber M2 mirror left or right along its arm, or use this slider. Range: −2 to +2 µm.");
+    m_fieldLayout->addWidget(labeled("M2 travel · ±2 µm", m_dxSlider));
+
     m_medium = addCombo("Arm medium", {"Air · n = 1.0000", "Water cell · n = 1.3330"}, {1.0, 1.333});
-    m_reference = addCombo("Reference arm", {"M1 fixed", "M1 on a piezo (static)"}, {0, 1});
+    m_reference = addCombo("M2 drive", {"Manual micrometer", "Piezo actuator"}, {0, 1});
     m_balance = addCombo("Beam balance", {"Equal beams · V = 1.00", "Unequal beams · V = 0.60"}, {1.0, 0.6});
     m_canvas = new MichelsonCanvas;
-    build("Optical bench / detector fringes", m_canvas, "Detector intensity vs mirror displacement", "ΔOPD = 2nΔx. One fringe per λ/(2n) of mirror motion.");
+    m_canvas->setObjectName("michelsonCanvas");
+    connect(m_dxSlider, &QSlider::valueChanged, this, [this](int value) {
+        setMirrorDisplacement(value / 10000.0);
+    });
+    connect(m_dx, &UnitField::edited, this, [this] {
+        bool ok = false;
+        const double displacement = m_dx->value(&ok);
+        if (!ok) return;
+        QSignalBlocker blocker(m_dxSlider);
+        m_dxSlider->setValue(static_cast<int>(std::lround(displacement * 10000.0)));
+    });
+    connect(m_canvas, &MichelsonCanvas::mirrorDisplacementChanged, this, &MichelsonPage::setMirrorDisplacement);
+
+    build("Optical bench / detector fringes", m_canvas, "Detector intensity vs mirror displacement", "Drag movable M2 or use its slider. ΔOPD = 2nΔx; one fringe per λ/(2n) of mirror travel.");
     reset();
 }
 ModelReport MichelsonPage::compute(const ReportContext& ctx) {
     return WE::michelson({m_lambda->value(), m_dx->value(), m_medium->currentData().toDouble(), m_balance->currentData().toDouble(),
                           m_tabs->current() == 1, m_reference->currentData().toDouble() > 0.5}, ctx);
 }
+void MichelsonPage::setMirrorDisplacement(double displacementUm) {
+    const double travel = std::clamp(displacementUm, -MichelsonCanvas::kMaxInteractiveTravelUm,
+                                     MichelsonCanvas::kMaxInteractiveTravelUm);
+    m_dx->setValue(travel, 4);
+    QSignalBlocker blocker(m_dxSlider);
+    m_dxSlider->setValue(static_cast<int>(std::lround(travel * 10000.0)));
+    apply(false);
+}
 void MichelsonPage::updateCanvas() {
     const bool fringes = m_tabs->current() == 1;
     const bool piezo = m_reference->currentData().toDouble() > 0.5;
     m_canvas->setInput({m_lambda->value(), m_dx->value(), m_medium->currentData().toDouble(), m_balance->currentData().toDouble(), fringes, piezo});
-    retitle(fringes ? (piezo ? "Optical bench / piezo scan of M1" : "Optical bench / fringe pattern") : "Optical bench / detector fringes",
-            fringes ? "Intensity across a ±2 µm mirror sweep" : "Detector intensity vs mirror displacement");
+    retitle(fringes ? (piezo ? "Optical bench / piezo scan of M2" : "Optical bench / fringe pattern") : "Optical bench / detector fringes",
+            fringes ? "Intensity across a ±2 µm M2 sweep" : "Detector intensity vs M2 displacement");
 }
-void MichelsonPage::resetFields() { m_lambda->setValue(632.8, 2); m_dx->setValue(0.75, 4); m_medium->setCurrentIndex(0); m_reference->setCurrentIndex(0); m_balance->setCurrentIndex(0); m_tabs->setCurrent(0); }
+void MichelsonPage::resetFields() {
+    m_lambda->setValue(632.8, 2);
+    m_dx->setValue(0.75, 4);
+    m_medium->setCurrentIndex(0);
+    m_reference->setCurrentIndex(0);
+    m_balance->setCurrentIndex(0);
+    m_tabs->setCurrent(0);
+    QSignalBlocker blocker(m_dxSlider);
+    m_dxSlider->setValue(7500);
+}
 QString MichelsonPage::runDescription() const {
-    return QString("Δx %1 µm · λ %2 nm · %3").arg(m_dx->text(), m_lambda->text(), m_tabs->current() == 1 ? "fringes" : "displacement");
+    return QString("M2 Δx %1 µm · λ %2 nm · %3").arg(m_dx->text(), m_lambda->text(), m_tabs->current() == 1 ? "fringes" : "displacement");
 }
 
 // ============================================================================ thin film
