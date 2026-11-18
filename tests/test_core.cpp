@@ -878,6 +878,66 @@ int main() {
         CHECK(ER::doubleSlit(badTolerance).paused && ER::doubleSlit(badTolerance).issues[0].field == FieldIds::sigmaScreenDistance);
     }
 
+    // ---------- Michelson fringe shift formula (ΔOPD = 2nΔx) ----------
+    {
+        namespace WE = WaveExperiments;
+        // ΔOPD = 2nΔx: round-trip path change. With n=1 air and Δx=0.3164 µm ≈ λ/(2n),
+        // ΔOPD ≈ 632.8 nm = one wavelength → one fringe shift.
+        MichelsonInput m1; m1.lambdaNm = 632.8; m1.displacementUm = 0.3164; m1.n = 1.0;
+        auto r1 = WE::michelson(m1);
+        CHECK(near(std::stod(r1.report.registers[0].resultValue), 1.0, 1e-3));
+
+        // Doubling the mirror travel doubles the OPD and the fringe shift.
+        MichelsonInput m2; m2.lambdaNm = 632.8; m2.displacementUm = 0.6328; m2.n = 1.0;
+        auto r2 = WE::michelson(m2);
+        CHECK(near(std::stod(r2.report.registers[0].resultValue), 2.0, 1e-3));
+
+        // Negative displacement → negative shift (mirror moves toward the beam splitter).
+        MichelsonInput m3; m3.lambdaNm = 632.8; m3.displacementUm = -0.3164; m3.n = 1.0;
+        auto r3 = WE::michelson(m3);
+        CHECK(near(std::stod(r3.report.registers[0].resultValue), -1.0, 1e-3));
+
+        // Higher index n increases the OPD for the same mirror travel (2nΔx).
+        MichelsonInput m4; m4.lambdaNm = 632.8; m4.displacementUm = 0.3164; m4.n = 1.5;
+        auto r4 = WE::michelson(m4);
+        CHECK(near(std::stod(r4.report.registers[0].resultValue), 1.5, 1e-3));
+
+        // One fringe corresponds to mirror travel λ/(2n): with λ=632.8 nm, n=1.5,
+        // travel = 632.8/(2×1.5) = 210.93 nm = 0.21093 µm → shift of exactly 1 fringe.
+        MichelsonInput m5; m5.lambdaNm = 632.8; m5.displacementUm = 0.21093; m5.n = 1.5;
+        auto r5 = WE::michelson(m5);
+        CHECK(near(std::stod(r5.report.registers[0].resultValue), 1.0, 1e-3));
+
+        // Detector intensity: I/Imax = (1 + V cos 2πΔN)/(1 + V).
+        // At ΔN = 1 (one full fringe), intensity returns to maximum.
+        MichelsonInput m6; m6.lambdaNm = 632.8; m6.displacementUm = 0.3164; m6.n = 1.0; m6.visibility = 1.0;
+        auto r6 = WE::michelson(m6);
+        CHECK(near(std::stod(r6.report.registers[1].resultValue), 1.0, 1e-3));
+
+        // At ΔN = 0.5 (half a fringe), intensity goes to minimum (dark).
+        MichelsonInput m7; m7.lambdaNm = 632.8; m7.displacementUm = 0.1582; m7.n = 1.0; m7.visibility = 1.0;
+        auto r7 = WE::michelson(m7);
+        CHECK(near(std::stod(r7.report.registers[1].resultValue), 0.0, 1e-3));
+
+        // Range guard: displacement beyond ±2 µm is rejected.
+        MichelsonInput mBad; mBad.lambdaNm = 632.8; mBad.displacementUm = 3.0; mBad.n = 1.0;
+        CHECK(WE::michelson(mBad).report.paused);
+        MichelsonInput mBad2; mBad2.lambdaNm = 632.8; mBad2.displacementUm = -3.0; mBad2.n = 1.0;
+        CHECK(WE::michelson(mBad2).report.paused);
+
+        // Invalid wavelength or index is rejected.
+        MichelsonInput mBad3; mBad3.lambdaNm = 0; mBad3.displacementUm = 0.1; mBad3.n = 1.0;
+        CHECK(WE::michelson(mBad3).report.paused);
+        MichelsonInput mBad4; mBad4.lambdaNm = 632.8; mBad4.displacementUm = 0.1; mBad4.n = 0.5;
+        CHECK(WE::michelson(mBad4).report.paused);
+
+        // Fringes tab: count across ±2 µm sweep = 2 × 2n × 2µm / λ.
+        MichelsonInput mf; mf.fringes = true; mf.lambdaNm = 632.8; mf.n = 1.0;
+        auto fm = WE::michelson(mf);
+        double expectedCount = 2 * 1.0 * (4.0 * 1000.0) / 632.8;  // 4 µm sweep total
+        CHECK(near(std::stod(fm.report.registers[1].resultValue), expectedCount, 0.01));
+    }
+
     if (g_failures == 0) std::cout << "All core tests passed\n";
     return g_failures == 0 ? 0 : 1;
 }
