@@ -175,6 +175,12 @@ MichelsonPage::MichelsonPage(AppContext* ctx, QWidget* parent)
     : ModelPage("Michelson Interferometry", "Drag movable M2 to follow the fringe shift", "Michelson Interferometry", ctx, parent) {
     addTabs({"Displacement", "Fringes"});
     m_lambda = addField(QString::fromLatin1(FieldIds::wavelength), "Wavelength · λ", "nm", 632.8, 2);
+
+    m_source = new QComboBox;
+    for (const auto& s : ctx->presets.sources) m_source->addItem(QString::fromStdString(s.name), s.wavelengthNm);
+    m_source->addItem("Custom", -1.0);
+    m_fieldLayout->addWidget(labeled("Source preset", m_source));
+
     m_dx = addField(QString::fromLatin1(FieldIds::mirrorDisplacement), "Mirror displacement · Δx", "µm", 0.75, 4, true, true, 0.05);
 
     m_dxSlider = new QSlider(Qt::Horizontal);
@@ -206,6 +212,26 @@ MichelsonPage::MichelsonPage(AppContext* ctx, QWidget* parent)
     });
     connect(m_canvas, &MichelsonCanvas::mirrorDisplacementChanged, this, &MichelsonPage::setMirrorDisplacement);
 
+    // Source preset: choosing a preset sets the wavelength; editing the wavelength manually switches to "Custom".
+    connect(m_source, &QComboBox::activated, this, [this] {
+        const double w = m_source->currentData().toDouble();
+        if (w > 0) {
+            m_lambda->setValue(w, 1);
+            apply(false);
+        }
+    });
+    connect(m_lambda, &UnitField::edited, this, [this] {
+        bool ok = false;
+        const double v = m_lambda->value(&ok);
+        if (!ok) return;
+        bool matches = false;
+        for (int i = 0; i < m_source->count() - 1; ++i) {
+            if (std::fabs(m_source->itemData(i).toDouble() - v) < 1e-9) { matches = true; break; }
+        }
+        if (!matches) m_source->setCurrentIndex(m_source->count() - 1);  // "Custom"
+        apply(false);
+    });
+
     build("Optical bench / detector fringes", m_canvas, "Detector intensity vs mirror displacement", "Drag movable M2 or use its slider. ΔOPD = 2nΔx; one fringe per λ/(2n) of mirror travel.");
     reset();
 }
@@ -230,6 +256,13 @@ void MichelsonPage::updateCanvas() {
 }
 void MichelsonPage::resetFields() {
     m_lambda->setValue(632.8, 2);
+    // Select the source preset matching the default wavelength (He-Ne · 632.8 nm).
+    for (int i = 0; i < m_source->count() - 1; ++i) {
+        if (std::fabs(m_source->itemData(i).toDouble() - 632.8) < 1e-9) {
+            m_source->setCurrentIndex(i);
+            break;
+        }
+    }
     m_dx->setValue(0.75, 4);
     m_medium->setCurrentIndex(0);
     m_reference->setCurrentIndex(0);

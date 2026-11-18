@@ -73,7 +73,7 @@ private:
 
     UnitField *m_lambda, *m_dx;
     QSlider* m_dxSlider;
-    QComboBox *m_medium, *m_reference, *m_balance;
+    QComboBox *m_source, *m_medium, *m_reference, *m_balance;
     class MichelsonCanvas* m_canvas;
 };
 
