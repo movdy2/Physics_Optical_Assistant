@@ -1,0 +1,32 @@
+{
+  "version": "3.0.0",
+  "name": "PHY104 Optical Assistant",
+  "description": "Offline optics lab and study companion for PHY104",
+  "build": {
+    "cmake": "3.21+",
+    "cxx_standard": 20,
+    "qt": "6.x"
+  },
+  "features": [
+    "Michelson interferometer (movable M2, fringe counter, n slider, wavelength presets, beam path tracing)",
+    "Formula solver (Michelson OPD, fringe count, visibility + 42 formulas)",
+    "Arabic localization with RTL layout",
+    "Dashboard with run comparison charts",
+    "PDF report generation with page breaks",
+    "Formula copy-to-clipboard",
+    "Recent-formula panel (max 8 entries)",
+    "Casio-style LCD font",
+    "Dark and light themes"
+  ],
+  "attribution": {
+    "lead": "Movdy2",
+    "contribution": "Ahmed Samir",
+    "scientific_supervision": "Dr. Ashraf"
+  },
+  "michelson_convention": {
+    "fixed_mirror": "M1",
+    "movable_mirror": "M2",
+    "formula": "ΔOPD = 2nΔx",
+    "fringe_travel": "λ₀/(2n)"
+  }
+}

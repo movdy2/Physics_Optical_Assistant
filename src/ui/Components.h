@@ -3,7 +3,6 @@
 #include "ExperimentReports.h"
 
 #include <QFrame>
-#include <QList>
 
 class QButtonGroup;
 class QEvent;

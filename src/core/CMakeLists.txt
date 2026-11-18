@@ -21,5 +21,5 @@ add_library(phy104_core STATIC
     Units.cpp
     Uncertainty.cpp
 )
-target_include_directories(phy104_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(phy104_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 phy104_enable_warnings(phy104_core STRICT)
