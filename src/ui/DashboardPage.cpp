@@ -322,8 +322,6 @@ DashboardPage::DashboardPage(AppContext* ctx, QWidget* parent)
 
 // ======================================================================== activity log
 void DashboardPage::refreshLog() {
-    const Theme& t = ThemeManager::instance().theme();
-
     // clear existing rows (keep the stretch)
     while (m_logLayout->count() > 1) {
         auto* item = m_logLayout->takeAt(0);
@@ -406,7 +404,6 @@ int DashboardPage::pageForExperiment(const std::string& name) const {
 
 // ======================================================================== refresh (metrics + cards)
 void DashboardPage::refresh() {
-    const Theme& t = ThemeManager::instance().theme();
     m_savedValue->setText(QString::number(m_ctx->log.savedCalculations()).rightJustified(2, '0'));
 
     int series = 0;

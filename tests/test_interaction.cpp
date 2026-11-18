@@ -882,7 +882,7 @@ private slots:
         QTest::mouseMove(canvas, pressPos + QPoint(10, 0));
         QTest::mouseRelease(canvas, Qt::LeftButton, Qt::NoModifier, pressPos + QPoint(10, 0));
         QApplication::processEvents();
-        QTRY_VERIFY_WITH_TIMEOUT(slider->value() == 17500, "slider did not follow canvas drag", 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(slider->value() == 17500, 1500);
 
         // Slider → field/register: move slider to 0 µm → zero fringe shift
         slider->setValue(0);
@@ -892,7 +892,7 @@ private slots:
         // Slider → field/register: move slider to −1 µm → negative fringe shift
         slider->setValue(-10000);
         QApplication::processEvents();
-        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->michelson).startsWith("-"), "fringe shift should be negative", 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->michelson).startsWith("-"), 1500);
 
         // --- Newton's rings: the viewing-mode dropdown now reaches the physics and the diagram
         goTo(m_app->newton);
