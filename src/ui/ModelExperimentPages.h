@@ -2,6 +2,8 @@
 #include "ExperimentPages.h"
 #include "WaveExperiments.h"
 
+class QSlider;
+
 namespace phy104 {
 
 /// Shared body of the six screens of the second Figma batch (header with Save / Export, tabs + fields on the
@@ -67,8 +69,12 @@ protected:
     void resetFields() override;
     QString runDescription() const override;
 private:
+    void setMirrorDisplacement(double displacementUm);
+
     UnitField *m_lambda, *m_dx;
-    QComboBox *m_medium, *m_reference, *m_balance;
+    QSlider* m_dxSlider;
+    QSlider* m_nSlider;
+    QComboBox *m_source, *m_medium, *m_reference, *m_balance;
     class MichelsonCanvas* m_canvas;
 };
 

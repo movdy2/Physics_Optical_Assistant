@@ -5,6 +5,7 @@
 #include "BasePage.h"
 #include <map>
 #include <memory>
+#include <QStringList>
 
 class QComboBox;
 class QFormLayout;
@@ -12,6 +13,7 @@ class QLabel;
 class QLineEdit;
 class QListWidget;
 class QPushButton;
+class QSplitter;
 class QTextBrowser;
 
 namespace phy104 {
@@ -19,8 +21,9 @@ namespace phy104 {
 class LatexWidget;
 
 /// Formula Solver page.
-///  left : search box, chapter filter, paged list of formula cards (screen limit)
-///  right: LaTeX formula on an LCD, LCD input fields, status line, LCD answer + steps
+///  left : search box, chapter filter, recent formulas, paged list of formula cards
+///  right: LaTeX formula on an LCD, LCD input fields, status line, LCD answer + steps,
+///         plus a variable-help panel and copy-to-clipboard action.
 class SolverPage : public BasePage {
     Q_OBJECT
 public:
@@ -40,12 +43,18 @@ private slots:
     void nextPage();
     void onSolve();
     void onClear();
+    void onCopyResult();
+    void onRecentFormula(const QString& id);
 
 private:
     void refreshList(bool resetPage);
     void refreshChapterCombo();
+    void refreshRecent();
     void showFormula(const Formula& formula);
     void setStatus(const QString& kind, const QString& text);   // kind: Ok | Warn | Error | "" (hide)
+    void updateVariableHelp();                                   // rebuild the variable help panel
+    void addToRecent(const std::string& id);
+    void showEmptyState(bool show);
 
     std::shared_ptr<FormulaEngine> m_engine;
     std::shared_ptr<FormulaManager> m_manager;
@@ -57,21 +66,28 @@ private:
     QComboBox* m_chapter;
     QComboBox* m_pageSize;
     QListWidget* m_list;
+    QListWidget* m_recentList;                                   // recently opened formulas
     QPushButton* m_prev;
     QPushButton* m_next;
     QLabel* m_pageLabel;
+    QLabel* m_emptyState;                                        // shown when no formulas match
     std::vector<const Formula*> m_results;
     int m_pageIndex = 0;
+    QStringList m_recent;                                        // recently opened formula ids
 
     // solver (right)
+    QSplitter* m_splitter;
     QLabel* m_formulaName;
     QLabel* m_formulaChapter;
     LatexWidget* m_formulaLatex;
     QFormLayout* m_form;
     std::map<std::string, QLineEdit*> m_edits;
     QLabel* m_status;
+    QPushButton* m_copyBtn;
     LatexWidget* m_answer;
     QTextBrowser* m_output;
+    QTextBrowser* m_varHelp;                                     // variable descriptions panel
+    QString m_lastAnswerLatex;                                   // last answer LaTeX, for copy-to-clipboard
 };
 
 } // namespace phy104
