@@ -52,7 +52,8 @@ void ThemeManager::loadFonts() {
     for (const char* f : {":/fonts/Inter-Regular.otf", ":/fonts/Inter-Medium.otf", ":/fonts/Inter-SemiBold.otf",
                           ":/fonts/NotoSansArabic.ttf",
                           ":/fonts/JetBrainsMono-Regular.ttf", ":/fonts/JetBrainsMono-Bold.ttf",
-                          ":/fonts/DSEG7Classic-Bold.ttf", ":/fonts/DSEG14Classic-Bold.ttf"})
+                          ":/fonts/DSEG7Classic-Bold.ttf", ":/fonts/DSEG14Classic-Bold.ttf",
+                          ":/fonts/CasioCalculatorFont.otf"})
         QFontDatabase::addApplicationFont(f);
 }
 
@@ -97,9 +98,12 @@ void ThemeManager::apply(QApplication& app, bool dark) {
 
 QFont ThemeManager::lcdFont(const QFont& base) {
     QFont font = base;
-    // DSEG remains the primary LCD face in both locales; the matching sans stack supplies glyphs
-    // it does not contain (including Arabic text) without switching the whole display to another font.
-    QStringList families{"DSEG14 Classic", monoFont()};
+    // Casio segment-style face is the primary LCD face for numeric results; DSEG14 and the
+    // matching sans stack supply glyphs it does not contain (including Arabic text) without
+    // switching the whole display to another font. The bundled font's internal family name is
+    // "CASIO-Calculator-Font" (hyphenated), so use that exact name plus a spaced fallback.
+    QStringList families{"CASIO-Calculator-Font", "Casio-Calculator-Font", "Casio Calculator Font",
+                         "DSEG14 Classic", monoFont()};
     families.append(uiFontFamilies());
     font.setFamilies(families);
     return font;

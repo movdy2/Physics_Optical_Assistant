@@ -54,8 +54,8 @@ public:
     /// The theme chosen in the last run (saved by apply(); read by main() before the UI is built).
     static bool storedDarkTheme();
 
-    /// One shared Casio-style DSEG14 face for every LCD surface, with a readable fallback
-    /// for glyphs the segmented font does not contain.
+    /// One shared Casio segment-style face for every LCD surface (Casio Calculator Font,
+    /// with DSEG14 and JetBrains Mono fallbacks), for glyphs the primary font does not contain.
     static QFont lcdFont(const QFont& base = QFont());
     static void polishLcdFont(QWidget* widget);
 

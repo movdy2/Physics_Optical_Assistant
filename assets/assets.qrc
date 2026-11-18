@@ -22,6 +22,7 @@
         <file alias="JetBrainsMono-Bold.ttf">fonts/JetBrainsMono-Bold.ttf</file>
         <file alias="DSEG7Classic-Bold.ttf">fonts/DSEG7Classic-Bold.ttf</file>
         <file alias="DSEG14Classic-Bold.ttf">fonts/DSEG14Classic-Bold.ttf</file>
+        <file alias="CasioCalculatorFont.otf">fonts/casio-calculator-font.otf</file>
     </qresource>
     <qresource prefix="/licenses">
         <file alias="NotoSansArabic-OFL.txt">fonts/NotoSansArabic-OFL.txt</file>

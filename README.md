@@ -1,4 +1,4 @@
-# physics Optical Assistant
+# PHY104 Optical Assistant
 
 **An offline optics lab and study companion for PHY104.** Built with C++20 and Qt 6 for Windows and Linux. The app needs no AI service, account, database, or internet connection.
 
@@ -29,15 +29,15 @@
 
 ![PHY104 Optical Assistant dashboard — a project by Movdy](docs/screenshots/readme-cover.png)
 
-## Download v2.9.0
+## Download v2.3.0
 
 | Platform | Download |
 |---|---|
-| **Windows x64 installer** | [PHY104 Optical Assistant Setup](https://github.com/movdy2/phy104-sim/releases/download/2.9/PHY104OpticalAssistant-2.9.0-Windows-x64-Setup.exe) |
-| **Windows x64 portable** | [Portable ZIP](https://github.com/movdy2/phy104-sim/releases/download/2.9/PHY104OpticalAssistant-2.9.0-Windows-x64-portable.zip) |
-| **Linux x86_64** | [AppImage](https://github.com/movdy2/phy104-sim/releases/download/2.9/PHY104OpticalAssistant-2.9.0-Linux-x86_64.AppImage) |
+| **Windows x64 installer** | [PHY104 Optical Assistant Setup](https://github.com/movdy2/phy104-sim/releases/download/v2.3.0/PHY104OpticalAssistant-2.3.0-Windows-x64-Setup.exe) |
+| **Windows x64 portable** | [Portable ZIP](https://github.com/movdy2/phy104-sim/releases/download/v2.3.0/PHY104OpticalAssistant-2.3.0-Windows-x64-portable.zip) |
+| **Linux x86_64** | [AppImage](https://github.com/movdy2/phy104-sim/releases/download/v2.3.0/PHY104OpticalAssistant-2.3.0-Linux-x86_64.AppImage) |
 
-See the [v2.9.0 release page](https://github.com/movdy2/phy104-sim/releases/tag/v2.3.0) for all files and release notes.
+See the [v2.3.0 release page](https://github.com/movdy2/phy104-sim/releases/tag/v2.3.0) for all files and release notes.
 
 ### Installation
 
@@ -128,5 +128,3 @@ The built-in formulas, constants, chapters, keyboard definitions, and optics pre
 Created for the PHY104 course at Zewail University of Science and Technology by [**Movdy2**](https://github.com/movdy2), with a contribution from **Ahmed Samir**. Scientific supervision and review were provided by **Dr. Ashraf**, the course instructor.
 
 The interface design was prepared with Figma AI. AI tools also helped speed up development and troubleshoot issues; the app itself runs locally and does not depend on an AI service.
-
-#zewail-city
