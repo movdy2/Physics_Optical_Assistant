@@ -310,6 +310,12 @@ jobs:
           path: release-assets
           merge-multiple: true
 
+      - name: Generate SHA256 checksums for release assets
+        run: |
+          cd release-assets
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
       - name: Create release with app packages
         env:
           GH_TOKEN: ${{ github.token }}
