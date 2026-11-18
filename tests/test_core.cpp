@@ -880,6 +880,7 @@ int main() {
 
     // ---------- Michelson fringe shift formula (ΔOPD = 2nΔx) ----------
     {
+        namespace WE = WaveExperiments;
         // ΔOPD = 2nΔx: round-trip path change. With n=1 air and Δx=0.3164 µm ≈ λ/(2n),
         // ΔOPD ≈ 632.8 nm = one wavelength → one fringe shift.
         MichelsonInput m1; m1.lambdaNm = 632.8; m1.displacementUm = 0.3164; m1.n = 1.0;
