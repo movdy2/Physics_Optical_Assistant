@@ -737,16 +737,34 @@ void MichelsonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
         text(p, QPointF(m2x + 6.0, bs.y() - 26.0), "Air · n = " + num(m_in.n, 4), t.muted, 9);
     }
 
-    // Input beam, two perpendicular round trips, and the recombined output to the detector.
-    ray(p, source + QPointF(8, 0), bs - QPointF(14, 0), t.amber, 1.8);
-    ray(p, bs + QPointF(-4, -14), QPointF(bs.x() - 4, m1.y() + 4), t.amber, 1.6);
-    ray(p, QPointF(bs.x() + 4, m1.y() + 4), bs + QPointF(4, -14), t.text, 1.3);
-    ray(p, bs + QPointF(14, -4), QPointF(m2x - 5, bs.y() - 4), t.amber, 1.6);
-    ray(p, QPointF(m2x - 5, bs.y() + 4), bs + QPointF(14, 4), t.text, 1.3);
-    // Recombined beam to detector: brightness and thickness follow I/Imax (visual SFX).
+    // Beam path tracing: draw each complete round-trip arm as a traced path with
+    // direction arrows and path-length labels.  Source → BS → mirror → BS → detector.
+    const QPointF bsOut(bs.x() - 4, bs.y());                 // BS output port (toward source side)
+    const QPointF bsIn(bs.x() + 4, bs.y());                  // BS input port (toward detector side)
+
+    // --- M1 arm (top): BS → M1 → BS  — amber path
+    const QPointF m1Out(bs.x() - 4, m1.y() + 4);             // BS → M1 departure
+    const QPointF m1Back(bs.x() + 4, m1.y() + 4);            // M1 → BS return
+    const double m1Len = std::hypot(m1.x() - bs.x(), m1.y() - bs.y());
+    ray(p, source + QPointF(8, 0), bsOut - QPointF(14, 0), t.amber, 1.8);        // source → BS
+    ray(p, bsOut + QPointF(0, -14), m1Out, t.amber, 1.6);                       // BS → M1
+    ray(p, m1Back, bsIn + QPointF(0, -14), t.amber, 1.3);                       // M1 → BS
+    text(p, QPointF((bs.x() + m1.x()) / 2, bs.y() - 40),
+         "M1 arm · " + num(m1Len, 1) + " px", t.amber, 9, Qt::AlignHCenter);
+
+    // --- M2 arm (side): BS → M2 → BS  — sage path
+    const QPointF m2Out(m2x - 5, bs.y() - 4);              // BS → M2 departure
+    const QPointF m2Back(m2x - 5, bs.y() + 4);             // M2 → BS return
+    const double m2Len = std::hypot(m2x - bs.x(), 0.0);
+    ray(p, bsOut + QPointF(14, 0), m2Out, t.sage, 1.6);                      // BS → M2
+    ray(p, m2Back, bsIn + QPointF(0, 14), t.sage, 1.3);                      // M2 → BS
+    text(p, QPointF((bs.x() + m2x) / 2, bs.y() - 40),
+         "M2 arm · " + num(m2Len, 1) + " px", t.sage, 9, Qt::AlignHCenter);
+
+    // --- Recombined beam: BS → detector  — brightness follows I/Imax
     QColor detBeam = t.amber;
     detBeam.setAlpha(static_cast<int>(150 + 105 * intensity));
-    ray(p, bs + QPointF(0, 14), detector, detBeam, 1.4 + 1.2 * intensity);
+    ray(p, bsIn + QPointF(0, 14), detector, detBeam, 1.4 + 1.2 * intensity);
 
     // Beam splitter and the fixed-mirror-arm compensator C (M1 arm).
     p.setPen(QPen(t.sage, 1.6));
@@ -824,6 +842,10 @@ void MichelsonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     text(p, QPointF(a.left() + 14, a.bottom() - 46), m_in.fringes
              ? "Contrast V = " + num(vis, 2) + " · sweep ±2 µm"
              : "Concentric fringes · schematic", t.muted, 9);
+    // Beam path tracing legend: color-coded arms
+    legendItem(p, QPointF(a.left() + 14, a.bottom() - 66), "M1 arm (top)", t.amber);
+    legendItem(p, QPointF(a.left() + 120, a.bottom() - 66), "M2 arm (side)", t.sage);
+    legendItem(p, QPointF(a.left() + 226, a.bottom() - 66), "Recombined → detector", t.amber);
 }
 
 void ThinFilmCanvas::paintDiagram(QPainter& p, const QRectF& a) {
