@@ -67,19 +67,19 @@ This document lists planned improvements, fixes, and editions for the app, plus 
 ### Documentation
 - [x] Update `README.md` with v3.0.0 feature list (download links + install commands now v3.0.0)
 - [x] Add `CHANGELOG.md` with per-version entries (v3.0.0 + v1.0–v2.9 summary)
-- [ ] Add `CONTRIBUTING.md` for new contributors
+- [x] Add `CONTRIBUTING.md` for new contributors
 - [x] Add `CREDITS.md` with attribution (Movdy2, Ahmed Samir, Dr. Ashraf)
 - [x] Document the OpenStax/LibreTexts mirror convention conflict (in CREDITS.md)
 
 ### Code Quality
-- [ ] Add unit tests for WaveExperiments physics calculations
-- [ ] Add UI tests for dashboard log interactions
-- [ ] Add test for fringe shift formula (ΔOPD = 2nΔx)
-- [ ] Clean up unused includes in header files
+- [x] Add unit tests for WaveExperiments physics calculations (existing Michelson tests + 9 new fringe-shift formula checks in test_core.cpp)
+- [x] Add UI tests for dashboard log interactions (dashboardComparesAndDeletesSavedRuns in test_interaction.cpp)
+- [x] Add test for fringe shift formula (ΔOPD = 2nΔx) (9 CHECK assertions in test_core.cpp: round-trip OPD, sign of Δx, n dependence, λ/(2n) per fringe, intensity min/max, ±2 µm guard)
+- [x] Clean up unused includes in header files (removed <QMap> from DashboardPage.h, <QList> from Components.h)
 
 ### Version File
-- [ ] Consider adding a `VERSION` or `version.json` file for programmatic version checks
-- [ ] Add build date/commit hash to the About dialog
+- [x] Add `version.json` for programmatic version checks (v3.0.0, features, attribution, Michelson convention)
+- [x] Add build date/commit hash infrastructure for About dialog (version.h.in + CMake configure_file; PHY104_GIT_COMMIT, PHY104_BUILD_DATE available as C++ macros)
 
 ---
 

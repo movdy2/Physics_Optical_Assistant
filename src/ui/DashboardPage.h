@@ -1,8 +1,6 @@
 #pragma once
 #include "BasePage.h"
 
-#include <QMap>
-
 class QCheckBox;
 class QComboBox;
 class QLabel;
