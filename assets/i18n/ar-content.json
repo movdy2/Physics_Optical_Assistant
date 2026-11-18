@@ -291,5 +291,17 @@
   "A point source spreads its power over a sphere, so the power per unit area falls with the square of the distance. Real lamps are not point sources, which is why the law only holds far from them.": "يوزّع المصدر النقطي قدرته على سطح كرة، ولذلك تتناسب القدرة لكل وحدة مساحة عكسيًا مع مربع المسافة. أما المصابيح الحقيقية فليست مصادر نقطية، ولهذا لا يصح القانون إلا على مسافة كبيرة منها.",
   "Illuminance is the luminous intensity divided by the squared distance: doubling the distance gives a quarter of the light.": "تساوي الاستضاءة الشدة الضوئية مقسومة على مربع المسافة؛ فمضاعفة المسافة تخفض الاستضاءة إلى ربع قيمتها.",
   "Luminous flux is intensity times the solid angle it is radiated into; a full sphere is 4π steradians.": "يساوي التدفق الضوئي الشدة الضوئية مضروبة في الزاوية المجسمة التي ينتشر فيها الضوء؛ وتساوي الزاوية المجسمة لكرة كاملة 4π ستيراديان.",
-  "The inverse-square law used as a comparison: the product of illuminance and squared distance stays constant.": "يُستخدم قانون التربيع العكسي للمقارنة؛ إذ يبقى حاصل ضرب الاستضاءة في مربع المسافة ثابتًا."
+  "The inverse-square law used as a comparison: the product of illuminance and squared distance stays constant.": "يُستخدم قانون التربيع العكسي للمقارنة؛ إذ يبقى حاصل ضرب الاستضاءة في مربع المسافة ثابتًا.",
+  "Michelson Optical Path Difference": "فرق المسار البصري في مقياس ميكلسون",
+  "Michelson Fringe Count": "عدد الأهداب في مقياس ميكلسون",
+  "Fringe Visibility": "تباين الأهداب",
+  "Optical path difference": "فرق المسار البصري",
+  "Fringe count / shift": "عدد الأهداب المنقولة",
+  "Minimum intensity": "الشدة الصغرى",
+  "Round-trip optical path difference introduced by moving one Michelson mirror": "فرق المسار البصري ذهابًا وإيابًا الناتج عن تحريك مرآة واحدة في مقياس ميكلسون",
+  "Number of fringes shifted as the Michelson mirror moves": "عدد الأهداب المنقولة عند تحريك مرآة مقياس ميكلسون",
+  "Minimum intensity of the recombined beams in an interferometer": "أدنى شدة للحزمتين المنعكستين في مقياس تداخل",
+  "Enter n ≥ 0 and a mirror displacement y.": "أدخل n ≥ 0 وإزاحة المرآة y.",
+  "Enter ΔOPD and λ₀ > 0.": "أدخل فرق المسار البصري ΔOPD والطول الموجي في الفراغ λ₀ > 0.",
+  "Enter I_max and I_min ≥ 0, not both zero.": "أدخل I_max وI_min ≥ 0، وليسا صفرين معًا."
 }
