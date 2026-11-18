@@ -12,6 +12,7 @@ class QVBoxLayout;
 namespace phy104 {
 
 class LineChart;
+struct ChartSeries;
 struct RunRecord;
 
 class DashboardPage : public BasePage {

@@ -819,7 +819,7 @@ void MichelsonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     // Live fringe counter: ΔN = ΔOPD / λ = 2nΔx / λ — how many fringes have shifted as M2 moves.
     const double shift = 2 * m_in.n * dxUm * 1e3 / m_in.lambdaNm;
     text(p, QPointF(detector.x() + 12, detector.y() + 24),
-         "ΔN = " + (shift >= 0 ? "+" : "-") + num(std::fabs(shift), 4) + " fringes",
+         QString::fromStdString(std::string("ΔN = ") + (shift >= 0 ? "+" : "-") + num(std::fabs(shift), 4) + " fringes"),
          shift >= 0 ? t.lime : t.amber, 10, Qt::AlignLeft, true);
     text(p, QPointF(detector.x() + 12, detector.y() + 38),
          "Fringes crossed from zero: " + num(std::fabs(shift), 4),

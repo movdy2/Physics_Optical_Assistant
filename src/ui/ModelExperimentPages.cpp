@@ -249,8 +249,7 @@ MichelsonPage::MichelsonPage(AppContext* ctx, QWidget* parent)
     });
 
     // Index slider: moving it sets n and re-applies; choosing a medium preset updates the slider.
-    connect(m_nSlider, &QSlider::valueChanged, this, [this](int value) {
-        const double n = value / 1000.0;
+    connect(m_nSlider, &QSlider::valueChanged, this, [this](int) {
         m_medium->setCurrentIndex(m_medium->count() - 1);  // "Custom"
         apply(false);
     });
