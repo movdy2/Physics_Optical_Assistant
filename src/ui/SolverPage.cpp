@@ -5,7 +5,10 @@
 
 #include "ThemeManager.h"
 
+#include <QApplication>
+#include <QClipboard>
 #include <QComboBox>
+#include <QTimer>
 #include <QFormLayout>
 #include <QFrame>
 #include <QHBoxLayout>
@@ -13,7 +16,7 @@
 #include <QLineEdit>
 #include <QListWidget>
 #include <QPushButton>
-#include <QStyle>
+#include <QSplitter>
 #include <QTextBrowser>
 #include <QVBoxLayout>
 
@@ -24,10 +27,11 @@ SolverPage::SolverPage(std::shared_ptr<FormulaEngine> engine, std::shared_ptr<Fo
     : BasePage("Formula Solver", "Search equations and solve for one unknown.", context, parent),
       m_engine(std::move(engine)), m_manager(std::move(manager)), m_solver(std::move(solver)) {
 
-    // ------------------------------------------------------------ left: formula browser
+    // ============================================================ left: formula browser
     auto* browser = new QFrame;
     browser->setObjectName("card");
-    browser->setFixedWidth(390);
+    browser->setMinimumWidth(340);
+    browser->setMaximumWidth(560);
 
     auto* browserTitle = new QLabel("Formulas");
     browserTitle->setObjectName("sectionTitle");
@@ -38,12 +42,38 @@ SolverPage::SolverPage(std::shared_ptr<FormulaEngine> engine, std::shared_ptr<Fo
 
     m_chapter = new QComboBox;
 
+    // Recent formulas panel
+    auto* recentPanel = new QFrame;
+    recentPanel->setObjectName("card");
+    auto* recentTitle = new QLabel("Recent formulas");
+    recentTitle->setObjectName("sectionTitle");
+    m_recentList = new QListWidget;
+    m_recentList->setFrameShape(QFrame::NoFrame);
+    m_recentList->setMaximumHeight(140);
+    m_recentList->setStyleSheet(
+        "QListWidget { background: transparent; border: none; } "
+        "QListWidget::item { border: none; padding: 4px; }");
+    auto* recentLayout = new QVBoxLayout(recentPanel);
+    recentLayout->setContentsMargins(12, 12, 12, 12);
+    recentLayout->setSpacing(8);
+    recentLayout->addWidget(recentTitle);
+    recentLayout->addWidget(m_recentList, 1);
+
     m_list = new QListWidget;
     m_list->setItemDelegate(new FormulaListDelegate(m_list));
     m_list->setMouseTracking(true);
     m_list->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
     m_list->setFrameShape(QFrame::NoFrame);
-    m_list->setStyleSheet("QListWidget { background: transparent; border: none; } QListWidget::item { border: none; }");
+    m_list->setStyleSheet(
+        "QListWidget { background: transparent; border: none; } "
+        "QListWidget::item { border: none; }");
+
+    m_emptyState = new QLabel("No formulas match your search.\n"
+                              "Try a different keyword or clear the search box.");
+    m_emptyState->setObjectName("hint");
+    m_emptyState->setAlignment(Qt::AlignCenter);
+    m_emptyState->setWordWrap(true);
+    m_emptyState->hide();
 
     m_pageSize = new QComboBox;
     for (int n : {3, 5, 10, 20}) m_pageSize->addItem(QString::number(n), n);
@@ -75,11 +105,15 @@ SolverPage::SolverPage(std::shared_ptr<FormulaEngine> engine, std::shared_ptr<Fo
     bl->addWidget(browserTitle);
     bl->addWidget(m_search);
     bl->addWidget(m_chapter);
-    bl->addLayout(limitRow);
+    bl->addWidget(recentPanel);
+    bl->addWidget(m_emptyState);
     bl->addWidget(m_list, 1);
+    bl->addLayout(limitRow);
     bl->addLayout(pagerRow);
 
-    // ------------------------------------------------------------ right: solver
+    // ============================================================ right: solver
+    auto* right = new QVBoxLayout;
+
     m_formulaName = new QLabel;
     m_formulaName->setObjectName("sectionTitle");
     m_formulaChapter = new QLabel;
@@ -99,9 +133,13 @@ SolverPage::SolverPage(std::shared_ptr<FormulaEngine> engine, std::shared_ptr<Fo
     auto* solveBtn = new QPushButton("Solve");
     solveBtn->setObjectName("primary");
     auto* clearBtn = new QPushButton("Clear");
+    m_copyBtn = new QPushButton("Copy result");
+    m_copyBtn->setObjectName("flat");
+    m_copyBtn->setEnabled(false);
     auto* buttons = new QHBoxLayout;
     buttons->addWidget(solveBtn);
     buttons->addWidget(clearBtn);
+    buttons->addWidget(m_copyBtn);
     buttons->addStretch();
 
     m_status = new QLabel;
@@ -118,7 +156,16 @@ SolverPage::SolverPage(std::shared_ptr<FormulaEngine> engine, std::shared_ptr<Fo
     ThemeManager::polishLcdFont(m_output);
     m_output->setMinimumHeight(140);
 
-    auto* right = new QVBoxLayout;
+    // Variable help panel: describes what each input means.
+    m_varHelp = new QTextBrowser;
+    m_varHelp->setObjectName("lcdScreen");
+    ThemeManager::polishLcdFont(m_varHelp);
+    m_varHelp->setMinimumHeight(100);
+    m_varHelp->setMaximumHeight(160);
+    m_varHelp->setOpenExternalLinks(false);
+    m_varHelp->setReadOnly(true);
+    m_varHelp->hide();
+
     right->addWidget(m_formulaName);
     right->addWidget(m_formulaChapter);
     right->addWidget(m_formulaLatex);
@@ -128,23 +175,43 @@ SolverPage::SolverPage(std::shared_ptr<FormulaEngine> engine, std::shared_ptr<Fo
     right->addWidget(m_status);
     right->addWidget(m_answer);
     right->addWidget(m_output, 1);
+    right->addWidget(m_varHelp);
+
+    // ============================================================ root: resizable split
+    m_splitter = new QSplitter(Qt::Horizontal);
+    m_splitter->addWidget(browser);
+
+    auto* rightContainer = new QFrame;
+    rightContainer->setLayout(right);
+    m_splitter->addWidget(rightContainer);
+
+    // Give the solver side more initial space.
+    m_splitter->setStretchFactor(0, 0);
+    m_splitter->setStretchFactor(1, 1);
+    m_splitter->setSizes({340, 660});
 
     auto* root = new QHBoxLayout;
-    root->addWidget(browser);
-    root->addLayout(right, 1);
+    root->addWidget(m_splitter, 1);
     content()->addLayout(root, 1);
 
+    // ============================================================ connections
     connect(m_search, &QLineEdit::textChanged, this, &SolverPage::onSearchChanged);
     connect(m_chapter, &QComboBox::currentIndexChanged, this, &SolverPage::onChapterChanged);
     connect(m_pageSize, &QComboBox::currentIndexChanged, this, &SolverPage::onPageSizeChanged);
     connect(m_list, &QListWidget::itemSelectionChanged, this, &SolverPage::onItemSelected);
+    connect(m_recentList, &QListWidget::itemClicked, this, [this](QListWidgetItem* item) {
+        const QString id = item->data(Qt::UserRole).toString();
+        if (!id.isEmpty()) onRecentFormula(id);
+    });
     connect(m_prev, &QPushButton::clicked, this, &SolverPage::prevPage);
     connect(m_next, &QPushButton::clicked, this, &SolverPage::nextPage);
     connect(solveBtn, &QPushButton::clicked, this, &SolverPage::onSolve);
     connect(clearBtn, &QPushButton::clicked, this, &SolverPage::onClear);
+    connect(m_copyBtn, &QPushButton::clicked, this, &SolverPage::onCopyResult);
 
     refreshChapterCombo();
     refreshList(true);
+    refreshRecent();
     if (m_list->count() > 0) {                                     // select the first real formula
         for (int i = 0; i < m_list->count(); ++i) { m_list->setCurrentRow(i); break; }
     }
@@ -171,6 +238,24 @@ void SolverPage::refreshChapterCombo() {
     m_chapter->setCurrentIndex(idx >= 0 ? idx : 0);
 }
 
+void SolverPage::refreshRecent() {
+    m_recentList->clear();
+    if (m_recent.isEmpty()) {
+        m_recentList->addItem("(none yet)");
+        m_recentList->setEnabled(false);
+        return;
+    }
+    m_recentList->setEnabled(true);
+    for (const QString& id : m_recent) {
+        const Formula* f = m_engine->findById(id.toStdString());
+        if (!f) continue;
+        auto* item = new QListWidgetItem(QString::fromStdString(f->name));
+        item->setData(Qt::UserRole, id);
+        item->setToolTip(QString::fromStdString(f->chapter.empty() ? "" : m_manager->chapterTitle(f->chapter)));
+        m_recentList->addItem(item);
+    }
+}
+
 void SolverPage::refreshList(bool resetPage) {
     m_results = m_manager->search(m_search->text().toStdString(), m_chapter->currentData().toString().toStdString());
     if (resetPage) m_pageIndex = 0;
@@ -189,12 +274,20 @@ void SolverPage::refreshList(bool resetPage) {
                       f->chapter != lastChapter ? QString::fromStdString(m_manager->chapterTitle(f->chapter)) : QString());
         item->setData(FormulaListDelegate::LatexRole,
                       QString::fromStdString(f->latex.empty() ? f->equation : f->latex));
+        item->setToolTip(QString::fromStdString(f->noSolutionHint.empty() ? f->name : f->noSolutionHint));
         lastChapter = f->chapter;
         m_list->addItem(item);
         if (QString::fromStdString(f->id) == keepId) reselect = m_list->count() - 1;
     }
     if (reselect >= 0) m_list->setCurrentRow(reselect);
 
+    const bool empty = page.total == 0;
+    m_emptyState->setVisible(empty);
+    m_list->setVisible(!empty);
+    m_emptyState->setText(empty
+        ? QString("No formulas match “%1”.\nTry a different keyword or clear the search box.")
+              .arg(m_search->text())
+        : QString());
     m_pageLabel->setText(page.total == 0
         ? QString("No formulas found")
         : QString("Page %1 / %2  ·  %3 formulas").arg(page.pageIndex + 1).arg(page.pageCount).arg(page.total));
@@ -215,6 +308,22 @@ void SolverPage::onItemSelected() {
     if (f && f != m_current) showFormula(*f);
 }
 
+void SolverPage::onRecentFormula(const QString& id) {
+    const Formula* f = m_engine->findById(id.toStdString());
+    if (!f) return;
+    m_search->clear();
+    QSignalBlocker block(m_chapter);
+    m_chapter->setCurrentIndex(0);
+    refreshChapterCombo();
+    m_results = m_manager->search("", "");
+    const int size = m_pageSize->currentData().toInt();
+    for (std::size_t i = 0; i < m_results.size(); ++i)
+        if (m_results[i] == f) { m_pageIndex = static_cast<int>(i) / size; break; }
+    m_current = f;
+    refreshList(false);
+    showFormula(*f);
+}
+
 void SolverPage::selectFormula(const QString& id) {
     const Formula* f = m_engine->findById(id.toStdString());
     if (!f) return;
@@ -231,9 +340,19 @@ void SolverPage::selectFormula(const QString& id) {
     showFormula(*f);
 }
 
+void SolverPage::addToRecent(const std::string& id) {
+    QString qid = QString::fromStdString(id);
+    m_recent.removeAll(qid);
+    m_recent.prepend(qid);
+    while (m_recent.size() > 8) m_recent.removeLast();
+    refreshRecent();
+}
+
 // ------------------------------------------------------------------ solver logic
 void SolverPage::showFormula(const Formula& formula) {
     m_current = &formula;
+    addToRecent(formula.id);
+
     m_formulaName->setText(QString::fromStdString(formula.name));
     m_formulaChapter->setText(QString::fromStdString(m_manager->chapterTitle(formula.chapter)));
     m_formulaLatex->setLatex(QString::fromStdString(formula.latex.empty() ? formula.equation : formula.latex));
@@ -253,14 +372,57 @@ void SolverPage::showFormula(const Formula& formula) {
         connect(edit, &QLineEdit::returnPressed, this, &SolverPage::onSolve);
         m_edits[var.id] = edit;
 
+        // Label: symbol (name) + optional required/optional tag + unit chip
+        const bool optional = !var.defaultValue.empty();
+        QString tag;
+        if (optional)
+            tag = " <span style='color:#8a94a6;font-size:8pt;'>(optional)</span>";
+        else
+            tag = " <span style='color:#fb4934;font-size:8pt;'>(required)</span>";
+        QString unitChip;
+        if (!unit.empty()) {
+            unitChip = " <span style='color:#d79921;font-size:8pt;'>["
+                       + QString::fromStdString(unit) + "]</span>";
+        }
         auto* label = new QLabel(QString::fromStdString(var.display) + "  <span style='color:gray'>" +
-                                 QString::fromStdString(var.name).toHtmlEscaped() + "</span>");
+                                 QString::fromStdString(var.name).toHtmlEscaped() + "</span>" + tag + unitChip);
         label->setTextFormat(Qt::RichText);
+        label->setToolTip(QString::fromStdString(var.name + (var.description.empty() ? "" : " - " + var.description)));
         m_form->addRow(label, edit);
     }
     setStatus("", "");
     m_answer->hide();
     m_output->clear();
+    m_copyBtn->setEnabled(false);
+    updateVariableHelp();
+}
+
+void SolverPage::updateVariableHelp() {
+    if (!m_current) { m_varHelp->hide(); return; }
+
+    QString html;
+    html += "<p style='margin:0 0 4px 0;'><b>" +
+            QString::fromStdString(m_current->name) + "</b> &mdash; " +
+            QString::fromStdString(m_manager->chapterTitle(m_current->chapter)) + "</p>";
+    if (!m_current->noSolutionHint.empty()) {
+        html += "<p style='margin:0 0 6px 0; color:#d79921; font-size:9pt;'>" +
+                QString::fromStdString(m_current->noSolutionHint) + "</p>";
+    }
+    html += "<ul style='margin:0; padding-left:16px; font-size:9pt;'>";
+    for (const auto& var : m_current->variables) {
+        html += "<li style='margin-bottom:2px;'><b>" + QString::fromStdString(var.display) +
+                "</b> (" + QString::fromStdString(var.name) + ")";
+        if (!var.unit.empty())
+            html += " &mdash; unit: <i>" + QString::fromStdString(var.unit) + "</i>";
+        if (!var.description.empty())
+            html += ": " + QString::fromStdString(var.description);
+        if (!var.defaultValue.empty())
+            html += " <span style='color:#8a94a6;'>(default: " + QString::fromStdString(var.defaultValue) + ")</span>";
+        html += "</li>";
+    }
+    html += "</ul>";
+    m_varHelp->setHtml(html);
+    m_varHelp->show();
 }
 
 void SolverPage::setStatus(const QString& kind, const QString& text) {
@@ -279,6 +441,7 @@ void SolverPage::onSolve() {
 
     const SolveResult r = m_solver->solve(*m_current, inputs);
     m_answer->hide();
+    m_copyBtn->setEnabled(false);
     if (!r.ok) {
         const QString message = QString::fromStdString(r.error);
         if (r.physical) {                                         // physics warning: orange
@@ -293,7 +456,11 @@ void SolverPage::onSolve() {
 
     setStatus("Ok", "✔ Solved   ·   check: " + QString::fromStdString(r.checkSummary));
     m_answer->setLatex(QString::fromStdString(r.answerLatex));
+    m_answer->setInkColor(ThemeManager::instance().theme().lime);
     m_answer->show();
+
+    m_lastAnswerLatex = QString::fromStdString(r.answerLatex);
+    m_copyBtn->setEnabled(true);
 
     QString html;
     for (const auto& step : r.steps) {
@@ -305,6 +472,20 @@ void SolverPage::onSolve() {
 
 void SolverPage::onClear() {
     if (m_current) showFormula(*m_current);
+}
+
+void SolverPage::onCopyResult() {
+    if (m_lastAnswerLatex.isEmpty()) return;
+    QClipboard* cb = QApplication::clipboard();
+    cb->setText(m_lastAnswerLatex);
+    // Brief visual confirmation on the copy button.
+    const QString original = m_copyBtn->text();
+    m_copyBtn->setText("Copied!");
+    m_copyBtn->setEnabled(false);
+    QTimer::singleShot(1200, this, [this, original] {
+        m_copyBtn->setText(original);
+        m_copyBtn->setEnabled(true);
+    });
 }
 
 } // namespace phy104

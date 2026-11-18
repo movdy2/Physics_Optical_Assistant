@@ -10,6 +10,7 @@
 #include <functional>
 #include <QPainter>
 #include <QPainterPath>
+#include <QMouseEvent>
 #include <QtMath>
 #include <algorithm>
 #include <cmath>
@@ -23,6 +24,7 @@ namespace TL = ThickLens;
 namespace {
 
 constexpr double kDeg = std::numbers::pi / 180.0;
+constexpr double kMichelsonPixelsPerUm = 10.0;
 const Theme& th() { return ThemeManager::instance().theme(); }
 
 QFont monoFont(int px, bool bold = false) {
@@ -643,50 +645,176 @@ void NewtonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     text(p, QPointF(14, a.bottom() - 14), transmitted ? "Dark rings: 2nt = (m + ½)λ." : "Dark rings: 2nt = mλ.", t.muted, 10);
 }
 
+MichelsonCanvas::MichelsonCanvas(QWidget* parent) : GridCanvas(parent) {
+    setMinimumSize(300, 330);
+    setMouseTracking(true);
+    setAccessibleName("Michelson interferometer optical bench");
+    setAccessibleDescription("M2 is the movable mirror. Drag it left or right along its arm, or use the mirror travel slider.");
+    setToolTip("Drag the amber M2 mirror left or right along its arm. Its travel updates the path difference and fringes.");
+}
+
+QPointF MichelsonCanvas::movableMirrorCenter() const {
+    const double splitterX = width() * 0.38;
+    const double referenceY = bsY();
+    const double m2x = width() - 70.0;
+    const double armLength = m2x - splitterX;
+    const double travel = std::clamp(m_in.displacementUm, -kMaxInteractiveTravelUm, kMaxInteractiveTravelUm);
+    return QPointF(splitterX + armLength + travel * kMichelsonPixelsPerUm, referenceY);
+}
+
+double MichelsonCanvas::bsY() const {
+    return height() * 0.43;
+}
+
+bool MichelsonCanvas::isNearMovableMirror(const QPointF& point) const {
+    const QPointF mirror = movableMirrorCenter();
+    return QRectF(mirror.x() - 12.0, mirror.y() - 27.0, 24.0, 54.0).contains(point);
+}
+
+void MichelsonCanvas::mousePressEvent(QMouseEvent* event) {
+    if (event->button() == Qt::LeftButton && isNearMovableMirror(event->position())) {
+        m_draggingM2 = true;
+        m_dragOffsetY = event->position().x() - movableMirrorCenter().x();
+        setCursor(Qt::ClosedHandCursor);
+        event->accept();
+        return;
+    }
+    event->ignore();
+}
+
+void MichelsonCanvas::mouseMoveEvent(QMouseEvent* event) {
+    if (m_draggingM2) {
+        const double splitterX = width() * 0.38;
+        const double m2x = width() - 70.0;
+        const double armLength = m2x - splitterX;
+        const double centerX = event->position().x() - m_dragOffsetY;
+        const double travel = (centerX - splitterX - armLength) / kMichelsonPixelsPerUm;
+        const double bounded = std::clamp(travel, -kMaxInteractiveTravelUm, kMaxInteractiveTravelUm);
+        emit mirrorDisplacementChanged(std::round(bounded * 1000.0) / 1000.0);
+        event->accept();
+        return;
+    }
+    setCursor(isNearMovableMirror(event->position()) ? Qt::OpenHandCursor : Qt::ArrowCursor);
+    event->ignore();
+}
+
+void MichelsonCanvas::mouseReleaseEvent(QMouseEvent* event) {
+    if (event->button() == Qt::LeftButton && m_draggingM2) {
+        m_draggingM2 = false;
+        setCursor(isNearMovableMirror(event->position()) ? Qt::OpenHandCursor : Qt::ArrowCursor);
+        event->accept();
+        return;
+    }
+    event->ignore();
+}
+
 void MichelsonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     const Theme& t = th();
-    const QPointF bs(a.center().x() - 20, a.top() + a.height() * 0.40);
-    text(p, QPointF(14, a.top() + 18), "MICHELSON INTERFEROMETER · TOP VIEW", t.amber, 10);
-    // source -> beam splitter
-    ray(p, QPointF(a.left() + 24, bs.y()), bs - QPointF(14, 0), t.amber, 1.8);
-    text(p, QPointF(a.left() + 24, bs.y() - 16), "Source", t.muted, 10);
-    p.setPen(QPen(t.sage, 1.6)); p.setBrush(Qt::NoBrush);
+    const QPointF bs(a.left() + a.width() * 0.38, a.top() + a.height() * 0.43);
+    const QPointF m1(bs.x(), bs.y() - 84.0);          // M1 fixed, top arm
+    const double m2xHome = a.right() - 70.0;           // M2 home (zero travel) position
+    const double armLength = m2xHome - bs.x();         // geometric arm length, without travel
+    const double m2x = movableMirrorCenter().x();      // M2 current position (includes travel)
+    const QPointF source(a.left() + 24.0, bs.y());
+    const QPointF detector(bs.x(), a.bottom() - 116.0);
+    const double dxUm = std::clamp(m_in.displacementUm, -kMaxInteractiveTravelUm, kMaxInteractiveTravelUm);
+    const double vis = std::clamp(m_in.visibility, 0.0, 1.0);
+    const double dphi = 4 * std::numbers::pi * m_in.n * dxUm * 1e3 / m_in.lambdaNm;
+    const double intensity = (1 + vis * std::cos(dphi)) / (1 + vis);
+
+    text(p, QPointF(a.left() + 14, a.top() + 18), "MICHELSON · TOP VIEW", t.amber, 10);
+
+    // The arm medium occupies both paths conceptually; ΔOPD = 2nΔx for the movable M2 arm.
+    if (m_in.n > 1.0001) {
+        QColor cell = t.blue;
+        cell.setAlpha(45);
+        p.setPen(QPen(t.blue, 1, Qt::DashLine));
+        p.setBrush(cell);
+        const QRectF chamber(m2x - 8.0, bs.y() - 19.0, 16.0, 38.0);
+        p.drawRect(chamber);
+        text(p, QPointF(m2x + 6.0, chamber.center().y()), "Water cell · n = " + num(m_in.n, 4), t.blue, 9);
+    } else {
+        text(p, QPointF(m2x + 6.0, bs.y() - 26.0), "Air · n = " + num(m_in.n, 4), t.muted, 9);
+    }
+
+    // Input beam, two perpendicular round trips, and the recombined output to the detector.
+    ray(p, source + QPointF(8, 0), bs - QPointF(14, 0), t.amber, 1.8);
+    ray(p, bs + QPointF(-4, -14), QPointF(bs.x() - 4, m1.y() + 4), t.amber, 1.6);
+    ray(p, QPointF(bs.x() + 4, m1.y() + 4), bs + QPointF(4, -14), t.text, 1.3);
+    ray(p, bs + QPointF(14, -4), QPointF(m2x - 5, bs.y() - 4), t.amber, 1.6);
+    ray(p, QPointF(m2x - 5, bs.y() + 4), bs + QPointF(14, 4), t.text, 1.3);
+    // Recombined beam to detector: brightness and thickness follow I/Imax (visual SFX).
+    QColor detBeam = t.amber;
+    detBeam.setAlpha(static_cast<int>(150 + 105 * intensity));
+    ray(p, bs + QPointF(0, 14), detector, detBeam, 1.4 + 1.2 * intensity);
+
+    // Beam splitter and the fixed-mirror-arm compensator C (M1 arm).
+    p.setPen(QPen(t.sage, 1.6));
+    p.setBrush(t.canvas);
     p.drawRect(QRectF(bs.x() - 14, bs.y() - 14, 28, 28));
     p.drawLine(QPointF(bs.x() - 14, bs.y() + 14), QPointF(bs.x() + 14, bs.y() - 14));
-    text(p, bs + QPointF(0, 28), "BS", t.muted, 10, Qt::AlignHCenter);
-    // M1 (fixed, above) and M2 (movable, right)
-    const double m1y = bs.y() - 96, m2x = bs.x() + 130 + std::clamp(m_in.displacementUm, -1.0, 1.0) * 18;
-    p.setPen(QPen(t.sage, 3)); p.drawLine(QPointF(bs.x() - 22, m1y), QPointF(bs.x() + 22, m1y)); p.drawLine(QPointF(m2x, bs.y() - 22), QPointF(m2x, bs.y() + 22));
-    if (m_in.piezo) {                                                  // second tab: M1 rides on a piezo stack
+    const double cx = bs.x() + armLength * 0.46;
+    p.setPen(QPen(t.blue, 2.4));
+    p.drawLine(QPointF(cx - 5, bs.y() + 7), QPointF(cx + 5, bs.y() - 7));
+    p.drawLine(QPointF(cx - 2, bs.y() + 7), QPointF(cx + 8, bs.y() - 7));
+    text(p, QPointF(cx + 2, bs.y() + 20), "C · compensator", t.blue, 9, Qt::AlignHCenter);
+
+    // Visual SFX: drag glow around M2 when being grabbed, zero-crossing pulse near Δx = 0.
+    const bool dragging = m_draggingM2;
+    const bool nearZero = std::fabs(dxUm) < 0.02;
+    if (dragging) {
+        QColor glow = t.amber; glow.setAlpha(70);
+        p.setPen(QPen(glow, 10, Qt::SolidLine, Qt::RoundCap));
+        p.drawLine(QPointF(m2x - 26, bs.y()), QPointF(m2x + 26, bs.y()));
+    }
+    if (nearZero) {
+        QColor pulse = t.amber; pulse.setAlpha(120);
+        p.setPen(QPen(pulse, 1.4, Qt::DotLine));
+        p.drawArc(QRectF(m2x - 10, bs.y() - 10, 20, 20), 0, 360 * 16);
+    }
+    // Dashed zero mark at M2's home position; amber M2 shows the signed, draggable mirror travel; M1 remains fixed.
+    if (std::fabs(dxUm) > 1e-4) {
+        p.setPen(QPen(t.dim, 1, Qt::DashLine));
+        p.drawLine(QPointF(m2xHome - 25, bs.y()), QPointF(m2xHome + 25, bs.y()));
+    }
+    if (m_in.piezo) {
         p.setPen(QPen(t.blue, 2));
-        for (int k = 0; k < 3; ++k) p.drawLine(QPointF(bs.x() - 18, m1y - 6 - 4 * k), QPointF(bs.x() + 18, m1y - 6 - 4 * k));
-        text(p, QPointF(bs.x() - 24, m1y - 8), "piezo", t.blue, 10, Qt::AlignRight);
+        for (int k = 0; k < 3; ++k) {
+            const double x = m2x - 6.0 - 4.0 * k;
+            p.drawLine(QPointF(x, bs.y() - 18), QPointF(x, bs.y() + 18));
+        }
     }
-    text(p, QPointF(bs.x() + 30, m1y), m_in.piezo ? "M1 · piezo mount" : "M1 fixed", t.muted, 10);
-    text(p, QPointF(m2x + 8, bs.y() - 30), "M2 · Δx = " + QString(m_in.displacementUm > 0 ? "+" : "") + num(m_in.displacementUm, 4) + " µm", t.amber, 10);
-    p.setPen(QPen(t.dim, 1, Qt::DashLine)); p.drawLine(QPointF(bs.x() + 130, bs.y() + 34), QPointF(m2x, bs.y() + 34));
-    ray(p, bs + QPointF(0, -14), QPointF(bs.x(), m1y + 4), t.text, 1.6);
-    ray(p, bs + QPointF(14, 0), QPointF(m2x - 4, bs.y()), t.amber, 1.6);
-    ray(p, QPointF(bs.x() + 3, m1y + 4), bs + QPointF(3, 14), t.text, 1.3);
-    const QPointF det(bs.x(), a.bottom() - 110);
-    ray(p, bs + QPointF(0, 14), det, t.amber, 1.8);
-    text(p, det + QPointF(14, 0), "Detector", t.muted, 10);
-    // fringe disc: I = cos²(Δφ/2 + k r²), Δφ = 4πnΔx/λ
-    const double dphi = 4 * std::numbers::pi * m_in.n * m_in.displacementUm * 1e3 / m_in.lambdaNm;
-    const double vis = std::clamp(m_in.visibility, 0.0, 1.0);
-    const int size = static_cast<int>(std::min(118.0, a.height() * 0.30));
-    const QImage img = fringeImage(size, [dphi, size, vis](double dx, double dy) {
-        const double r2 = (dx * dx + dy * dy) / double((size / 2) * (size / 2));
-        return (1 + vis * std::cos(dphi + 18.0 * r2)) / (1 + vis);      // I = (1 + V cos Δφ_r)/(1 + V)
+    p.setPen(QPen(t.sage, 3, Qt::SolidLine, Qt::RoundCap));
+    p.drawLine(QPointF(bs.x(), m1.y() - 22), QPointF(bs.x(), m1.y() + 22));
+    // Mirror body: slightly larger when being dragged, amber highlight on the leading edge.
+    const double mirrorHalfW = dragging ? 26.0 : 22.0;
+    p.setPen(QPen(t.amber, dragging ? 4.0 : 3.0, Qt::SolidLine, Qt::RoundCap));
+    p.drawLine(QPointF(m2x - mirrorHalfW, bs.y()), QPointF(m2x + mirrorHalfW, bs.y()));
+    text(p, QPointF(bs.x() - 30, m1.y()), "M1 · fixed", t.muted, 9, Qt::AlignRight);
+    text(p, QPointF(m2x + 30, bs.y() - 5), "M2 · movable", t.amber, 9);
+    text(p, QPointF(m2x + 30, bs.y() + 10), "Δx = " + QString(dxUm > 0 ? "+" : "") + num(dxUm, 4) + " µm", t.muted, 9);
+    text(p, source + QPointF(-8, -20), "Source", t.muted, 9);
+    text(p, bs + QPointF(0, 28), "BS", t.muted, 9, Qt::AlignHCenter);
+    text(p, QPointF(detector.x() + 12, detector.y() - 8), "Detector", t.muted, 9);
+    text(p, QPointF(detector.x() + 12, detector.y() + 7), "I/Imax = " + num(intensity, 4), t.amber, 9);
+
+    // Circular detector fringes are a schematic radial phase map. At r = 0 it uses the same
+    // Δφ = 4πnΔx/λ and normalized intensity as the register above.
+    const int size = static_cast<int>(std::min(108.0, a.height() * 0.27));
+    const QImage img = fringeImage(size, [dphi, size, vis](double px, double py) {
+        const double r2 = (px * px + py * py) / double((size / 2) * (size / 2));
+        return (1 + vis * std::cos(dphi + 18.0 * r2)) / (1 + vis);
     });
-    const QPointF c(det.x(), a.bottom() - size / 2.0 - 16);
-    p.drawImage(QPointF(c.x() - size / 2.0, c.y() - size / 2.0), img);
-    text(p, QPointF(a.left() + 14, a.bottom() - 14), "ΔOPD = 2nΔx = " + num(2 * m_in.n * m_in.displacementUm, 4) + " µm", t.muted, 10);
-    if (m_in.fringes) {                                                // fringe-count tab: spacing and contrast on the bench
-        const double spacing = m_in.lambdaNm / (2 * m_in.n);
-        text(p, QPointF(a.left() + 14, a.bottom() - 30), "Fringe spacing λ/(2n) = " + num(spacing, 4) + " nm per fringe", t.muted, 10);
-        text(p, QPointF(a.left() + 14, a.bottom() - 44), "Contrast V = " + num(m_in.visibility, 2) + "  ·  sweep ±2 µm", t.muted, 10);
-    }
+    const QPointF fringeCenter(a.right() - size / 2.0 - 16.0, a.bottom() - size / 2.0 - 22.0);
+    p.drawImage(QPointF(fringeCenter.x() - size / 2.0, fringeCenter.y() - size / 2.0), img);
+    text(p, QPointF(fringeCenter.x(), fringeCenter.y() - size / 2.0 - 10.0), "FRINGE VIEW", t.amber, 9, Qt::AlignHCenter);
+
+    const double spacing = m_in.lambdaNm / (2 * m_in.n);
+    text(p, QPointF(a.left() + 14, a.bottom() - 14), "ΔOPD = 2nΔx = " + num(2 * m_in.n * dxUm, 4) + " µm", t.muted, 9);
+    text(p, QPointF(a.left() + 14, a.bottom() - 30), "λ/(2n) = " + num(spacing, 4) + " nm per fringe", t.muted, 9);
+    text(p, QPointF(a.left() + 14, a.bottom() - 46), m_in.fringes
+             ? "Contrast V = " + num(vis, 2) + " · sweep ±2 µm"
+             : "Concentric fringes · schematic", t.muted, 9);
 }
 
 void ThinFilmCanvas::paintDiagram(QPainter& p, const QRectF& a) {
