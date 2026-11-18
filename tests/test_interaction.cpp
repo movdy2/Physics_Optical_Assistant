@@ -53,6 +53,7 @@
 #include <QPalette>
 #include <QPlainTextEdit>
 #include <QPoint>
+#include <QPointF>
 #include <QRawFont>
 #include <QRect>
 #include <QPushButton>
@@ -859,13 +860,39 @@ private slots:
         chooseItem(comboWith(m_app->michelson, "Unequal beams · V = 0.60"), 1);
         QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->michelson), QString("316.4000 nm"), 1500);
         QTRY_VERIFY_WITH_TIMEOUT(allLabelTexts(m_app->michelson).join(QStringLiteral(" ")).contains("contrast V = 0.60"), 1500);
-        // reference-arm dropdown: M1 on a piezo, and the diagram says so
-        chooseItem(comboWith(m_app->michelson, "M1 on a piezo (static)"), 1);
-        QTRY_VERIFY_WITH_TIMEOUT(allLabelTexts(m_app->michelson).contains("Optical bench / piezo scan of M1"), 1500);
+        // M2 drive dropdown: piezo actuator, and the diagram says so
+        chooseItem(comboWith(m_app->michelson, "Piezo actuator"), 1);
+        QTRY_VERIFY_WITH_TIMEOUT(allLabelTexts(m_app->michelson).contains("Optical bench / piezo scan of M2"), 1500);
         click(modeTab(m_app->michelson, "Displacement"));
         QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->michelson), QString("+2.3704"), 1500);
         click(findControl(m_app->michelson, "resetParameters"));                                  // return to the default displacement mode
         QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->michelson), QString("+2.3704"), 1500);
+
+        // --- Michelson: dragging M2 syncs slider, field, and display ---
+        goTo(m_app->michelson);
+        auto* canvas = m_app->michelson->findChild<MichelsonCanvas*>(QStringLiteral("michelsonCanvas"));
+        QVERIFY2(canvas, "Michelson canvas not found");
+        auto* slider = m_app->michelson->findChild<QSlider*>(QStringLiteral("michelsonMirrorSlider"));
+        QVERIFY2(slider, "Michelson slider not found");
+
+        // Drag M2 rightward by +1 µm (10 px at 10 px/µm) from the default 0.75 µm → 1.75 µm
+        const QPointF mirrorCenter = canvas->movableMirrorCenter();
+        const QPoint pressPos = mirrorCenter.toPoint();
+        QTest::mousePress(canvas, Qt::LeftButton, Qt::NoModifier, pressPos);
+        QTest::mouseMove(canvas, pressPos + QPoint(10, 0));
+        QTest::mouseRelease(canvas, Qt::LeftButton, Qt::NoModifier, pressPos + QPoint(10, 0));
+        QApplication::processEvents();
+        QTRY_VERIFY_WITH_TIMEOUT(slider->value() == 17500, 1500);
+
+        // Slider → field/register: move slider to 0 µm → zero fringe shift
+        slider->setValue(0);
+        QApplication::processEvents();
+        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->michelson), QString("+0.0000"), 1500);
+
+        // Slider → field/register: move slider to −1 µm → negative fringe shift
+        slider->setValue(-10000);
+        QApplication::processEvents();
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->michelson).startsWith("-"), 1500);
 
         // --- Newton's rings: the viewing-mode dropdown now reaches the physics and the diagram
         goTo(m_app->newton);

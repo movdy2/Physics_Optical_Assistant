@@ -27,7 +27,8 @@ struct ModelReport {
 
 /// `transmitted` picks the second mode tab: reflected (false) or transmitted (true) light.
 struct NewtonInput    { double lambdaNm = 600, radiusM = 1.0, order = 4, n = 1.0; bool transmitted = false; };
-/// `fringes` and `piezo` are the second tab: count/tune fringes instead of stepping the mirror by Δx.
+/// `fringes` selects the spacing/count view; `piezo` selects the movable mirror's actuator (otherwise a micrometer).
+/// The classroom stage models mirror travel from −2 to +2 µm; moving it changes round-trip OPD by 2nΔx.
 struct MichelsonInput { double lambdaNm = 632.8, displacementUm = 0.75, n = 1.0, visibility = 1.0; bool fringes = false, piezo = false; };
 /// `transmission` picks the second mode tab: reflected (false) or transmitted (true) light.
 /// `colours` is the third tab: every wavelength at once - the perceived colour of the film.

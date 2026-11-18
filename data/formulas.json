@@ -13,7 +13,7 @@
       "equation": "na*sin(thetaa)=nb*sin(thetab)",
       "latex": "n_a\\sin\\theta_a=n_b\\sin\\theta_b",
       "chapter": "nature_of_light",
-      "noSolutionHint": "Total internal reflection: sin(θ_b) would be greater than 1, so no light is refracted - all of it is reflected."
+      "noSolutionHint": "Total internal reflection: sin(\u03b8_b) would be greater than 1, so no light is refracted - all of it is reflected."
     },
     {
       "id": "wavelength_medium",
@@ -103,7 +103,7 @@
       "equation": "NA=sqrt(n1^2-n2^2)",
       "latex": "NA=\\sqrt{n_1^2-n_2^2}",
       "chapter": "tir_prisms",
-      "noSolutionHint": "n₁ must be larger than n₂ (core index above cladding index)."
+      "noSolutionHint": "n\u2081 must be larger than n\u2082 (core index above cladding index)."
     },
     {
       "id": "prism_deviation",
@@ -118,7 +118,7 @@
       "equation": "sin((A+deltamin)/2)=n*sin(A/2)",
       "latex": "\\sin\\left(\\frac{A+\\delta_{min}}{2}\\right)=n\\sin\\left(\\frac{A}{2}\\right)",
       "chapter": "tir_prisms",
-      "noSolutionHint": "No real angle satisfies this: check that n·sin(A/2) is not greater than 1."
+      "noSolutionHint": "No real angle satisfies this: check that n\u00b7sin(A/2) is not greater than 1."
     },
     {
       "id": "angular_dispersion",
@@ -267,7 +267,7 @@
       "equation": "rm=sqrt((m*lambda0*R)/nfilm)",
       "latex": "r_m=\\sqrt{\\frac{m\\lambda_0 R}{n_{film}}}",
       "chapter": "thin_film",
-      "noSolutionHint": "The ring radius needs m, λ₀, R and n_film to be positive."
+      "noSolutionHint": "The ring radius needs m, \u03bb\u2080, R and n_film to be positive."
     },
     {
       "id": "michelson",
@@ -317,6 +317,30 @@
       "equation": "d=1/N",
       "latex": "d=\\frac{1}{N}",
       "chapter": "diffraction"
+    },
+    {
+      "id": "michelson_opd",
+      "name": "Michelson Optical Path Difference",
+      "equation": "dopd=2*n*y",
+      "latex": "\\Delta OPD=2ny",
+      "chapter": "interference",
+      "noSolutionHint": "Enter n >= 0 and a mirror displacement y."
+    },
+    {
+      "id": "michelson_fringes",
+      "name": "Michelson Fringe Count",
+      "equation": "deltaN=dopd/lambda0",
+      "latex": "\\Delta N=\\frac{\\Delta OPD}{\\lambda_0}",
+      "chapter": "interference",
+      "noSolutionHint": "Enter DeltaOPD and lambda_0 > 0."
+    },
+    {
+      "id": "fringe_visibility",
+      "name": "Fringe Visibility",
+      "equation": "V=(Imax-Imin)/(Imax+Imin)",
+      "latex": "V=\\frac{I_{max}-I_{min}}{I_{max}+I_{min}}",
+      "chapter": "interference",
+      "noSolutionHint": "Enter I_max and I_min >= 0, not both zero."
     }
   ]
 }

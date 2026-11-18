@@ -439,6 +439,30 @@
       "unit": "1/m",
       "description": "Number of grating lines per metre",
       "latex": "N"
+    },
+    {
+      "id": "dopd",
+      "symbol": "ΔOPD",
+      "name": "Optical path difference",
+      "unit": "m",
+      "description": "Round-trip optical path difference introduced by moving one Michelson mirror",
+      "latex": "\\Delta OPD"
+    },
+    {
+      "id": "deltaN",
+      "symbol": "ΔN",
+      "name": "Fringe count / shift",
+      "unit": "",
+      "description": "Number of fringes shifted as the Michelson mirror moves",
+      "latex": "\\Delta N"
+    },
+    {
+      "id": "Imin",
+      "symbol": "I_min",
+      "name": "Minimum intensity",
+      "unit": "W/m²",
+      "description": "Minimum intensity of the recombined beams in an interferometer",
+      "latex": "I_{min}"
     }
   ]
 }

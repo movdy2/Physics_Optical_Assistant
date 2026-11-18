@@ -8,6 +8,7 @@
 #include <QSignalBlocker>
 #include <QLabel>
 #include <QPushButton>
+#include <QSlider>
 #include <QVBoxLayout>
 #include <cmath>
 
@@ -171,31 +172,146 @@ QString NewtonRingsPage::runDescription() const {
 
 // ============================================================================ Michelson
 MichelsonPage::MichelsonPage(AppContext* ctx, QWidget* parent)
-    : ModelPage("Michelson Interferometry", "Mirror displacement, fringe shift and fringe count", "Michelson Interferometry", ctx, parent) {
+    : ModelPage("Michelson Interferometry", "Drag movable M2 to follow the fringe shift", "Michelson Interferometry", ctx, parent) {
     addTabs({"Displacement", "Fringes"});
     m_lambda = addField(QString::fromLatin1(FieldIds::wavelength), "Wavelength · λ", "nm", 632.8, 2);
+
+    m_source = new QComboBox;
+    for (const auto& s : ctx->presets.sources) m_source->addItem(QString::fromStdString(s.name), s.wavelengthNm);
+    m_source->addItem("Custom", -1.0);
+    m_fieldLayout->addWidget(labeled("Source preset", m_source));
+
     m_dx = addField(QString::fromLatin1(FieldIds::mirrorDisplacement), "Mirror displacement · Δx", "µm", 0.75, 4, true, true, 0.05);
-    m_medium = addCombo("Arm medium", {"Air · n = 1.0000", "Water cell · n = 1.3330"}, {1.0, 1.333});
-    m_reference = addCombo("Reference arm", {"M1 fixed", "M1 on a piezo (static)"}, {0, 1});
+
+    m_dxSlider = new QSlider(Qt::Horizontal);
+    m_dxSlider->setObjectName("michelsonMirrorSlider");
+    const int sliderLimit = static_cast<int>(std::lround(MichelsonCanvas::kMaxInteractiveTravelUm * 10000.0));
+    m_dxSlider->setRange(-sliderLimit, sliderLimit);                  // 0.1 nm steps, ±2 µm stage travel
+    m_dxSlider->setSingleStep(10);                                    // 1 nm keyboard/page adjustment
+    m_dxSlider->setPageStep(1000);
+    m_dxSlider->setTickPosition(QSlider::TicksBelow);
+    m_dxSlider->setTickInterval(5000);
+    m_dxSlider->setAccessibleName("M2 mirror travel in micrometres");
+    m_dxSlider->setToolTip("Drag the amber M2 mirror left or right along its arm, or use this slider. Range: −2 to +2 µm.");
+    m_fieldLayout->addWidget(labeled("M2 travel · ±2 µm", m_dxSlider));
+
+    m_medium = new QComboBox;
+    for (const auto& m : ctx->presets.media) m_medium->addItem(QString::fromStdString(m.name), m.n);
+    m_medium->addItem("Custom · n = slider", -1.0);
+    m_fieldLayout->addWidget(labeled("Arm medium · n", m_medium));
+
+    m_nSlider = new QSlider(Qt::Horizontal);
+    m_nSlider->setObjectName("michelsonIndexSlider");
+    m_nSlider->setRange(1000, 2500);           // 1.000 to 2.500 in 0.001 steps
+    m_nSlider->setSingleStep(1);              // 0.001 keyboard/page adjustment
+    m_nSlider->setPageStep(100);
+    m_nSlider->setTickPosition(QSlider::TicksBelow);
+    m_nSlider->setTickInterval(500);
+    m_nSlider->setValue(1000);                // default: air
+    m_nSlider->setAccessibleName("Refractive index of the arm medium");
+    m_nSlider->setToolTip("Adjust the refractive index n of the medium in the M2 arm. ΔOPD = 2nΔx.");
+    m_fieldLayout->addWidget(labeled("Index n · 1.000–2.500", m_nSlider));
+
+    m_reference = addCombo("M2 drive", {"Manual micrometer", "Piezo actuator"}, {0, 1});
     m_balance = addCombo("Beam balance", {"Equal beams · V = 1.00", "Unequal beams · V = 0.60"}, {1.0, 0.6});
     m_canvas = new MichelsonCanvas;
-    build("Optical bench / detector fringes", m_canvas, "Detector intensity vs mirror displacement", "ΔOPD = 2nΔx. One fringe per λ/(2n) of mirror motion.");
+    m_canvas->setObjectName("michelsonCanvas");
+    connect(m_dxSlider, &QSlider::valueChanged, this, [this](int value) {
+        setMirrorDisplacement(value / 10000.0);
+    });
+    connect(m_dx, &UnitField::edited, this, [this] {
+        bool ok = false;
+        const double displacement = m_dx->value(&ok);
+        if (!ok) return;
+        QSignalBlocker blocker(m_dxSlider);
+        m_dxSlider->setValue(static_cast<int>(std::lround(displacement * 10000.0)));
+    });
+    connect(m_canvas, &MichelsonCanvas::mirrorDisplacementChanged, this, &MichelsonPage::setMirrorDisplacement);
+
+    // Source preset: choosing a preset sets the wavelength; editing the wavelength manually switches to "Custom".
+    connect(m_source, &QComboBox::activated, this, [this] {
+        const double w = m_source->currentData().toDouble();
+        if (w > 0) {
+            m_lambda->setValue(w, 1);
+            apply(false);
+        }
+    });
+    connect(m_lambda, &UnitField::edited, this, [this] {
+        bool ok = false;
+        const double v = m_lambda->value(&ok);
+        if (!ok) return;
+        bool matches = false;
+        for (int i = 0; i < m_source->count() - 1; ++i) {
+            if (std::fabs(m_source->itemData(i).toDouble() - v) < 1e-9) { matches = true; break; }
+        }
+        if (!matches) m_source->setCurrentIndex(m_source->count() - 1);  // "Custom"
+        apply(false);
+    });
+
+    // Index slider: moving it sets n and re-applies; choosing a medium preset updates the slider.
+    connect(m_nSlider, &QSlider::valueChanged, this, [this](int value) {
+        const double n = value / 1000.0;
+        m_medium->setCurrentIndex(m_medium->count() - 1);  // "Custom"
+        apply(false);
+    });
+    connect(m_medium, &QComboBox::activated, this, [this](int index) {
+        const double n = m_medium->itemData(index).toDouble();
+        if (n > 0) {
+            QSignalBlocker blocker(m_nSlider);
+            m_nSlider->setValue(static_cast<int>(std::lround(n * 1000.0)));
+        }
+        apply(false);
+    });
+
+    build("Optical bench / detector fringes", m_canvas, "Detector intensity vs mirror displacement", "Drag movable M2 or use its slider. ΔOPD = 2nΔx; one fringe per λ/(2n) of mirror travel.");
     reset();
 }
 ModelReport MichelsonPage::compute(const ReportContext& ctx) {
-    return WE::michelson({m_lambda->value(), m_dx->value(), m_medium->currentData().toDouble(), m_balance->currentData().toDouble(),
+    const double n = m_medium->currentIndex() == m_medium->count() - 1
+        ? m_nSlider->value() / 1000.0
+        : m_medium->currentData().toDouble();
+    return WE::michelson({m_lambda->value(), m_dx->value(), n, m_balance->currentData().toDouble(),
                           m_tabs->current() == 1, m_reference->currentData().toDouble() > 0.5}, ctx);
+}
+void MichelsonPage::setMirrorDisplacement(double displacementUm) {
+    const double travel = std::clamp(displacementUm, -MichelsonCanvas::kMaxInteractiveTravelUm,
+                                     MichelsonCanvas::kMaxInteractiveTravelUm);
+    m_dx->setValue(travel, 4);
+    QSignalBlocker blocker(m_dxSlider);
+    m_dxSlider->setValue(static_cast<int>(std::lround(travel * 10000.0)));
+    apply(false);
 }
 void MichelsonPage::updateCanvas() {
     const bool fringes = m_tabs->current() == 1;
     const bool piezo = m_reference->currentData().toDouble() > 0.5;
-    m_canvas->setInput({m_lambda->value(), m_dx->value(), m_medium->currentData().toDouble(), m_balance->currentData().toDouble(), fringes, piezo});
-    retitle(fringes ? (piezo ? "Optical bench / piezo scan of M1" : "Optical bench / fringe pattern") : "Optical bench / detector fringes",
-            fringes ? "Intensity across a ±2 µm mirror sweep" : "Detector intensity vs mirror displacement");
+    const double n = m_medium->currentIndex() == m_medium->count() - 1
+        ? m_nSlider->value() / 1000.0
+        : m_medium->currentData().toDouble();
+    m_canvas->setInput({m_lambda->value(), m_dx->value(), n, m_balance->currentData().toDouble(), fringes, piezo});
+    retitle(fringes ? (piezo ? "Optical bench / piezo scan of M2" : "Optical bench / fringe pattern") : "Optical bench / detector fringes",
+            fringes ? "Intensity across a ±2 µm M2 sweep" : "Detector intensity vs M2 displacement");
 }
-void MichelsonPage::resetFields() { m_lambda->setValue(632.8, 2); m_dx->setValue(0.75, 4); m_medium->setCurrentIndex(0); m_reference->setCurrentIndex(0); m_balance->setCurrentIndex(0); m_tabs->setCurrent(0); }
+void MichelsonPage::resetFields() {
+    m_lambda->setValue(632.8, 2);
+    // Select the source preset matching the default wavelength (He-Ne · 632.8 nm).
+    for (int i = 0; i < m_source->count() - 1; ++i) {
+        if (std::fabs(m_source->itemData(i).toDouble() - 632.8) < 1e-9) {
+            m_source->setCurrentIndex(i);
+            break;
+        }
+    }
+    m_dx->setValue(0.75, 4);
+    m_medium->setCurrentIndex(0);                                    // Air · n = 1.0000
+    QSignalBlocker blockerN(m_nSlider);
+    m_nSlider->setValue(1000);                                       // n = 1.000
+    m_reference->setCurrentIndex(0);
+    m_balance->setCurrentIndex(0);
+    m_tabs->setCurrent(0);
+    QSignalBlocker blockerDx(m_dxSlider);
+    m_dxSlider->setValue(7500);
+}
 QString MichelsonPage::runDescription() const {
-    return QString("Δx %1 µm · λ %2 nm · %3").arg(m_dx->text(), m_lambda->text(), m_tabs->current() == 1 ? "fringes" : "displacement");
+    return QString("M2 Δx %1 µm · λ %2 nm · %3").arg(m_dx->text(), m_lambda->text(), m_tabs->current() == 1 ? "fringes" : "displacement");
 }
 
 // ============================================================================ thin film
