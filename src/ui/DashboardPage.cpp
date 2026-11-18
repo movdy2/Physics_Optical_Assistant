@@ -1,12 +1,14 @@
 #include "DashboardPage.h"
 #include "AppContext.h"
 #include "Components.h"
+#include "ExperimentReports.h"
 #include "Icons.h"
 #include "OpticsCanvases.h"
 #include "Plots.h"
 #include "ThemeManager.h"
 
 #include <QAction>
+#include <QCheckBox>
 #include <QComboBox>
 #include <QEvent>
 #include <QGridLayout>
@@ -21,6 +23,8 @@
 #include <QMenu>
 #include <QVBoxLayout>
 #include <algorithm>
+#include <cmath>
+#include <set>
 
 namespace phy104 {
 namespace {
@@ -298,7 +302,47 @@ DashboardPage::DashboardPage(AppContext* ctx, QWidget* parent)
     notebook->body()->addStretch();
     cols.right->addWidget(notebook, 1);
 
+    // ===================================================================== right: run comparison chart
+    auto* comparisonPanel = new Panel("RUN COMPARISON", "OVERLAY MULTIPLE RUNS");
+    comparisonPanel->body()->setSpacing(8);
+    comparisonPanel->body()->setContentsMargins(0, 0, 0, 0);
+
+    auto* filterHint = new QLabel("Experiment");
+    filterHint->setObjectName("caption");
+    filterHint->setWordWrap(true);
+    comparisonPanel->body()->addWidget(filterHint);
+
+    m_comparisonFilter = new QComboBox;
+    m_comparisonFilter->addItem("All experiments", "");
+    comparisonPanel->body()->addWidget(m_comparisonFilter);
+
+    auto* listHint = new QLabel("Select runs to overlay");
+    listHint->setObjectName("caption");
+    listHint->setWordWrap(true);
+    comparisonPanel->body()->addWidget(listHint);
+
+    m_runScroll = new QScrollArea;
+    m_runScroll->setWidgetResizable(true);
+    m_runScroll->setFrameShape(QFrame::NoFrame);
+    m_runScroll->setMaximumHeight(150);
+    m_runScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+
+    m_runListContainer = new QWidget;
+    m_runListLayout = new QVBoxLayout(m_runListContainer);
+    m_runListLayout->setSpacing(2);
+    m_runListLayout->setContentsMargins(0, 0, 0, 0);
+    m_runListLayout->addStretch();
+    m_runScroll->setWidget(m_runListContainer);
+    comparisonPanel->body()->addWidget(m_runScroll, 1);
+
+    m_comparisonChart = new LineChart;
+    m_comparisonChart->setMinimumHeight(180);
+    comparisonPanel->body()->addWidget(m_comparisonChart, 1);
+
+    cols.right->addWidget(comparisonPanel, 1);
+
     // ===================================================================== connections
+    connect(m_comparisonFilter, &QComboBox::currentIndexChanged, this, &DashboardPage::refreshComparison);
     connect(openNotes, &QPushButton::clicked, this, [this] { emit openPageRequested(m_notesPage); });
     connect(exportData, &QPushButton::clicked, this, [this] { emit openPageRequested(m_exportPage); });
     connect(m_deleteRun, &QPushButton::clicked, this, &DashboardPage::deleteSelectedRun);
@@ -314,10 +358,13 @@ DashboardPage::DashboardPage(AppContext* ctx, QWidget* parent)
         refresh();
     });
     connect(ctx, &AppContext::snapshotChanged, this, &DashboardPage::refresh);
+    connect(ctx, &AppContext::snapshotChanged, this, &DashboardPage::refreshComparison);
     connect(ctx, &AppContext::runsChanged, this, &DashboardPage::refresh);
+    connect(ctx, &AppContext::runsChanged, this, &DashboardPage::refreshComparison);
     connect(ctx, &AppContext::notesSaved, this, &DashboardPage::refresh);
     connect(&ThemeManager::instance(), &ThemeManager::themeChanged, this, &DashboardPage::refresh);
     refresh();
+    refreshComparison();
 }
 
 // ======================================================================== activity log
@@ -426,6 +473,123 @@ void DashboardPage::deleteSelectedRun() {
         m_selectedRunId = -1;
         refresh();
     }
+}
+
+// ======================================================================== run comparison chart
+ChartSeries DashboardPage::seriesToChart(const DataSeries& s, const QColor& color) const {
+    ChartSeries cs;
+    cs.color = color;
+    cs.line = true;
+    cs.markers = true;
+    if (s.headers.size() < 2 || s.rows.empty()) return cs;
+
+    // Plot column 1 (Y) against column 0 (X), skipping NaN and non-finite rows.
+    for (const auto& row : s.rows) {
+        if (row.size() < 2) continue;
+        double x = row[0], y = row[1];
+        if (!std::isfinite(x) || !std::isfinite(y)) continue;
+        cs.points.append(QPointF(x, y));
+    }
+    // Sort by X for clean line drawing.
+    std::sort(cs.points.begin(), cs.points.end(),
+              [](const QPointF& a, const QPointF& b) { return a.x() < b.x(); });
+    return cs;
+}
+
+void DashboardPage::refreshComparison() {
+    // Clear existing checkboxes.
+    qDeleteAll(m_runCheckboxes);
+    m_runCheckboxes.clear();
+
+    // Clear existing run list widgets (keep the stretch at the end).
+    while (m_runListLayout->count() > 1) {
+        auto* item = m_runListLayout->takeAt(0);
+        if (item->widget()) delete item->widget();
+        delete item;
+    }
+
+    const auto runs = m_ctx->log.runs();
+    const QString filter = m_comparisonFilter->currentData().toString();
+
+    // Rebuild the experiment filter dropdown (keep "All experiments").
+    m_comparisonFilter->blockSignals(true);
+    while (m_comparisonFilter->count() > 1) m_comparisonFilter->removeItem(1);
+    std::set<std::string> experiments;
+    for (const auto& r : runs) experiments.insert(r.experiment);
+    for (const auto& e : experiments)
+        m_comparisonFilter->addItem(QString::fromUtf8(e.c_str()), QString::fromUtf8(e.c_str()));
+    m_comparisonFilter->blockSignals(false);
+
+    // Filter runs.
+    std::vector<const RunRecord*> filtered;
+    for (const auto& r : runs) {
+        if (!filter.isEmpty() && QString::fromUtf8(r.experiment.c_str()) != filter) continue;
+        // Only show runs that have a data series with at least 2 columns and rows.
+        if (r.series.headers.size() < 2 || r.series.rows.empty()) continue;
+        filtered.push_back(&r);
+    }
+    // Newest first.
+    std::sort(filtered.begin(), filtered.end(),
+              [](const RunRecord* a, const RunRecord* b) { return a->id > b->id; });
+
+    const Theme& t = ThemeManager::instance().theme();
+    const QColor palette[] = {t.amber, t.lime, t.blue, t.sage, t.muted, t.text, t.error};
+    int colorIdx = 0;
+
+    QList<ChartSeries> chartSeries;
+    QStringList legendItems;
+
+    for (const auto* r : filtered) {
+        auto* cb = new QCheckBox;
+        const QString label = QString("%1 · %2")
+                                  .arg(QString::fromStdString(SessionLog::runLabel(r->id)))
+                                  .arg(QString::fromStdString(r->description));
+        cb->setText(label);
+        cb->setChecked(true);  // default: show all
+        cb->setProperty("runId", r->id);
+        connect(cb, &QCheckBox::toggled, this, &DashboardPage::refreshComparison);
+        m_runListLayout->insertWidget(m_runListLayout->count() - 1, cb);
+        m_runCheckboxes.insert(r->id, cb);
+
+        if (!cb->isChecked()) continue;
+
+        QColor color = palette[colorIdx % (sizeof(palette) / sizeof(palette[0]))];
+        ++colorIdx;
+
+        ChartSeries cs = seriesToChart(r->series, color);
+        if (!cs.points.empty()) {
+            chartSeries.append(cs);
+            legendItems.append(QString::fromUtf8(SessionLog::runLabel(r->id)) + " · " +
+                               QString::fromUtf8(r->description));
+        }
+    }
+
+    // Set up chart axes from the first usable series.
+    if (!chartSeries.empty()) {
+        double xMin = chartSeries.first().points.first().x();
+        double xMax = chartSeries.first().points.first().x();
+        double yMin = chartSeries.first().points.first().y();
+        double yMax = chartSeries.first().points.first().y();
+        for (const auto& cs : chartSeries) {
+            for (const auto& pt : cs.points) {
+                xMin = std::min(xMin, pt.x());
+                xMax = std::max(xMax, pt.x());
+                yMin = std::min(yMin, pt.y());
+                yMax = std::max(yMax, pt.y());
+            }
+        }
+        const double xPad = (xMax - xMin) * 0.05;
+        const double yPad = (yMax - yMin) * 0.05;
+        m_comparisonChart->setAxes(xMin - xPad, xMax + xPad, 4, 2,
+                                   QString::fromUtf8(filtered.front()->series.headers[0]),
+                                   yMin - yPad, yMax + yPad, 4, 2,
+                                   QString::fromUtf8(filtered.front()->series.headers[1]));
+    } else {
+        m_comparisonChart->setAxes(0, 1, 4, 2, "X", 0, 1, 4, 2, "Y");
+    }
+
+    m_comparisonChart->setSeries(chartSeries);
+    m_comparisonChart->setLegend(legendItems, "Runs overlaid · column 1 vs column 0");
 }
 
 } // namespace phy104
