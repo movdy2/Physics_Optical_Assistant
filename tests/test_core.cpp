@@ -576,6 +576,29 @@ int main() {
         CHECK(near(s.chart.xMax, 1.2, 1e-9));
         SingleSlitInput sb; sb.widthMm = 0.0001;                                                           // λ/a > 1: no first minimum
         CHECK(WE::singleSlit(sb).report.paused);
+        // --- β = 0 limit: central maximum is exactly 1.0, not NaN
+        CHECK(near(WE::singleSlitIntensity(0.0, 0.1, 500), 1.0, 1e-12));
+        CHECK(near(WE::singleSlitIntensity(0.0, 0.05, 700), 1.0, 1e-12));
+        // --- exact vs small-angle approximation: base case differs negligibly at small angles
+        SingleSlitInput exact; exact.widthMm = 0.1; exact.lambdaNm = 500; exact.screenM = 1.0; exact.exactGeometry = true;
+        auto se = WE::singleSlit(exact);
+        SingleSlitInput approx = exact; approx.exactGeometry = false;
+        auto sa = WE::singleSlit(approx);
+        CHECK(se.report.registers[1].resultValue == "10.0001 mm");
+        CHECK(sa.report.registers[1].resultValue == "10.0000 mm");
+        CHECK(has(sa.report.registers[1], "≈ 2L λ/a"));
+        // --- wider slit: a = 0.2mm → w ≈ 5mm
+        SingleSlitInput wide; wide.widthMm = 0.2; wide.lambdaNm = 500; wide.screenM = 1.0;
+        auto sw = WE::singleSlit(wide);
+        CHECK(sw.report.registers[1].resultValue == "5.0000 mm");
+        // --- narrower slit: a = 0.05mm → w ≈ 20mm
+        SingleSlitInput narrow; narrow.widthMm = 0.05; narrow.lambdaNm = 500; narrow.screenM = 1.0;
+        auto sn = WE::singleSlit(narrow);
+        CHECK(sn.report.registers[1].resultValue == "20.0000 mm");
+        // --- longer wavelength: λ = 700nm, a = 0.1mm → w ≈ 14mm
+        SingleSlitInput longL; longL.widthMm = 0.1; longL.lambdaNm = 700; longL.screenM = 1.0;
+        auto sl = WE::singleSlit(longL);
+        CHECK(sl.report.registers[1].resultValue == "14.0000 mm");
         // --- Malus + Brewster: Iin = 100 W/m² unpolarized, θ = 60°, air -> glass
         auto p = WE::polarization({});
         CHECK(has(p.report.registers[0], "I₀ = Iᵢₙ / 2 = 50 W/m²") && has(p.report.registers[0], "I = I₀ cos²θ") && has(p.report.registers[0], "  = 50 × cos²(60°)") && has(p.report.registers[0], "  = 50 × 0.2500"));

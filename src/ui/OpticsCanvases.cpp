@@ -1041,9 +1041,14 @@ void SingleSlitCanvas::paintDiagram(QPainter& p, const QRectF& a) {
                  + num(m_in.screenM * std::tan(std::asin(std::min(1.0, 2 * lam / aa))) * 1e3, 4) + " mm", t.muted, 10);
         text(p, QPointF(14, a.bottom() - 14),
              "y₃ = ±" + num(m_in.screenM * std::tan(std::asin(std::min(1.0, 3 * lam / aa))) * 1e3, 4)
-                 + " mm · w = " + num(2 * m_in.screenM * std::tan(theta) * 1e3, 5) + " mm (central lobe)", t.muted, 10);
+                 + " mm · w = " + num(m_in.exactGeometry ? 2 * m_in.screenM * std::tan(theta) * 1e3 :
+                    2 * m_in.screenM * (m_in.lambdaNm * 1e-9 / (m_in.widthMm * 1e-3)) * 1e3, 5)
+                 + " mm (central lobe)", t.muted, 10);
     } else {
-        text(p, QPointF(14, a.bottom() - 30), "w = 2L tan θ₁ = " + num(2 * m_in.screenM * std::tan(theta) * 1e3, 5) + " mm", t.muted, 10);
+        const double wExact = 2 * m_in.screenM * std::tan(theta) * 1e3;
+        const double wApprox = 2 * m_in.screenM * (m_in.lambdaNm * 1e-9 / (m_in.widthMm * 1e-3)) * 1e3;
+        const double wDisp = m_in.exactGeometry ? wExact : wApprox;
+        text(p, QPointF(14, a.bottom() - 30), "w = " + (m_in.exactGeometry ? "2L tan θ₁" : "≈ 2L λ/a") + " = " + num(wDisp, 5) + " mm", t.muted, 10);
         text(p, QPointF(14, a.bottom() - 14), "Minima: a sin θ = mλ", t.muted, 10);
     }
 }
