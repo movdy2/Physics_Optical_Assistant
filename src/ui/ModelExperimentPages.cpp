@@ -4,7 +4,9 @@
 #include "Components.h"
 #include "OpticsCanvases.h"
 
+#include <QCheckBox>
 #include <QComboBox>
+#include <QHBoxLayout>
 #include <QSignalBlocker>
 #include <QLabel>
 #include <QPushButton>
@@ -89,16 +91,24 @@ void ModelPage::retitle(const QString& diagramTitle, const QString& chartTitle) 
 }
 
 void ModelPage::showChart(const ChartData& c) {
-    ChartSeries curve, marker;
+    ChartSeries curve, curve2, marker;
     curve.line = true;
     for (const auto& [x, y] : c.curve) curve.points << QPointF(x, y);
+    if (!c.curve2.empty()) {
+        curve2.line = true;
+        for (const auto& [x, y] : c.curve2) curve2.points << QPointF(x, y);
+    }
     marker.markers = true;
     marker.color = QColor();                                            // theme sage
     for (const auto& [x, y] : c.marker) marker.points << QPointF(x, y);
     m_chart->clearAnnotations();
     m_chart->setAxes(c.xMin, c.xMax, c.xTicks, c.xDecimals, q(c.xLabel), c.yMin, c.yMax, c.yTicks, c.yDecimals, q(c.yLabel));
-    m_chart->setSeries({curve, marker});
-    m_chart->setLegend({}, q(c.legend));
+    QList<ChartSeries> series = {curve, marker};
+    if (!c.curve2.empty()) series.insert(1, curve2);                    // second curve between curve and marker
+    m_chart->setSeries(series);
+    QStringList legends = {q(c.legend)};
+    if (!c.legend2.empty()) legends << q(c.legend2);
+    m_chart->setLegend(legends, q(c.legend));
 }
 
 void ModelPage::reset() {
@@ -150,14 +160,47 @@ NewtonRingsPage::NewtonRingsPage(AppContext* ctx, QWidget* parent)
     m_lambda = addField(QString::fromLatin1(FieldIds::wavelength), "Vacuum wavelength · λ", "nm", 600, 2);
     m_radius = addField(QString::fromLatin1(FieldIds::radiusOfCurvature), "Radius of curvature · R", "m", 1.0, 4);
     m_order = addField(QString::fromLatin1(FieldIds::order), "Selected dark-ring order · m", "integer", 4, 0, false, true, 1);
+    m_sigmaLambda = addField(QString::fromLatin1(FieldIds::sigmaNewtonLambda), "σ(λ) uncertainty", "nm", 0.0, 4);
+    m_sigmaRadius = addField(QString::fromLatin1(FieldIds::sigmaNewtonRadius), "σ(R) uncertainty", "m", 0.0, 4);
+    m_sigmaN = addField(QString::fromLatin1(FieldIds::sigmaNewtonIndex), "σ(n) uncertainty", "", 0.0, 4);
     m_medium = addCombo("Film medium", {"Air · n = 1.0000", "Water · n = 1.3330", "Oil · n = 1.4000"}, {1.0, 1.333, 1.4});
     m_viewing = addCombo("Viewing mode", {"Reflected light", "Transmitted light"}, {0, 1});
+    // ---- Preset scenarios (Item 19) ----
+    auto* presetLabel = new QLabel("Presets:");
+    presetLabel->setObjectName("fieldLabel");
+    m_fieldLayout->addWidget(presetLabel);
+    auto* presetRow = new QHBoxLayout;
+    presetRow->setSpacing(4);
+    auto makePreset = [&](const QString& label, double lambda, double radius, int order, int mediumIdx, int viewingIdx) {
+        auto* b = new QPushButton(label);
+        b->setObjectName("presetBtn");
+        b->setCursor(Qt::PointingHandCursor);
+        b->setMinimumHeight(30);
+        connect(b, &QPushButton::clicked, this, [this, lambda, radius, order, mediumIdx, viewingIdx] {
+            m_syncing = true;
+            m_lambda->setValue(lambda, 2);
+            m_radius->setValue(radius, 4);
+            m_order->setValue(order, 0);
+            m_medium->setCurrentIndex(mediumIdx);
+            m_viewing->setCurrentIndex(viewingIdx);
+            m_syncing = false;
+            apply(false);
+        });
+        presetRow->addWidget(b);
+        return b;
+    };
+    m_presetAir = makePreset("Air · m=4", 600.0, 1.0, 4, 0, 0);
+    m_presetWater = makePreset("Water · m=4", 600.0, 1.0, 4, 1, 0);
+    m_presetOil = makePreset("Oil · m=4", 600.0, 1.0, 4, 2, 0);
+    m_presetTransmitted = makePreset("Transmitted · m=4", 600.0, 1.0, 4, 0, 1);
+    m_fieldLayout->addLayout(presetRow);
     m_canvas = new NewtonCanvas;
     build("Lens on plate / concentric reflected rings", m_canvas, "Dark-ring radius squared vs order", "Reflected: m = 0 is the dark contact center. Transmitted: it is bright and the dark rings sit at half orders. t ≈ r²/(2R).");
     reset();
 }
 ModelReport NewtonRingsPage::compute(const ReportContext& ctx) {
     return WE::newtonRings({m_lambda->value(), m_radius->value(), m_order->value(), m_medium->currentData().toDouble(),
+                            m_sigmaLambda->value(), m_sigmaRadius->value(), m_sigmaN->value(),
                             m_viewing->currentData().toDouble() > 0.5}, ctx);
 }
 void NewtonRingsPage::updateCanvas() {
@@ -166,7 +209,7 @@ void NewtonRingsPage::updateCanvas() {
     retitle(transmitted ? "Lens on plate / transmitted rings" : "Lens on plate / reflected rings",
             transmitted ? "Transmitted dark-ring radius squared vs half order" : "Dark-ring radius squared vs order");
 }
-void NewtonRingsPage::resetFields() { m_lambda->setValue(600, 2); m_radius->setValue(1.0, 4); m_order->setValue(4, 0); m_medium->setCurrentIndex(0); m_viewing->setCurrentIndex(0); m_tabs->setCurrent(0); }
+void NewtonRingsPage::resetFields() { m_lambda->setValue(600, 2); m_radius->setValue(1.0, 4); m_order->setValue(4, 0); m_sigmaLambda->setValue(0.0, 4); m_sigmaRadius->setValue(0.0, 4); m_sigmaN->setValue(0.0, 4); m_medium->setCurrentIndex(0); m_viewing->setCurrentIndex(0); m_tabs->setCurrent(0); }
 QString NewtonRingsPage::runDescription() const {
     return QString("m = %1 · λ %2 nm · R %3 m · %4").arg(m_order->text(), m_lambda->text(), m_radius->text(),
                                                          m_viewing->currentData().toDouble() > 0.5 ? "transmitted" : "reflected");
@@ -216,6 +259,49 @@ MichelsonPage::MichelsonPage(AppContext* ctx, QWidget* parent)
 
     m_reference = addCombo("M2 drive", {"Manual micrometer", "Piezo actuator"}, {0, 1});
     m_balance = addCombo("Beam balance", {"Equal beams · V = 1.00", "Unequal beams · V = 0.60"}, {1.0, 0.6});
+    // Item 13: coherence length / source linewidth
+    m_coherenceLength = addField(QString::fromLatin1(FieldIds::michelsonCoherenceLength), "Coherence length · Lc", "µm", 0.0, 2, false, true, 1);
+    // Item 14: mirror tilt
+    m_tiltSlider = new QSlider(Qt::Horizontal);
+    m_tiltSlider->setObjectName("michelsonTiltSlider");
+    m_tiltSlider->setRange(0, 1000);           // 0 to 10 mrad in 0.01 mrad steps
+    m_tiltSlider->setSingleStep(10);
+    m_tiltSlider->setPageStep(100);
+    m_tiltSlider->setValue(0);
+    m_tiltSlider->setAccessibleName("M2 mirror tilt in milliradians");
+    m_tiltSlider->setToolTip("Tilt M2 to change from straight fringes (tilt = 0) to circular bullseye fringes.");
+    m_fieldLayout->addWidget(labeled("Mirror tilt · mrad", m_tiltSlider));
+    // Item 15: glass plate in one arm
+    m_plateThickness = addField(QString::fromLatin1(FieldIds::michelsonPlateThickness), "Plate thickness · t", "µm", 0.0, 2, false, true, 1);
+    m_plateIndex = addField(QString::fromLatin1(FieldIds::michelsonPlateIndex), "Plate index · n_p", "", 1.5, 4, false, true, 0.01);
+    // ---- Preset scenarios (Item 19) ----
+    auto* presetLabel = new QLabel("Presets:");
+    presetLabel->setObjectName("fieldLabel");
+    m_fieldLayout->addWidget(presetLabel);
+    auto* presetRow = new QHBoxLayout;
+    presetRow->setSpacing(4);
+    auto makePreset = [&](const QString& label, double lambda, double dxUm, double nIdx, bool fringes) {
+        auto* b = new QPushButton(label);
+        b->setObjectName("presetBtn");
+        b->setCursor(Qt::PointingHandCursor);
+        b->setMinimumHeight(30);
+        connect(b, &QPushButton::clicked, this, [this, lambda, dxUm, nIdx, fringes] {
+            m_syncing = true;
+            m_lambda->setValue(lambda, 2);
+            m_dx->setValue(dxUm, 4);
+            m_medium->setCurrentIndex(static_cast<int>(nIdx));
+            m_tabs->setCurrent(fringes ? 1 : 0);
+            m_syncing = false;
+            apply(false);
+        });
+        presetRow->addWidget(b);
+        return b;
+    };
+    m_presetAir = makePreset("Air · Δx 0.75", 632.8, 0.75, 0, false);
+    m_presetCrown = makePreset("Crown · Δx 0.75", 632.8, 0.75, 1, false);
+    m_presetFlint = makePreset("Flint · Δx 0.75", 632.8, 0.75, 2, false);
+    m_presetFringes = makePreset("Fringes tab", 632.8, 0.75, 0, true);
+    m_fieldLayout->addLayout(presetRow);
     m_canvas = new MichelsonCanvas;
     m_canvas->setObjectName("michelsonCanvas");
     connect(m_dxSlider, &QSlider::valueChanged, this, [this](int value) {
@@ -264,6 +350,12 @@ MichelsonPage::MichelsonPage(AppContext* ctx, QWidget* parent)
         apply(false);
     });
 
+    // Item 13-15 real-time connections for new parameters
+    connect(m_coherenceLength, &UnitField::edited, this, [this] { apply(false); });
+    connect(m_tiltSlider, &QSlider::valueChanged, this, [this] { apply(false); });
+    connect(m_plateThickness, &UnitField::edited, this, [this] { apply(false); });
+    connect(m_plateIndex, &UnitField::edited, this, [this] { apply(false); });
+
     build("Optical bench / detector fringes", m_canvas, "Detector intensity vs mirror displacement", "Drag movable M2 or use its slider. ΔOPD = 2nΔx; one fringe per λ/(2n) of mirror travel.");
     reset();
 }
@@ -272,7 +364,10 @@ ModelReport MichelsonPage::compute(const ReportContext& ctx) {
         ? m_nSlider->value() / 1000.0
         : m_medium->currentData().toDouble();
     return WE::michelson({m_lambda->value(), m_dx->value(), n, m_balance->currentData().toDouble(),
-                          m_tabs->current() == 1, m_reference->currentData().toDouble() > 0.5}, ctx);
+                          m_tabs->current() == 1, m_reference->currentData().toDouble() > 0.5,
+                          m_coherenceLength->value(),
+                          m_tiltSlider->value() / 1000.0,
+                          m_plateThickness->value(), m_plateIndex->value()}, ctx);
 }
 void MichelsonPage::setMirrorDisplacement(double displacementUm) {
     const double travel = std::clamp(displacementUm, -MichelsonCanvas::kMaxInteractiveTravelUm,
@@ -288,7 +383,9 @@ void MichelsonPage::updateCanvas() {
     const double n = m_medium->currentIndex() == m_medium->count() - 1
         ? m_nSlider->value() / 1000.0
         : m_medium->currentData().toDouble();
-    m_canvas->setInput({m_lambda->value(), m_dx->value(), n, m_balance->currentData().toDouble(), fringes, piezo});
+    m_canvas->setInput({m_lambda->value(), m_dx->value(), n, m_balance->currentData().toDouble(), fringes, piezo,
+                        m_coherenceLength->value(), m_tiltSlider->value() / 1000.0,
+                        m_plateThickness->value(), m_plateIndex->value()});
     retitle(fringes ? (piezo ? "Optical bench / piezo scan of M2" : "Optical bench / fringe pattern") : "Optical bench / detector fringes",
             fringes ? "Intensity across a ±2 µm M2 sweep" : "Detector intensity vs M2 displacement");
 }
@@ -310,6 +407,12 @@ void MichelsonPage::resetFields() {
     m_tabs->setCurrent(0);
     QSignalBlocker blockerDx(m_dxSlider);
     m_dxSlider->setValue(7500);
+    // Items 13-15: reset new parameters to defaults
+    QSignalBlocker blockerTilt(m_tiltSlider);
+    m_tiltSlider->setValue(0);
+    m_coherenceLength->setValue(0.0, 2);
+    m_plateThickness->setValue(0.0, 2);
+    m_plateIndex->setValue(1.5, 4);
 }
 QString MichelsonPage::runDescription() const {
     return QString("M2 Δx %1 µm · λ %2 nm · %3").arg(m_dx->text(), m_lambda->text(), m_tabs->current() == 1 ? "fringes" : "displacement");
@@ -321,7 +424,38 @@ ThinFilmPage::ThinFilmPage(AppContext* ctx, QWidget* parent)
     addTabs({"Reflection", "Transmission", "Colours"});
     m_lambda = addField(QString::fromLatin1(FieldIds::wavelength), "Vacuum wavelength · λ", "nm", 600, 2);
     m_n = addField(QString::fromLatin1(FieldIds::refractiveIndex), "Film index · n", "", 1.5, 4, false, true, 0.01);
+    m_n2 = addField(QString::fromLatin1(FieldIds::filmSubstrateIndex), "Substrate index · n₂", "", 1.5, 4, false, true, 0.01);
     m_t = addField(QString::fromLatin1(FieldIds::thickness), "Film thickness · t", "nm", 100, 2, false, true, 5);
+    m_theta = addField(QString::fromLatin1(FieldIds::filmIncidenceAngle), "Incidence angle · θ", "°", 0.0, 2, false, true, 1);
+    // ---- Preset scenarios (Item 19) ----
+    auto* presetLabel = new QLabel("Presets:");
+    presetLabel->setObjectName("fieldLabel");
+    m_fieldLayout->addWidget(presetLabel);
+    auto* presetRow = new QHBoxLayout;
+    presetRow->setSpacing(4);
+    auto makePreset = [&](const QString& label, double lambda, double n, double n2, double tNm, int tabIdx) {
+        auto* b = new QPushButton(label);
+        b->setObjectName("presetBtn");
+        b->setCursor(Qt::PointingHandCursor);
+        b->setMinimumHeight(30);
+        connect(b, &QPushButton::clicked, this, [this, lambda, n, n2, tNm, tabIdx] {
+            m_syncing = true;
+            m_lambda->setValue(lambda, 2);
+            m_n->setValue(n, 4);
+            m_n2->setValue(n2, 4);
+            m_t->setValue(tNm, 2);
+            m_theta->setValue(0.0, 2);
+            m_tabs->setCurrent(tabIdx);
+            m_syncing = false;
+            apply(false);
+        });
+        presetRow->addWidget(b);
+        return b;
+    };
+    m_presetSoap = makePreset("Soap · n=1.333", 600.0, 1.333, 1.333, 100.0, 0);
+    m_presetOil = makePreset("Oil · n=1.500", 600.0, 1.500, 1.500, 100.0, 0);
+    m_presetTransmission = makePreset("Transmission", 600.0, 1.500, 1.500, 100.0, 1);
+    m_fieldLayout->addLayout(presetRow);
     m_swatch = new QLabel;
     m_swatch->setObjectName("colourSwatch");
     m_swatch->setFixedHeight(34);
@@ -333,7 +467,8 @@ ThinFilmPage::ThinFilmPage(AppContext* ctx, QWidget* parent)
 }
 ModelReport ThinFilmPage::compute(const ReportContext& ctx) {
     ThinFilmInput in;
-    in.lambdaNm = m_lambda->value(); in.n = m_n->value(); in.thicknessNm = m_t->value();
+    in.lambdaNm = m_lambda->value(); in.n = m_n->value(); in.n2 = m_n2->value();
+    in.thicknessNm = m_t->value(); in.thetaDeg = m_theta->value();
     in.transmission = m_tabs->current() == 1;
     in.colours = m_tabs->current() == 2;
     return WE::thinFilm(in, ctx);
@@ -341,14 +476,15 @@ ModelReport ThinFilmPage::compute(const ReportContext& ctx) {
 
 QString ThinFilmPage::colourSwatch() {
     if (m_tabs->current() != 2) return QString();                    // the swatch only exists on the Colours tab
-    const FilmColour c = thinFilmColour(m_t->value(), m_n->value());
+    const FilmColour c = thinFilmColour(m_t->value(), m_n->value(), m_n2->value());
     return QString::fromStdString(c.hex);
 }
 void ThinFilmPage::updateCanvas() {
     const int tab = m_tabs->current();
     const bool transmission = tab == 1;
     ThinFilmInput in;
-    in.lambdaNm = m_lambda->value(); in.n = m_n->value(); in.thicknessNm = m_t->value();
+    in.lambdaNm = m_lambda->value(); in.n = m_n->value(); in.n2 = m_n2->value();
+    in.thicknessNm = m_t->value(); in.thetaDeg = m_theta->value();
     in.transmission = transmission; in.colours = tab == 2;
     m_canvas->setInput(in);
     retitle(tab == 2 ? "Film layers / colour by thickness" : transmission ? "Film layers / transmitted beam" : "Film layers / two reflected rays",
@@ -357,16 +493,16 @@ void ThinFilmPage::updateCanvas() {
         const bool colours = tab == 2;
         m_swatch->setVisible(colours);
         if (colours) {
-            const FilmColour c = thinFilmColour(in.thicknessNm, in.n);
+            const FilmColour c = thinFilmColour(in.thicknessNm, in.n, in.n2);
             m_swatch->setStyleSheet(QString("background: %1; border: 1px solid #00000055; border-radius: 4px;").arg(QString::fromStdString(c.hex)));
             m_swatch->setToolTip(c.hueNm > 0 ? QString("%1 nm dominant").arg(c.hueNm, 0, 'f', 0) : QString("neutral grey"));
         }
     }
 }
-void ThinFilmPage::resetFields() { m_lambda->setValue(600, 2); m_n->setValue(1.5, 4); m_t->setValue(100, 2); m_tabs->setCurrent(0); }
+void ThinFilmPage::resetFields() { m_lambda->setValue(600, 2); m_n->setValue(1.5, 4); m_n2->setValue(1.5, 4); m_t->setValue(100, 2); m_theta->setValue(0.0, 2); m_tabs->setCurrent(0); }
 // (the Colours tab keeps the same three inputs: λ marks a point, n and t decide the swatch)
 QString ThinFilmPage::runDescription() const {
-    return QString("t %1 nm · n %2 · %3").arg(m_t->text(), m_n->text(), m_tabs->current() == 1 ? "transmission" : "reflection");
+    return QString("t %1 nm · n %2 · n₂ %3 · θ %4° · %5").arg(m_t->text(), m_n->text(), m_n2->text(), m_theta->text(), m_tabs->current() == 1 ? "transmission" : "reflection");
 }
 
 // ============================================================================ diffraction grating
@@ -374,10 +510,39 @@ GratingPage::GratingPage(AppContext* ctx, QWidget* parent)
     : ModelPage("Diffraction Grating", "Principal maxima of a transmission grating", "Diffraction Grating", ctx, parent) {
     addTabs({"Transmission", "Orders", "Resolution"});
     m_density = addField(QString::fromLatin1(FieldIds::gratingDensity), "Line density · N", "lines/cm", 5000, 0, false, true, 100);
-    m_lambda = addField(QString::fromLatin1(FieldIds::wavelength), "Wavelength · λ", "nm", 600, 2);
+    m_lambda = addField(QString::fromLatin1(FieldIds::wavelength), "Wavelength · λ₁", "nm", 600, 2);
+    m_lambda2 = addField(QString::fromLatin1(FieldIds::gratingLambda2), "Second wavelength · λ₂ (0 = off)", "nm", 0.0, 2);
     m_order = addField(QString::fromLatin1(FieldIds::order), "Selected order · m", "order", 1, 0, true, true, 1);
     m_slits = addField(QString::fromLatin1(FieldIds::illuminatedSlits), "Illuminated slit count · M", "slits", 20, 0, false, true, 1);
     m_incidence = addCombo("Incidence", {"Normal · 0.00°", "15.00°", "30.00°"}, {0, 15, 30});
+    // ---- Preset scenarios (Item 19) ----
+    auto* presetLabel = new QLabel("Presets:");
+    presetLabel->setObjectName("fieldLabel");
+    m_fieldLayout->addWidget(presetLabel);
+    auto* presetRow = new QHBoxLayout;
+    presetRow->setSpacing(4);
+    auto makePreset = [&](const QString& label, double density, double lambda, int order, int slits, int tabIdx) {
+        auto* b = new QPushButton(label);
+        b->setObjectName("presetBtn");
+        b->setCursor(Qt::PointingHandCursor);
+        b->setMinimumHeight(30);
+        connect(b, &QPushButton::clicked, this, [this, density, lambda, order, slits, tabIdx] {
+            m_syncing = true;
+            m_density->setValue(density, 0);
+            m_lambda->setValue(lambda, 2);
+            m_order->setValue(order, 0);
+            m_slits->setValue(slits, 0);
+            m_tabs->setCurrent(tabIdx);
+            m_syncing = false;
+            apply(false);
+        });
+        presetRow->addWidget(b);
+        return b;
+    };
+    m_presetStandard = makePreset("5000 /cm · m=1", 5000.0, 600.0, 1, 20, 0);
+    m_presetHighDensity = makePreset("600 /mm · m=2", 6000.0, 532.0, 2, 20, 0);
+    m_presetResolution = makePreset("Resolution tab", 5000.0, 600.0, 1, 20, 2);
+    m_fieldLayout->addLayout(presetRow);
     m_canvas = new GratingCanvas;
     build("Grating / angular observation screen", m_canvas, "Diffracted intensity vs angle", "N is line density, not slit count. Transmission: intensity fan. Orders: every peak with its angle. Resolution: R = m·M — raise M to split closer lines.");
     reset();
@@ -385,20 +550,22 @@ GratingPage::GratingPage(AppContext* ctx, QWidget* parent)
 ModelReport GratingPage::compute(const ReportContext& ctx) {
     if (m_tabs->current() == 2)                                        // the third tab: R = mN, δλ and the FSR
         return WE::gratingResolution({m_density->value(), m_lambda->value(), std::max(1.0, m_order->value()), m_slits->value()}, ctx);
-    return WE::grating({m_density->value(), m_lambda->value(), m_order->value(), m_slits->value(), m_incidence->currentData().toDouble(),
-                        m_tabs->current() == 1}, ctx);
+    return WE::grating({m_density->value(), m_lambda->value(), m_lambda2->value(), m_order->value(), m_slits->value(),
+                        m_incidence->currentData().toDouble(), m_tabs->current() == 1}, ctx);
 }
 void GratingPage::updateCanvas() {
     const int tab = m_tabs->current();
     const bool orders = tab == 1;
-    m_canvas->setInput({m_density->value(), m_lambda->value(), m_order->value(), m_slits->value(), m_incidence->currentData().toDouble(), orders});
+    m_canvas->setInput({m_density->value(), m_lambda->value(), m_lambda2->value(), m_order->value(), m_slits->value(),
+                        m_incidence->currentData().toDouble(), orders});
     retitle(tab == 2 ? "Grating / two lines one Rayleigh step apart" : orders ? "Grating / every propagating order" : "Grating / angular observation screen",
             tab == 2 ? "Single line and a just-resolved pair" : orders ? "Order angles and where every peak sits" : "Diffracted intensity vs angle");
 }
-void GratingPage::resetFields() { m_density->setValue(5000, 0); m_lambda->setValue(600, 2); m_order->setValue(1, 0); m_slits->setValue(20, 0); m_incidence->setCurrentIndex(0); m_tabs->setCurrent(0); }
+void GratingPage::resetFields() { m_density->setValue(5000, 0); m_lambda->setValue(600, 2); m_lambda2->setValue(0.0, 2); m_order->setValue(1, 0); m_slits->setValue(20, 0); m_incidence->setCurrentIndex(0); m_tabs->setCurrent(0); }
 QString GratingPage::runDescription() const {
     const int tab = m_tabs->current();
-    return QString("order %1 · N %2 /cm · %3").arg(m_order->text(), m_density->text(),
+    return QString("order %1 · N %2 /cm · λ₁ %3 nm · λ₂ %4 nm · %5").arg(m_order->text(), m_density->text(),
+                                                   m_lambda->text(), m_lambda2->text(),
                                                    tab == 2 ? "resolution" : tab == 1 ? "orders" : "transmission");
 }
 
@@ -410,8 +577,41 @@ SingleSlitPage::SingleSlitPage(AppContext* ctx, QWidget* parent)
     m_lambda = addField(QString::fromLatin1(FieldIds::wavelength), "Wavelength · λ", "nm", 500, 2);
     m_screen = addField(QString::fromLatin1(FieldIds::screenDistance), "Screen distance · L", "m", 1.0, 4);
     m_separation = addField(QString::fromLatin1(FieldIds::slitSeparation), "Second slit · d (envelope tab)", "mm", 0.4, 4);
+    // ---- Preset scenarios (Item 19) ----
+    auto* presetLabel = new QLabel("Presets:");
+    presetLabel->setObjectName("fieldLabel");
+    m_fieldLayout->addWidget(presetLabel);
+    auto* presetRow = new QHBoxLayout;
+    presetRow->setSpacing(4);
+    auto makePreset = [&](const QString& label, double width, double lambda, double screen, int tabIdx) {
+        auto* b = new QPushButton(label);
+        b->setObjectName("presetBtn");
+        b->setCursor(Qt::PointingHandCursor);
+        b->setMinimumHeight(30);
+        connect(b, &QPushButton::clicked, this, [this, width, lambda, screen, tabIdx] {
+            m_syncing = true;
+            m_width->setValue(width, 4);
+            m_lambda->setValue(lambda, 2);
+            m_screen->setValue(screen, 4);
+            m_tabs->setCurrent(tabIdx);
+            m_syncing = false;
+            apply(false);
+        });
+        presetRow->addWidget(b);
+        return b;
+    };
+    m_presetStandard = makePreset("a=0.1mm · λ=500", 0.1, 500.0, 1.0, 0);
+    m_presetGeometry = makePreset("Geometry tab", 0.1, 500.0, 1.0, 1);
+    m_presetEnvelope = makePreset("Envelope tab", 0.1, 500.0, 1.0, 2);
+    m_fieldLayout->addLayout(presetRow);
+    // Item 11: real-time updates are built into addField() (edited → apply(false))
     m_wave = addCombo("Incident wave", {"Plane · coherent"}, {0});
     m_scale = addCombo("Intensity scale", {"Normalized · I/I₀"}, {0});
+    m_exactGeom = addCombo("Geometry model", {"Exact · tan(asin(λ/a))", "Small-angle · ≈ 2Lλ/a"}, {1, 0});
+    m_showEnvelopeOnly = new QCheckBox("Show sinc² envelope only");
+    m_showEnvelopeOnly->setChecked(false);
+    m_fieldLayout->addWidget(m_showEnvelopeOnly);
+    connect(m_showEnvelopeOnly, &QCheckBox::toggled, this, [this](bool) { apply(false); });
     m_canvas = new SingleSlitCanvas;
     build("Slit / screen diffraction pattern", m_canvas, "Single-slit intensity vs angle", "Minima: a sin θ = mλ. Intensity: the envelope. Geometry: where each minimum lands. Envelope: two slits of width a — fringes inside the envelope, missing orders at d/a.");
     reset();
@@ -421,25 +621,35 @@ ModelReport SingleSlitPage::compute(const ReportContext& ctx) {
         SingleSlitInput in;
         in.widthMm = m_width->value(); in.lambdaNm = m_lambda->value(); in.screenM = m_screen->value();
         in.separationMm = m_separation->value(); in.envelope = true;
+        // Item 12: show sinc² envelope only when checkbox is checked
+        if (m_showEnvelopeOnly->isChecked()) {
+            // Override: show just the envelope (cos² term = 1)
+            in.separationMm = 0.0;  // will be caught by d > a check, so handle separately
+            return WE::singleSlit({m_width->value(), m_lambda->value(), m_screen->value(), false, false, 0.0, m_exactGeom->currentData().toInt() == 1}, ctx);
+        }
         return WE::doubleSlitEnvelope(in, ctx);
     }
-    return WE::singleSlit({m_width->value(), m_lambda->value(), m_screen->value(), m_tabs->current() == 1}, ctx);
+    return WE::singleSlit({m_width->value(), m_lambda->value(), m_screen->value(), m_tabs->current() == 1, false, m_separation->value(),
+                           m_exactGeom->currentData().toInt() == 1}, ctx);
 }
 void SingleSlitPage::updateCanvas() {
     const int tab = m_tabs->current();
     const bool geometry = tab == 1;
+    const bool exact = m_exactGeom->currentData().toInt() == 1;
     SingleSlitInput in;
     in.widthMm = m_width->value(); in.lambdaNm = m_lambda->value(); in.screenM = m_screen->value();
-    in.geometry = geometry; in.envelope = tab == 2; in.separationMm = m_separation->value();
+    in.geometry = geometry; in.envelope = tab == 2; in.separationMm = m_separation->value(); in.exactGeometry = exact;
     m_canvas->setInput(in);
     retitle(tab == 2 ? "Two slits / fringes inside the envelope" : geometry ? "Slit / where the minima land" : "Slit / screen diffraction pattern",
             tab == 2 ? "Fringes and the slit envelope" : geometry ? "Minimum position vs order" : "Single-slit intensity vs angle");
 }
-void SingleSlitPage::resetFields() { m_width->setValue(0.1, 4); m_lambda->setValue(500, 2); m_screen->setValue(1.0, 4); m_separation->setValue(0.4, 4); m_wave->setCurrentIndex(0); m_scale->setCurrentIndex(0); m_tabs->setCurrent(0); }
+void SingleSlitPage::resetFields() { m_width->setValue(0.1, 4); m_lambda->setValue(500, 2); m_screen->setValue(1.0, 4); m_separation->setValue(0.4, 4); m_wave->setCurrentIndex(0); m_scale->setCurrentIndex(0); m_exactGeom->setCurrentIndex(0); m_showEnvelopeOnly->setChecked(false); m_tabs->setCurrent(0); }
 QString SingleSlitPage::runDescription() const {
     const int tab = m_tabs->current();
-    return QString("a %1 mm · λ %2 nm · %3").arg(m_width->text(), m_lambda->text(),
-                                                 tab == 2 ? "envelope" : tab == 1 ? "geometry" : "intensity");
+    return QString("a %1 mm · λ %2 nm · %3 · %4 · env%5").arg(m_width->text(), m_lambda->text(),
+                                                 tab == 2 ? "envelope" : tab == 1 ? "geometry" : "intensity",
+                                                 m_exactGeom->currentText().section(' ·', 0, 0),
+                                                 m_showEnvelopeOnly->isChecked() ? "only" : "fringes");
 }
 
 // ============================================================================ Malus + Brewster
@@ -451,6 +661,34 @@ PolarizationPage::PolarizationPage(AppContext* ctx, QWidget* parent)
     m_angle = addField(QString::fromLatin1(FieldIds::relativeAngle), "Relative axis angle · θ", "°", 60, 2, false, true, 1);
     m_n1 = addField(QString::fromLatin1(FieldIds::refractiveIndex1), "Incident index · n₁ (air)", "", 1.0, 4, false, true, 0.01);
     m_n2 = addField(QString::fromLatin1(FieldIds::refractiveIndex2), "Transmitted index · n₂", "", 1.5, 4, false, true, 0.01);
+    // ---- Preset scenarios (Item 19) ----
+    auto* presetLabel = new QLabel("Presets:");
+    presetLabel->setObjectName("fieldLabel");
+    m_fieldLayout->addWidget(presetLabel);
+    auto* presetRow = new QHBoxLayout;
+    presetRow->setSpacing(4);
+    auto makePreset = [&](const QString& label, double intensity, double angle, double n1, double n2, bool unpolarized, int tabIdx) {
+        auto* b = new QPushButton(label);
+        b->setObjectName("presetBtn");
+        b->setCursor(Qt::PointingHandCursor);
+        b->setMinimumHeight(30);
+        connect(b, &QPushButton::clicked, this, [this, intensity, angle, n1, n2, unpolarized, tabIdx] {
+            m_syncing = true;
+            m_intensity->setValue(intensity, 2);
+            m_angle->setValue(angle, 2);
+            m_n1->setValue(n1, 4);
+            m_n2->setValue(n2, 4);
+            m_beam->setCurrentIndex(unpolarized ? 0 : 1);
+            m_tabs->setCurrent(tabIdx);
+            m_syncing = false;
+            apply(false);
+        });
+        presetRow->addWidget(b);
+        return b;
+    };
+    m_presetMalus = makePreset("Malus · θ=60°", 100.0, 60.0, 1.0, 1.5, true, 0);
+    m_presetBrewster = makePreset("Brewster · air→glass", 100.0, 0.0, 1.0, 1.5, true, 1);
+    m_fieldLayout->addLayout(presetRow);
     m_canvas = new PolarizationCanvas;
     build("Two polarizers / independent Brewster reference", m_canvas, "Intensity vs relative angle", "Malus: θ range 0–90°, the first polarizer transmits half of unpolarized light. Brewster: tan θB = n₂/n₁, R_p = 0 at θB.");
     reset();

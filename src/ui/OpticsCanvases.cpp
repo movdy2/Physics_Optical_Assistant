@@ -493,10 +493,12 @@ void PrismCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     };
 
     const Trace main = trace(m_in.nPrism, m_in.nMedium);
-    // normals
-    p.setPen(QPen(t.dim, 1, Qt::DashLine));
-    p.drawLine(P1 - nL * 40, P1 + nL * 60);
-    if (main.ok) p.drawLine(main.P2 - nR * 40, main.P2 + nR * 60);
+    // normals (gated by toggle)
+    if (m_showNormals) {
+        p.setPen(QPen(t.dim, 1, Qt::DashLine));
+        p.drawLine(P1 - nL * 40, P1 + nL * 60);
+        if (main.ok) p.drawLine(main.P2 - nR * 40, main.P2 + nR * 60);
+    }
 
     if (!spectrumMode) {
         drawPath(main, t.amber, true, true);
@@ -517,14 +519,16 @@ void PrismCanvas::paintDiagram(QPainter& p, const QRectF& a) {
         arcDirs(p, main.X, main.d0, main.d2, 24, t.text);
         text(p, main.P2 + QPointF(26, 44), "δ = " + num(res.deviation) + "°", t.amber, 10);
     }
-    arcDirs(p, P1, nL, -main.d0, 24, t.text);
-    text(p, P1 + QPointF(-6, -22), "i₁ = " + num(m_in.incidence) + "°", t.text, 9, Qt::AlignRight);
-    if (main.ok && !main.tir) {
-        arcDirs(p, main.P2, nR, main.d2, 24, t.text);
-        text(p, main.P2 + QPointF(6, -22), "i₂ = " + num(res.i2) + "°", t.text, 9);
-        const bool sym = std::fabs(res.r1 - res.r2) < 0.005;
-        text(p, (P1 + main.P2) / 2 + QPointF(0, 18), sym ? "r₁ = r₂ = " + QString::number(res.r1, 'g', 6) + "°"
-                                                         : "r₁ = " + num(res.r1, 2) + "°  r₂ = " + num(res.r2, 2) + "°", t.text, 9, Qt::AlignHCenter);
+    if (m_showBends) {
+        arcDirs(p, P1, nL, -main.d0, 24, t.text);
+        text(p, P1 + QPointF(-6, -22), "i₁ = " + num(m_in.incidence) + "°", t.text, 9, Qt::AlignRight);
+        if (main.ok && !main.tir) {
+            arcDirs(p, main.P2, nR, main.d2, 24, t.text);
+            text(p, main.P2 + QPointF(6, -22), "i₂ = " + num(res.i2) + "°", t.text, 9);
+            const bool sym = std::fabs(res.r1 - res.r2) < 0.005;
+            text(p, (P1 + main.P2) / 2 + QPointF(0, 18), sym ? "r₁ = r₂ = " + QString::number(res.r1, 'g', 6) + "°"
+                                                             : "r₁ = " + num(res.r1, 2) + "°  r₂ = " + num(res.r2, 2) + "°", t.text, 9, Qt::AlignHCenter);
+        }
     }
     arcDirs(p, apex, unit(left - apex), unit(right - apex), 26, t.text);
     text(p, apex + QPointF(0, 44), "A = " + QString::number(m_in.apex, 'g', 5) + "°", t.text, 9, Qt::AlignHCenter);
@@ -597,7 +601,7 @@ void WaveCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     const double ym = cy - m_in.order * pitch;
     for (const QPointF& s : {S1, S2}) ray(p, s, QPointF(sx, ym), t.text, 1, -1, Qt::DashLine);
     for (const QPointF& s : {S1, S2}) ray(p, s, QPointF(sx, cy), t.text, 1, -1, Qt::DashLine);
-    text(p, QPointF(sx - 10, ym - 8), "m = +" + QString::number(m_in.order), t.amber, 9, Qt::AlignRight);
+    text(p, QPointF(sx - 10, ym - 8), QString("m = %1").arg(m_in.order), t.amber, 9, Qt::AlignRight);
     text(p, QPointF(sx - 10, cy + 12), "m = 0", t.amber, 9, Qt::AlignRight);
 
     text(p, QPointF(a.left() + 14, cy + 105), "d = " + QString::number(m_in.separationMm, 'g', 4) + " mm", t.amber, 10);
@@ -856,15 +860,26 @@ void MichelsonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
          QString::fromStdString(std::string("ΔN = ") + (shift >= 0 ? "+" : "-") + NumberFormat::fixed(std::fabs(shift), 4) + " fringes"),
          shift >= 0 ? t.lime : t.amber, 10, Qt::AlignLeft, true);
     text(p, QPointF(detector.x() + 12, detector.y() + 38),
+         QString::fromStdString(std::string("Δφ = ") + NumberFormat::signedFixed(dphi) + " rad = " +
+                                NumberFormat::signedFixed(dphi * 180.0 / std::numbers::pi) + "°"),
+         t.amber, 9);
+    text(p, QPointF(detector.x() + 12, detector.y() + 52),
          QString::fromStdString(std::string("Fringes crossed from zero: ") + NumberFormat::fixed(std::fabs(shift), 4)),
          t.muted, 9);
 
     // Circular detector fringes are a schematic radial phase map. At r = 0 it uses the same
     // Δφ = 4πnΔx/λ and normalized intensity as the register above.
     const int size = static_cast<int>(std::min(108.0, a.height() * 0.27));
-    const QImage img = fringeImage(size, [dphi, size, vis](double px, double py) {
+    // Item 14: tilt converts circular (bullseye) fringes into straight fringes.
+    // tiltMrad adds a linear OPD gradient across the field of view; at zero tilt
+    // the pattern is circular, at large tilt the fringes straighten and crowd together.
+    const double tiltRad = m_in.tiltMrad * 1e-3;
+    const double tiltGrad = 2.0 * std::numbers::pi * tiltRad * size / m_in.lambdaNm * 1e3;
+    const QImage img = fringeImage(size, [dphi, size, vis, tiltRad, tiltGrad](double px, double py) {
         const double r2 = (px * px + py * py) / double((size / 2) * (size / 2));
-        return (1 + vis * std::cos(dphi + 18.0 * r2)) / (1 + vis);
+        // Linear tilt term across x plus circular quadratic term; tilt straightens fringes.
+        const double phase = dphi + 18.0 * r2 + tiltGrad * px / (size / 2.0);
+        return (1 + vis * std::cos(phase)) / (1 + vis);
     });
     const QPointF fringeCenter(a.right() - size / 2.0 - 16.0, a.bottom() - size / 2.0 - 22.0);
     p.drawImage(QPointF(fringeCenter.x() - size / 2.0, fringeCenter.y() - size / 2.0), img);
@@ -876,6 +891,39 @@ void MichelsonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     text(p, QPointF(a.left() + 14, a.bottom() - 46), m_in.fringes
              ? "Contrast V = " + num(vis, 2) + " · sweep ±2 µm"
              : "Concentric fringes · schematic", t.muted, 9);
+
+    // ---- Detector screen interference fringes ----
+    // A horizontal screen showing vertical bright/dark fringes. Fringe spacing across
+    // the screen is set by the M2 tilt (tilt = 0 → uniform intensity); contrast is set
+    // by visibility V (coherence-length decay reduces V). Center intensity matches I/Imax.
+    const int screenW = 120, screenH = 14;
+    const QRectF screenRect(detector.x() + 44, detector.y() + 12, screenW, screenH);
+    const double screenCenter = screenW / 2.0;
+
+    // Screen frame
+    p.setPen(QPen(t.muted, 1));
+    p.setBrush(Qt::NoBrush);
+    p.drawRect(screenRect);
+    text(p, QPointF(screenRect.left(), screenRect.top() - 6), "Detector screen · fringes", t.muted, 8);
+
+    // Fringe phase gradient across screen from mirror tilt:
+    //   ΔOPD(x) ≈ 2·θ·x  (round trip)  →  φ(x) = φ₀ + 4πθx/λ
+    // At 10 mrad tilt → ~8 fringes across the screen width.
+    const double tiltFringeCount = (std::fabs(tiltRad) / 0.01) * 8.0;
+    const double phaseGrad = tiltFringeCount * 2.0 * std::numbers::pi / screenW;
+    for (int i = 0; i < screenW; ++i) {
+        const double phase = dphi + phaseGrad * (i - screenCenter);
+        const double I = (1 + vis * std::cos(phase)) / (1 + vis);
+        p.setPen(mix(t.canvas, t.lime, I));
+        p.drawLine(screenRect.left() + i, screenRect.top(), screenRect.left() + i, screenRect.bottom());
+    }
+
+    // Center marker: intensity at screen center = I/Imax
+    const int centerX = screenRect.left() + static_cast<int>(screenCenter);
+    p.setPen(QPen(t.amber, 2));
+    p.drawLine(QPointF(centerX, screenRect.top() - 4), QPointF(centerX, screenRect.top() + screenH + 4));
+    text(p, QPointF(centerX, screenRect.bottom() + 12), "I/Imax = " + num(intensity, 4), t.amber, 8, Qt::AlignHCenter);
+
     // Beam path tracing legend: color-coded arms
     legendItem(p, QPointF(a.left() + 14, a.bottom() - 66), "M1 arm (top)", t.amber);
     legendItem(p, QPointF(a.left() + 120, a.bottom() - 66), "M2 arm (side)", t.sage);
@@ -889,7 +937,17 @@ void ThinFilmCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     const double thick = std::clamp(m_in.thicknessNm / 400.0, 0.12, 1.0) * 90;
     const double filmBot = filmTop + thick;
     const bool transmission = m_in.transmission;
-    text(p, QPointF(14, a.top() + 18), transmission ? "NORMAL INCIDENCE · TRANSMITTED BEAM" : "NORMAL INCIDENCE · SINGLE FILM", t.amber, 10);
+    const bool topRev = m_in.n > 1.0;
+    const bool botRev = m_in.n2 > m_in.n;
+    const bool oneReversal = topRev != botRev;
+    // Snell's law: sin(θₜ) = sin(θ₀)/n (n₀ = 1.0)
+    const double sinThetaT = std::sin(std::fabs(m_in.thetaDeg) * kDeg) / m_in.n;
+    const double cosThetaT = std::sqrt(std::max(0.0, 1.0 - sinThetaT * sinThetaT));
+    const double opd = 2.0 * m_in.n * m_in.thicknessNm * cosThetaT;
+
+    const bool oblique = std::fabs(m_in.thetaDeg) > 0.5;
+    text(p, QPointF(14, a.top() + 18), (oblique ? "OBLIQUE INCIDENCE" : "NORMAL INCIDENCE") +
+                                (transmission ? " · TRANSMITTED BEAM" : " · SINGLE FILM"), t.amber, 10);
     QColor film = t.blue; film.setAlpha(60);
     QColor sub = t.sage; sub.setAlpha(40);
     p.setPen(Qt::NoPen);
@@ -897,40 +955,47 @@ void ThinFilmCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     p.setBrush(sub); p.drawRect(QRectF(left, filmBot, right - left, a.bottom() - filmBot - 70));
     p.setPen(QPen(t.sage, 1.5)); p.drawLine(QPointF(left, filmTop), QPointF(right, filmTop)); p.drawLine(QPointF(left, filmBot), QPointF(right, filmBot));
     text(p, QPointF(left + 6, filmTop - 12), "Air · n₀ = 1.0000", t.muted, 10);
-    text(p, QPointF(left + 6, filmTop + thick / 2), "Film · n = " + num(m_in.n, 4), t.text, 10);
-    text(p, QPointF(left + 6, filmBot + 16), "Substrate · n₂ > n", t.muted, 10);
+    text(p, QPointF(left + 6, filmTop + thick / 2), "Film · n = " + num(m_in.n), t.text, 10);
+    text(p, QPointF(left + 6, filmBot + 16), "Substrate · n₂ = " + num(m_in.n2), t.muted, 10);
     const double x0 = a.center().x() - 20;
-    ray(p, QPointF(x0 - 60, a.top() + 54), QPointF(x0, filmTop), t.amber, 1.8);                 // incident (drawn slightly oblique)
+    const double dy = oblique ? 24.0 : 0.0;
+    const double dx = oblique ? 40.0 : 60.0;
+    ray(p, QPointF(x0 - dx, a.top() + 54 - dy), QPointF(x0, filmTop), t.amber, 1.8);                 // incident ray
+    if (oblique) {
+        text(p, QPointF(x0 - dx - 40, a.top() + 44), "θ₀ = " + num(m_in.thetaDeg, 1) + "°", t.muted, 9);
+    }
     if (transmission) {
         ray(p, QPointF(x0, filmTop), QPointF(x0 + 20, filmBot), t.amber, 1.3);                  // T1 through the film
         ray(p, QPointF(x0 + 20, filmBot), QPointF(x0 + 34, a.bottom() - 80), t.amber, 1.8);     // T2 down through the substrate
-        text(p, QPointF(x0 + 38, a.bottom() - 80), "T · no net reversal", t.amber, 10);
+        text(p, QPointF(x0 + 38, a.bottom() - 80), "T · " + QString(oneReversal ? "one reversal" : "no net reversal"), t.amber, 10);
         ray(p, QPointF(x0 + 20, filmBot), QPointF(x0 + 6, filmTop), t.dim, 1.1, -1, Qt::DashLine);   // weak internal bounce
     } else {
-        ray(p, QPointF(x0, filmTop), QPointF(x0 + 60, a.top() + 54), t.text, 1.6);              // R1: phase reversal
-        text(p, QPointF(x0 + 64, a.top() + 54), "R1 · phase reversal", t.text, 10);
+        ray(p, QPointF(x0, filmTop), QPointF(x0 + dx, a.top() + 54 + dy), t.text, 1.6);              // R1: reflected at top
+        text(p, QPointF(x0 + dx + 4, a.top() + 54 + dy), "R1 · " + QString(topRev ? "reversal" : "no reversal"), t.text, 10);
         ray(p, QPointF(x0, filmTop), QPointF(x0 + 14, filmBot), t.amber, 1.3);
         ray(p, QPointF(x0 + 14, filmBot), QPointF(x0 + 28, filmTop), t.amber, 1.3);
-        ray(p, QPointF(x0 + 28, filmTop), QPointF(x0 + 88, a.top() + 92), t.amber, 1.6);        // R2
-        text(p, QPointF(x0 + 92, a.top() + 92), "R2 · no reversal", t.amber, 10);
+        ray(p, QPointF(x0 + 28, filmTop), QPointF(x0 + dx + 28, a.top() + 92 + dy), t.amber, 1.6);        // R2
+        text(p, QPointF(x0 + dx + 32, a.top() + 92 + dy), "R2 · " + QString(botRev ? "reversal" : "no reversal"), t.amber, 10);
     }
     p.setPen(QPen(t.text, 1)); p.drawLine(QPointF(right - 24, filmTop), QPointF(right - 24, filmBot));
     text(p, QPointF(right - 30, filmTop + thick / 2), "t = " + num(m_in.thicknessNm) + " nm", t.text, 10, Qt::AlignRight);
-    text(p, QPointF(14, a.bottom() - 46), "OPD = 2nt = " + num(2 * m_in.n * m_in.thicknessNm) + " nm", t.muted, 10);
+    text(p, QPointF(14, a.bottom() - 46), "OPD = 2nt·cosθₜ = " + num(opd) + " nm", t.muted, 10);
     if (transmission) {
-        const double trans = std::pow(std::cos(std::numbers::pi * 2 * m_in.n * m_in.thicknessNm / m_in.lambdaNm), 2);
-        text(p, QPointF(14, a.bottom() - 30), "I_t/I_t,max = cos²(2πnt/λ) = " + num(trans, 4), t.muted, 10);
-        text(p, QPointF(14, a.bottom() - 14), "Bright when 2nt = qλ", t.muted, 10);
+        const double trans = 1.0 - (oneReversal ? std::pow(std::sin(std::numbers::pi * opd / m_in.lambdaNm), 2) :
+                                                std::pow(std::cos(std::numbers::pi * opd / m_in.lambdaNm), 2));
+        text(p, QPointF(14, a.bottom() - 30), "I_t/I_t,max = " + (oneReversal ? "sin²" : "cos²") + "(2πnt·cosθₜ/λ) = " + num(trans), t.muted, 10);
+        text(p, QPointF(14, a.bottom() - 14), "Bright when 2nt·cosθₜ = " + QString(oneReversal ? "(q + ½)λ" : "qλ"), t.muted, 10);
     } else {
-        text(p, QPointF(14, a.bottom() - 30), "Δψ = 4πnt/λ − π", t.muted, 10);
-        text(p, QPointF(14, a.bottom() - 14), "Bright when 2nt = (q + ½)λ", t.muted, 10);
+        text(p, QPointF(14, a.bottom() - 30), "Δψ = 4πnt·cosθₜ/λ " + QString(oneReversal ? "+ π" : "") + " (" + (oneReversal ? "sin²" : "cos²") + ")", t.muted, 10);
+        text(p, QPointF(14, a.bottom() - 14), "Bright when 2nt·cosθₜ = " + QString(oneReversal ? "(q + ½)λ" : "qλ"), t.muted, 10);
     }
 }
 
 void GratingCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     const Theme& t = th();
     const double d = 0.01 / std::max(1e-9, m_in.linesPerCm), lam = m_in.lambdaNm * 1e-9;
-    text(p, QPointF(14, a.top() + 18), "NORMAL INCIDENCE · d = " + num(d * 1e6, 4) + " µm", t.amber, 10);
+    text(p, QPointF(14, a.top() + 18), (std::fabs(m_in.incidenceDeg) < 0.5 ? "NORMAL INCIDENCE" : "INCIDENCE θᵢ = " + num(m_in.incidenceDeg, 1) + "°") +
+                                " · d = " + num(d * 1e6, 4) + " µm", t.amber, 10);
     if (m_in.orderList)                                                        // second tab: every peak is the subject
         text(p, QPointF(a.right() - 14, a.top() + 18), "ORDERS VIEW · d/λ = " + num(d / lam, 4), t.amber, 10, Qt::AlignRight);
     const QPointF g(a.left() + a.width() * 0.30, a.top() + a.height() * 0.40);
@@ -939,14 +1004,26 @@ void GratingCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     p.setPen(QPen(t.dim, 5, Qt::DotLine)); p.drawLine(QPointF(g.x(), g.y() - 70), QPointF(g.x(), g.y() + 70));
     p.setPen(QPen(t.sage, 2)); p.drawLine(QPointF(sx, g.y() - 100), QPointF(sx, g.y() + 100));
     const auto orders = WaveExperiments::allowedGratingOrders(m_in.linesPerCm, m_in.lambdaNm, m_in.incidenceDeg);
+    const int mSel = static_cast<int>(std::lround(m_in.order));
+    const double sSel = mSel * lam / d - std::sin(m_in.incidenceDeg * std::numbers::pi / 180);
+    const bool selPropagates = std::fabs(sSel) <= 1.0;
+    const double thSel = selPropagates ? std::asin(std::clamp(sSel, -1.0, 1.0)) : 0.0;
     for (int m : orders) {
-        const double s = m * lam / d + std::sin(m_in.incidenceDeg * std::numbers::pi / 180);
+        const double s = m * lam / d - std::sin(m_in.incidenceDeg * std::numbers::pi / 180);
         const double th2 = std::asin(std::clamp(s, -1.0, 1.0));
         const QPointF end(g.x() + len * std::cos(th2) * 0.92, g.y() - len * std::sin(th2) * 0.92);
-        const bool selected = m == static_cast<int>(std::lround(m_in.order)) || m_in.orderList;
+        const bool selected = m == mSel || m_in.orderList;
         p.setPen(QPen(selected ? t.amber : t.sage, selected ? 2.2 : 1.3));
         p.drawLine(g, end);
         text(p, end + QPointF(6, 0), (m > 0 ? "+" : "") + QString::number(m), selected ? t.amber : t.muted, 10);
+    }
+    // Ray angle visualizer: incidence angle and selected diffracted order angle
+    text(p, QPointF(a.left() + 24, g.y() - 80), "θᵢ = " + num(m_in.incidenceDeg, 1) + "°", t.muted, 10);
+    if (selPropagates) {
+        text(p, QPointF(g.x() + len * std::cos(thSel) * 0.92 + 10, g.y() - len * std::sin(thSel) * 0.92 - 14),
+             "θₘ = " + num(thSel * 180 / std::numbers::pi, 2) + "°", t.amber, 10);
+    } else {
+        text(p, QPointF(g.x() + 40, g.y() - 50), "θₘ: no real angle", t.muted, 9);
     }
     text(p, QPointF(a.center().x(), g.y() + 108), "Ray fan schematic · not to scale", t.muted, 10, Qt::AlignHCenter);
     // angular screen: one sharp bar per allowed order
@@ -954,7 +1031,7 @@ void GratingCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     text(p, QPointF(14, by - 26), "ANGULAR SCREEN · SHARP ALLOWED ORDERS", t.amber, 10);
     p.setPen(Qt::NoPen); p.setBrush(t.bg); p.drawRect(QRectF(bx, by - 14, bw, 30));
     for (int m : orders) {
-        const double th2 = std::asin(std::clamp(m * lam / d + std::sin(m_in.incidenceDeg * std::numbers::pi / 180), -1.0, 1.0)) * 180 / std::numbers::pi;
+        const double th2 = std::asin(std::clamp(m * lam / d - std::sin(m_in.incidenceDeg * std::numbers::pi / 180), -1.0, 1.0)) * 180 / std::numbers::pi;
         const double x = bx + bw / 2 + th2 / 90.0 * bw / 2;
         const bool selected = m == static_cast<int>(std::lround(m_in.order));
         p.setBrush(selected || m_in.orderList ? t.amber : t.sage); p.drawRect(QRectF(x - 2, by - 12, 4, 26));
@@ -1008,9 +1085,14 @@ void SingleSlitCanvas::paintDiagram(QPainter& p, const QRectF& a) {
                  + num(m_in.screenM * std::tan(std::asin(std::min(1.0, 2 * lam / aa))) * 1e3, 4) + " mm", t.muted, 10);
         text(p, QPointF(14, a.bottom() - 14),
              "y₃ = ±" + num(m_in.screenM * std::tan(std::asin(std::min(1.0, 3 * lam / aa))) * 1e3, 4)
-                 + " mm · w = " + num(2 * m_in.screenM * std::tan(theta) * 1e3, 5) + " mm (central lobe)", t.muted, 10);
+                 + " mm · w = " + num(m_in.exactGeometry ? 2 * m_in.screenM * std::tan(theta) * 1e3 :
+                    2 * m_in.screenM * (m_in.lambdaNm * 1e-9 / (m_in.widthMm * 1e-3)) * 1e3, 5)
+                 + " mm (central lobe)", t.muted, 10);
     } else {
-        text(p, QPointF(14, a.bottom() - 30), "w = 2L tan θ₁ = " + num(2 * m_in.screenM * std::tan(theta) * 1e3, 5) + " mm", t.muted, 10);
+        const double wExact = 2 * m_in.screenM * std::tan(theta) * 1e3;
+        const double wApprox = 2 * m_in.screenM * (m_in.lambdaNm * 1e-9 / (m_in.widthMm * 1e-3)) * 1e3;
+        const double wDisp = m_in.exactGeometry ? wExact : wApprox;
+        text(p, QPointF(14, a.bottom() - 30), "w = " + (m_in.exactGeometry ? "2L tan θ₁" : "≈ 2L λ/a") + " = " + num(wDisp, 5) + " mm", t.muted, 10);
         text(p, QPointF(14, a.bottom() - 14), "Minima: a sin θ = mλ", t.muted, 10);
     }
 }
@@ -1049,6 +1131,7 @@ void PolarizationCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     }
     const double i0 = m_in.unpolarized ? m_in.incidentIntensity / 2 : m_in.incidentIntensity;
     const double iOut = i0 * std::pow(std::cos(m_in.angleDeg * std::numbers::pi / 180), 2);
+    const double iOutDisp = iOut < 1e-12 ? 0.0 : iOut;   // clamp tiny residual at θ = 90°
     const double half = a.top() + a.height() * 0.50;
     text(p, QPointF(14, a.top() + 18), "A / MALUS · AXIS ROTATION", t.amber, 10);
     const double cy = a.top() + a.height() * 0.22;
@@ -1062,8 +1145,18 @@ void PolarizationCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     p.setPen(QPen(t.amber, 1.6)); p.drawEllipse(p2, 22, 38);
     p.drawLine(p2 + QPointF(-std::sin(ang) * 34, -std::cos(ang) * 34), p2 + QPointF(std::sin(ang) * 34, std::cos(ang) * 34));
     text(p, QPointF(a.left() + 14, cy - 22), "Iᵢₙ = " + num(m_in.incidentIntensity, 4) + " W/m²", t.muted, 9);
-    text(p, QPointF(p1.x() + 34, cy - 22), "I₀ = " + num(i0, 4) + " W/m²", t.muted, 9);
-    text(p, QPointF(a.right() - 10, cy - 22), "I = " + num(iOut, 5) + " W/m²", t.amber, 9, Qt::AlignRight);
+    text(p, QPointF(p1.x() + 34, cy - 22), "I₀ = " + num(i0, 4) + " W/m²" + (m_in.unpolarized ? "  (½ of unpolarized)" : ""), t.muted, 9);
+    if (m_in.unpolarized) {
+        // star / mixed arrows showing multiple polarization directions before P1
+        p.setPen(QPen(t.muted, 1.2));
+        for (double ka : {0.0, 0.8, 1.6, 2.4, 3.1}) {
+            const double ax = p1.x() - 42, ay = p1.y() - 14;
+            const double dx = std::cos(ka) * 10, dy = std::sin(ka) * 10;
+            p.drawLine(QPointF(ax, ay), QPointF(ax + dx, ay + dy));
+        }
+        text(p, QPointF(p1.x() - 52, cy - 34), "unpolarized", t.muted, 8);
+    }
+    text(p, QPointF(a.right() - 10, cy - 22), "I = " + num(iOutDisp, 5) + " W/m²", t.amber, 9, Qt::AlignRight);
     text(p, p1 + QPointF(0, 54), "P₁ axis 0°", t.muted, 9, Qt::AlignHCenter);
     text(p, p2 + QPointF(0, 54), "P₂ axis " + num(m_in.angleDeg, 4) + "°", t.muted, 9, Qt::AlignHCenter);
     text(p, QPointF(a.center().x(), cy + 76), "θ = " + num(m_in.angleDeg, 4) + "° between transmission axes", t.text, 10, Qt::AlignHCenter);

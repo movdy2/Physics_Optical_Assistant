@@ -69,9 +69,31 @@ ModelReport newtonRings(const NewtonInput& in, const ReportContext& ctx) {
     const double order = in.transmitted ? m + 0.5 : double(m);
     const double r2 = order * lam * in.radiusM / in.n;              // r_m² = m'λR/n
     const double r = std::sqrt(r2);
+
+    // --- Geometry constraint: r must be ≪ R (thin-film / small-angle approximation) ---
+    const bool rExceedsR = r > in.radiusM;
+    if (rExceedsR) {
+        issues.push_back({FieldIds::radiusOfCurvature, "Ring radius r exceeds R: small-angle approximation breaks down.", "R"});
+        const std::string guardText2 = "The computed ring radius r = " + fx(r * 1e3) + " mm exceeds R = " + num(in.radiusM) + " m. The relation t ≈ r²/(2R) is only valid for r ≪ R. Reduce m, λ, or increase R.";
+        return paused("Ring radius exceeds lens curvature", issues,
+                      {"λ = " + num(in.lambdaNm) + " nm   R = " + num(in.radiusM) + " m", "n = " + num(in.n) + "   m = " + num(in.order), "r = " + fx(r * 1e3) + " mm > R = " + num(in.radiusM) + " m", "ACTION: Reduce m, increase R, or choose a smaller λ."},
+                      guardText2 + "\n\nDiagram, chart and retained results show the last valid run.", ctx);
+    }
+
     const double t = order * lam / (2 * in.n);                      // film thickness at ring m
     const std::string ms = sub(m);
     const std::string orderExpr = in.transmitted ? "(" + std::to_string(m) + " + ½)" : std::to_string(m);
+
+    // --- Uncertainty propagation: σ(r)/r = ½(σ(λ)/λ + σ(R)/R + σ(n)/n) ---
+    const bool uncertain = anyUncertainty({in.sigmaLambdaNm, in.sigmaRadiusM, in.sigmaN});
+    double sigmaR = 0.0;
+    if (uncertain && r > 0.0) {
+        const double relErr = 0.5 * std::sqrt(
+            std::pow(in.sigmaLambdaNm / in.lambdaNm, 2) +
+            std::pow(in.sigmaRadiusM / in.radiusM, 2) +
+            std::pow(in.sigmaN / in.n, 2));
+        sigmaR = r * relErr;
+    }
 
     ModelReport out;
     Report& rep = out.report;
@@ -82,6 +104,10 @@ ModelReport newtonRings(const NewtonInput& in, const ReportContext& ctx) {
                " = " + NF::scientific(r2, 4) + " m²", "r" + ms + " = √(" + NF::scientificCompact(r2).substr(0, 0) + NF::general(r2 * 1e6, 5) + "×10⁻⁶) m"};
     a.resultLabel = "RADIUS · r" + ms;
     a.resultValue = fx(r * 1e3) + " mm";
+    if (uncertain && sigmaR > 0.0) {
+        a.resultValue += " ± " + fx(sigmaR * 1e3) + " mm";
+        a.extraLines.push_back("σ(r" + ms + ") = " + fx(sigmaR * 1e3) + " mm (1σ)");
+    }
     LcdRegister b;
     b.title = "DIAMETER / FILM THICKNESS";
     b.lines = {"D" + ms + " = 2r" + ms,
@@ -95,9 +121,15 @@ ModelReport newtonRings(const NewtonInput& in, const ReportContext& ctx) {
                        : "One reflection phase reversal makes the contact point dark. Squared radius, not radius, grows linearly with dark-ring order."),
                    guard(guardText)};
     rep.headline = "r" + ms + " = " + fx(r * 1e3) + " mm";
+    if (uncertain && sigmaR > 0.0) rep.headline += " ± " + fx(sigmaR * 1e3) + " mm";
     rep.retained = retained({"λ = " + NF::fixed(in.lambdaNm, 1) + " nm · R = " + NF::fixed(in.radiusM, 4) + " m", "n = " + NF::fixed(in.n, 4) + " · m = " + std::to_string(m)}, "RETAINED RADIUS · r" + ms, a.resultValue);
     rep.parameters = {{"λ", num(in.lambdaNm) + " nm"}, {"R", num(in.radiusM) + " m"}, {"m", std::to_string(m)}, {"n", num(in.n)},
                       {"mode", in.transmitted ? "transmitted" : "reflected"}};
+    if (uncertain) {
+        rep.parameters.emplace_back("σ(λ)", num(in.sigmaLambdaNm) + " nm");
+        rep.parameters.emplace_back("σ(R)", num(in.sigmaRadiusM) + " m");
+        rep.parameters.emplace_back("σ(n)", num(in.sigmaN));
+    }
 
     const double slope = lam * in.radiusM / in.n * 1e6;             // mm² per order
     ChartData& c = out.chart;
@@ -118,15 +150,28 @@ ModelReport michelson(const MichelsonInput& in, const ReportContext& ctx) {
     if (in.n < 1) issues.push_back({FieldIds::refractiveIndex, "Enter n ≥ 1.", "n"});
     if (in.displacementUm < -2.0 || in.displacementUm > 2.0)
         issues.push_back({FieldIds::mirrorDisplacement, "Keep the movable mirror stage within −2 to +2 µm.", "Δx"});
-    const std::string guardText = "Require λ > 0 and n ≥ 1. The simulated movable mirror stage travels ±2 µm; equal-amplitude beams give full visibility, while unequal beams reduce fringe contrast.";
+    if (in.coherenceLengthUm < 0) issues.push_back({FieldIds::wavelength, "Coherence length must be ≥ 0 (0 = infinite).", "Lc"});
+    if (in.plateThicknessUm < 0) issues.push_back({FieldIds::refractiveIndex, "Plate thickness must be ≥ 0.", "t"});
+    if (in.plateIndex < 1) issues.push_back({FieldIds::refractiveIndex, "Plate index must be ≥ 1.", "n_plate"});
+    const std::string guardText = "Require λ > 0 and n ≥ 1. The simulated movable mirror stage travels ±2 µm; equal-amplitude beams give full visibility, while unequal beams reduce fringe contrast. Coherence length 0 = infinite.";
     if (!issues.empty())
         return paused(issues.front().label + " out of range", issues, {"λ = " + num(in.lambdaNm) + " nm", "n = " + num(in.n), "ACTION: " + issues.front().message},
                       guardText + "\n\nDiagram, chart and retained results show the last valid run.", ctx);
 
-    const double opd = 2 * in.n * in.displacementUm * 1e3;          // nm
+    // Total OPD: mirror travel contribution (2nΔx) plus glass-plate contribution (2(n_plate−1)t, round trip)
+    const double opdMirror = 2 * in.n * in.displacementUm * 1e3;          // nm
+    const double opdPlate = 2 * (in.plateIndex - 1.0) * in.plateThicknessUm * 1e3;  // nm
+    const double opd = opdMirror + opdPlate;                               // nm
     const double shift = opd / in.lambdaNm;                         // fringes
     const double phase = 2 * std::numbers::pi * shift;
-    const double v = in.visibility;
+    const double vBase = in.visibility;
+
+    // Coherence-length decay: V = V_base · exp(−|ΔOPD| / Lc), with Lc in µm and ΔOPD converted to µm
+    double v = vBase;
+    if (in.coherenceLengthUm > 0.0) {
+        const double opdUm = std::fabs(opd) / 1e3;          // µm
+        v = vBase * std::exp(-opdUm / in.coherenceLengthUm);
+    }
     const double intensity = (1 + v * std::cos(phase)) / (1 + v);
 
     ModelReport out;
@@ -145,46 +190,61 @@ ModelReport michelson(const MichelsonInput& in, const ReportContext& ctx) {
         LcdRegister b;
         b.title = "COUNT ACROSS A ±2 µm SWEEP";
         b.lines = {"N = 2nΔx / λ", " = 2 × " + fx(in.n) + " × " + NF::fixed(2 * sweepUm * 1e3, 1) + " nm / " + num(in.lambdaNm) + " nm",
-                   "V = " + NF::fixed(v, 2) + (v >= 1 ? "  (equal beams)" : "  (unequal beams)"),
+                   "V = " + NF::fixed(vBase, 2) + (vBase >= 1 ? "  (equal beams)" : "  (unequal beams)"),
                    "I/Imax = (1 + V cos 2πN)/(1 + V)"};
         b.resultLabel = "FRINGES IN ±2 µm";
         b.resultValue = fx(count) + " fringes";
         rep.registers = {a, b};
-        rep.notices = {interpretation("Every λ/(2n) = " + fx(spacingNm) + " nm of mirror travel adds one round-trip wavelength, so one more fringe crosses the detector. Unequal beams change only the contrast V = " + NF::fixed(v, 2) + ", never the spacing."),
+        rep.notices = {interpretation("Every λ/(2n) = " + fx(spacingNm) + " nm of mirror travel adds one round-trip wavelength, so one more fringe crosses the detector. Unequal beams change only the contrast V = " + NF::fixed(vBase, 2) + ", never the spacing."),
                        guard(guardText)};
         rep.headline = fx(count) + " fringes in ±2 µm";
         rep.retained = retained({"λ = " + NF::fixed(in.lambdaNm, 1) + " nm · n = " + fx(in.n),
-                                 "sweep Δx = ±" + NF::fixed(sweepUm, 1) + " µm · V = " + NF::fixed(v, 2)},
+                                 "sweep Δx = ±" + NF::fixed(sweepUm, 1) + " µm · V = " + NF::fixed(vBase, 2)},
                                 "RETAINED FRINGE SPACING", a.resultValue);
         rep.parameters = {{"λ", num(in.lambdaNm) + " nm"}, {"Δx", num(in.displacementUm) + " µm"}, {"n", num(in.n)},
-                          {"V", num(v)}, {"mount", in.piezo ? "piezo scan" : "micrometer"}, {"mode", "fringes"}};
+                          {"V", num(vBase)}, {"mount", in.piezo ? "piezo scan" : "micrometer"}, {"mode", "fringes"}};
 
         ChartData& c = out.chart;
         c.xLabel = "Δx (µm)"; c.yLabel = "I / Imax";
         c.xMin = -sweepUm; c.xMax = sweepUm; c.yMin = 0; c.yMax = 1; c.xTicks = 4; c.yTicks = 2; c.xDecimals = 1; c.yDecimals = 1;
         for (int k = 0; k <= 600; ++k) {
             const double x = -sweepUm + 2 * sweepUm * k / 600.0;
-            c.curve.push_back({x, (1 + v * std::cos(2 * std::numbers::pi * (2 * in.n * x * 1e3) / in.lambdaNm)) / (1 + v)});
+            const double opdX = 2 * in.n * x * 1e3 + opdPlate;
+            const double vx = (in.coherenceLengthUm > 0.0) ? vBase * std::exp(-std::fabs(opdX) / 1e3 / in.coherenceLengthUm) : vBase;
+            c.curve.push_back({x, (1 + vx * std::cos(2 * std::numbers::pi * opdX / in.lambdaNm)) / (1 + vx)});
         }
         const double marked = std::clamp(in.displacementUm, -sweepUm, sweepUm);
-        c.marker = {{marked, (1 + v * std::cos(2 * std::numbers::pi * (2 * in.n * marked * 1e3) / in.lambdaNm)) / (1 + v)}};
+        const double opdM = 2 * in.n * marked * 1e3 + opdPlate;
+        const double vm = (in.coherenceLengthUm > 0.0) ? vBase * std::exp(-std::fabs(opdM) / 1e3 / in.coherenceLengthUm) : vBase;
+        c.marker = {{marked, (1 + vm * std::cos(2 * std::numbers::pi * opdM / in.lambdaNm)) / (1 + vm)}};
         c.legend = "λ/(2n) = " + fx(spacingNm) + " nm per fringe   ● current Δx";
         return out;
     }
+    // Item 12: explicit fringe count — integer number of full fringes crossed plus fractional part
+    const int fullFringes = static_cast<int>(std::floor(std::fabs(shift)));
+    const double fringeFraction = shift - std::copysign(static_cast<double>(fullFringes), shift);
     LcdRegister a;
     a.title = "ROUND-TRIP PATH CHANGE";
-    a.lines = {"ΔOPD = 2nΔx", " = 2 × " + fx(in.n) + " × " + NF::signedFixed(in.displacementUm) + " µm", " = " + NF::signedFixed(opd / 1e3) + " µm",
+    std::vector<std::string> aLines = {"ΔOPD = 2nΔx", " = 2 × " + fx(in.n) + " × " + NF::signedFixed(in.displacementUm) + " µm", " = " + NF::signedFixed(opd / 1e3) + " µm",
                "ΔN = ΔOPD / λ", " = " + NF::general(opd, 6) + " nm / " + num(in.lambdaNm) + " nm"};
+    if (in.plateThicknessUm > 0.0)
+        aLines.push_back("ΔOPD_plate = 2(n_plate − 1)t = " + fx(opdPlate / 1e3) + " µm");
+    aLines.push_back("Full fringes crossed: " + std::to_string(fullFringes));
+    aLines.push_back("Fractional fringe: " + NF::general(fringeFraction, 4));
+    a.lines = aLines;
     a.resultLabel = "FRINGE SHIFT · ΔN";
     a.resultValue = NF::signedFixed(shift);
     LcdRegister b;
     b.title = "PHASE-REFERENCED DETECTOR";
-    b.lines = {"Δφ = 2πΔN = " + NF::signedFixed(phase) + " rad", "I/Imax = (1 + V cos Δφ)/(1 + V)", "V = " + NF::fixed(v, 2) + (v >= 1 ? "  (equal beams)" : "  (unequal beams)")};
+    std::vector<std::string> bLines = {"Δφ = 2πΔN = " + NF::signedFixed(phase) + " rad", "I/Imax = (1 + V cos Δφ)/(1 + V)", "V = " + NF::fixed(v, 2) + (v >= 1 ? "  (equal beams)" : "  (unequal beams)")};
+    if (in.coherenceLengthUm > 0.0)
+        bLines.push_back("V_eff = V · exp(−|ΔOPD|/Lc) = " + NF::fixed(v, 4) + "  (Lc = " + num(in.coherenceLengthUm) + " µm)");
+    b.lines = bLines;
     b.resultLabel = "NORMALIZED INTENSITY · I/Imax";
     b.resultValue = fx(intensity);
     rep.registers = {a, b};
     rep.notices = {interpretation("Moving one mirror by λ/(2n) = " + NF::fixed(in.lambdaNm / (2 * in.n) / 1e3, 4) + " µm adds one full round-trip wavelength and shifts the pattern by one fringe."), guard(guardText)};
-    rep.headline = "ΔN = " + NF::signedFixed(shift) + " fringes";
+    rep.headline = "ΔN = " + NF::signedFixed(shift) + " fringes (" + std::to_string(fullFringes) + " full · " + NF::general(std::fabs(fringeFraction), 3) + " fractional)";
     rep.retained = retained({"λ = " + NF::fixed(in.lambdaNm, 1) + " nm · n = " + fx(in.n), "Δx = " + NF::signedFixed(in.displacementUm) + " µm"}, "RETAINED FRINGE SHIFT · ΔN", a.resultValue);
     rep.parameters = {{"λ", num(in.lambdaNm) + " nm"}, {"Δx", num(in.displacementUm) + " µm"}, {"n", num(in.n)}, {"V", num(v)},
                       {"mount", in.piezo ? "piezo scan" : "micrometer"}, {"mode", "displacement"}};
@@ -194,7 +254,9 @@ ModelReport michelson(const MichelsonInput& in, const ReportContext& ctx) {
     c.xMin = -2; c.xMax = 2; c.yMin = 0; c.yMax = 1; c.xTicks = 4; c.yTicks = 2; c.xDecimals = 1; c.yDecimals = 1;
     for (int k = 0; k <= 800; ++k) {
         const double x = -2 + k * 0.005;
-        c.curve.push_back({x, (1 + v * std::cos(2 * std::numbers::pi * (2 * in.n * x * 1e3) / in.lambdaNm)) / (1 + v)});
+        const double opdX = 2 * in.n * x * 1e3 + opdPlate;
+        const double vx = (in.coherenceLengthUm > 0.0) ? vBase * std::exp(-std::fabs(opdX) / 1e3 / in.coherenceLengthUm) : vBase;
+        c.curve.push_back({x, (1 + vx * std::cos(2 * std::numbers::pi * opdX / in.lambdaNm)) / (1 + vx)});
     }
     c.marker = {{in.displacementUm, intensity}};
     c.legend = "I/Imax = (1 + V cos 4πnΔx/λ)/(1 + V)   ● current Δx";
@@ -206,26 +268,38 @@ ModelReport thinFilm(const ThinFilmInput& in, const ReportContext& ctx) {
     std::vector<FieldIssue> issues;
     if (in.lambdaNm <= 0) issues.push_back({FieldIds::wavelength, "Enter λ > 0 nm.", "λ"});
     if (in.n <= 0) issues.push_back({FieldIds::refractiveIndex, "Enter n > 0.", "n"});
+    if (in.n2 <= 0) issues.push_back({FieldIds::filmSubstrateIndex, "Enter n₂ > 0.", "n₂"});
     if (in.thicknessNm <= 0) issues.push_back({FieldIds::thickness, "Enter t > 0 nm.", "t"});
-    const std::string guardText = "Require λ, n, t > 0. Assumes normal incidence, equal-amplitude interface reflections, and a film with n between the surrounding media.";
+    if (std::fabs(in.thetaDeg) > 89.9) issues.push_back({FieldIds::filmIncidenceAngle, "Keep |θ| < 90°.", "θ"});
+    const std::string guardText = "Require λ, n, n₂, t > 0 and |θ| < 90°. Assumes equal-amplitude interface reflections; phase reversal depends on n₀=1.0 vs n vs n₂ relations.";
     if (!issues.empty())
-        return paused(issues.front().label + " out of range", issues, {"λ = " + num(in.lambdaNm) + " nm   n = " + num(in.n), "t = " + num(in.thicknessNm) + " nm", "ACTION: " + issues.front().message},
+        return paused(issues.front().label + " out of range", issues,
+                      {"λ = " + num(in.lambdaNm) + " nm   n = " + num(in.n), "n₂ = " + num(in.n2) + "   t = " + num(in.thicknessNm) + " nm", "θ = " + num(in.thetaDeg) + "°   ACTION: " + issues.front().message},
                       guardText + "\n\nDiagram, chart and retained results show the last valid run.", ctx);
 
-    const double opd = 2 * in.n * in.thicknessNm;
-    const double dpsi = 4 * std::numbers::pi * in.n * in.thicknessNm / in.lambdaNm - std::numbers::pi;
-    const double refl = std::pow(std::sin(2 * std::numbers::pi * in.n * in.thicknessNm / in.lambdaNm), 2);
+    // Snell's law: sin(θₜ) = sin(θ₀)/n (n₀ = 1.0), OPD = 2nt·cos(θₜ)
+    const double sinThetaT = std::sin(std::fabs(in.thetaDeg) * kDeg) / in.n;
+    const double cosThetaT = std::sqrt(std::max(0.0, 1.0 - sinThetaT * sinThetaT));
+    const double opd = 2.0 * in.n * in.thicknessNm * cosThetaT;          // nm
+    // Phase reversal: π at top if n > 1.0, π at bottom if n₂ > n → XOR determines sin² vs cos²
+    const bool topRev = in.n > 1.0;
+    const bool botRev = in.n2 > in.n;
+    const bool oneReversal = topRev != botRev;
+    const double phase = std::numbers::pi * opd / in.lambdaNm;   // 2πnt·cosθₜ/λ = π·opd/λ
+    const double refl = oneReversal ? std::pow(std::sin(phase), 2) : std::pow(std::cos(phase), 2);
     const double firstBright = in.lambdaNm / (4 * in.n);
 
-    if (in.colours) {
+    const bool colours = in.colours;
+    if (colours) {
         // Third tab: every wavelength at once. The film reflects a comb of wavelengths; the eye sees their sum.
-        const FilmColour fc = thinFilmColour(in.thicknessNm, in.n);
+        const FilmColour fc = thinFilmColour(in.thicknessNm, in.n, in.n2);
         const double vis = thinFilmColourVisibility(in.thicknessNm, in.n);
         ModelReport out;
         Report& rep = out.report;
         LcdRegister a;
+        const std::string formula = oneReversal ? "R(λ) = sin²(2πnt/λ)" : "R(λ) = cos²(2πnt/λ)";
         a.title = "FILM COLOUR / λ SWEEP";
-        a.lines = {"R(λ) = sin²(2πnt/λ)", "OPD = 2nt = " + num(opd) + " nm", "visibility V = " + NF::fixed(vis, 3) + "  (1 = saturated, 0 = grey)"};
+        a.lines = {formula, "OPD = 2nt·cosθₜ = " + num(opd) + " nm", "visibility V = " + NF::fixed(vis, 3) + "  (1 = saturated, 0 = grey)"};
         for (const FilmColourSample& s : fc.lines)
             a.lines.push_back(NF::fixed(s.wavelengthNm, 0) + " nm: " + NF::fixed(s.reflectance, 3));
         a.resultLabel = "PERCEIVED COLOUR";
@@ -245,17 +319,17 @@ ModelReport thinFilm(const ThinFilmInput& in, const ReportContext& ctx) {
                                                      : "many wavelengths at once with no clear winner: the film looks grey.")),
                        guard("The swatch is a CIE 1931 integration of R(λ) under a flat illuminant, with equal-amplitude reflections. Real soap films vary in thickness across the surface.")};
         rep.headline = "film " + num(in.thicknessNm) + " nm · " + (fc.hueNm > 0 ? NF::fixed(fc.hueNm, 0) + " nm" : std::string("grey"));
-        rep.retained = retained({"t = " + NF::fixed(in.thicknessNm, 2) + " nm · n = " + fx(in.n), "λ range 400–700 nm"}, "RETAINED FILM COLOUR", fc.hex);
-        rep.parameters = {{"t", num(in.thicknessNm) + " nm"}, {"n", num(in.n)}, {"swatch", fc.hex}, {"mode", "colours"}};
+        rep.retained = retained({"t = " + NF::fixed(in.thicknessNm, 2) + " nm · n = " + fx(in.n) + " · n₂ = " + fx(in.n2), "λ range 400–700 nm"}, "RETAINED FILM COLOUR", fc.hex);
+        rep.parameters = {{"t", num(in.thicknessNm) + " nm"}, {"n", num(in.n)}, {"n₂", num(in.n2)}, {"swatch", fc.hex}, {"mode", "colours"}};
 
         ChartData& c = out.chart;
         c.xLabel = "λ (nm)"; c.yLabel = "R(λ)";
         c.xMin = 400; c.xMax = 700; c.yMin = 0; c.yMax = 1; c.xTicks = 3; c.yTicks = 2; c.xDecimals = 0; c.yDecimals = 1;
         for (int k = 0; k <= 400; ++k) {
             const double w = 400 + 300.0 * k / 400.0;
-            c.curve.push_back({w, thinFilmReflectance(in.thicknessNm, in.n, w)});
+            c.curve.push_back({w, thinFilmReflectance(in.thicknessNm, 1.0, in.n, in.n2, w, in.thetaDeg)});
         }
-        c.marker = {{in.lambdaNm, thinFilmReflectance(in.thicknessNm, in.n, in.lambdaNm)}};
+        c.marker = {{in.lambdaNm, thinFilmReflectance(in.thicknessNm, 1.0, in.n, in.n2, in.lambdaNm, in.thetaDeg)}};
         c.legend = "R(λ) of the film   ● your λ = " + num(in.lambdaNm) + " nm";
         return out;
     }
@@ -267,22 +341,27 @@ ModelReport thinFilm(const ThinFilmInput& in, const ReportContext& ctx) {
         const double firstDark = in.lambdaNm / (4 * in.n);
         LcdRegister a;
         a.title = "OPTICAL PATH / PHASE";
-        a.lines = {"OPD = 2nt", " = 2 × " + num(in.n) + " × " + num(in.thicknessNm) + " nm", " = " + num(opd) + " nm",
-                   "I_t/I_t,max = cos²(2πnt/λ)"};
+        const std::string opdLine = "OPD = 2nt·cosθₜ";
+        // T = 1 − R: if reflection has one reversal (R = sin²), transmission has no net reversal (T = cos²)
+        const std::string tFormula = oneReversal ? "cos²(2πnt·cosθₜ/λ)" : "sin²(2πnt·cosθₜ/λ)";
+        a.lines = {opdLine, " = 2 × " + num(in.n) + " × " + num(in.thicknessNm) + " × cosθₜ", " = " + num(opd) + " nm",
+                   "I_t/I_t,max = " + tFormula};
         a.resultLabel = "NORMALIZED TRANSMISSION";
         a.resultValue = fx(trans);
         LcdRegister b;
-        b.title = "NO NET PHASE REVERSAL";
-        b.lines = {"Bright: 2nt = qλ", "Dark: 2nt = (q + ½)λ", "q = 0, 1, 2, …"};
+        const std::string brightCondT = oneReversal ? "Bright: 2nt·cosθₜ = qλ" : "Bright: 2nt·cosθₜ = (q + ½)λ";
+        const std::string darkCondT = oneReversal ? "Dark: 2nt·cosθₜ = (q + ½)λ" : "Dark: 2nt·cosθₜ = qλ";
+        b.title = oneReversal ? "NO NET PHASE REVERSAL" : "ONE PHASE REVERSAL";
+        b.lines = {brightCondT, darkCondT, "q = 0, 1, 2, …"};
         b.resultLabel = "FIRST DARK THICKNESS";
         b.resultValue = fx(firstDark) + " nm";
         rep.registers = {a, b};
-        rep.notices = {interpretation("Both surfaces reverse the phase on transmission, so the transmitted beams leave in phase: 2nt = qλ is bright and 2nt = (q + ½)λ is dark — the exact complement of the reflection tab, I_t = 1 − I_r."),
+        rep.notices = {interpretation("Transmission is the complement of reflection: I_t = 1 − I_r. Phase reversal depends on whether n₂ > n (substrate denser) or n₂ < n (substrate rarer)."),
                        guard(guardText)};
         rep.headline = "I_t/I_t,max = " + fx(trans);
-        rep.retained = retained({"λ = " + NF::fixed(in.lambdaNm, 1) + " nm · n = " + fx(in.n), "t = " + NF::fixed(in.thicknessNm, 2) + " nm"},
+        rep.retained = retained({"λ = " + NF::fixed(in.lambdaNm, 1) + " nm · n = " + fx(in.n) + " · n₂ = " + fx(in.n2), "t = " + NF::fixed(in.thicknessNm, 2) + " nm"},
                                 "RETAINED TRANSMISSION", a.resultValue);
-        rep.parameters = {{"λ", num(in.lambdaNm) + " nm"}, {"n", num(in.n)}, {"t", num(in.thicknessNm) + " nm"}, {"mode", "transmission"}};
+        rep.parameters = {{"λ", num(in.lambdaNm) + " nm"}, {"n", num(in.n)}, {"n₂", num(in.n2)}, {"t", num(in.thicknessNm) + " nm"}, {"mode", "transmission"}};
 
         ChartData& c = out.chart;
         c.xLabel = "t (nm)"; c.yLabel = "I_t / I_t,max";
@@ -290,28 +369,32 @@ ModelReport thinFilm(const ThinFilmInput& in, const ReportContext& ctx) {
         c.xTicks = static_cast<int>(c.xMax / 100); c.yTicks = 2; c.xDecimals = 0; c.yDecimals = 1;
         for (int k = 0; k <= 400; ++k) {
             const double t = c.xMax * k / 400.0;
-            c.curve.push_back({t, std::pow(std::cos(2 * std::numbers::pi * in.n * t / in.lambdaNm), 2)});
+            c.curve.push_back({t, thinFilmReflectance(t, 1.0, in.n, in.n2, in.lambdaNm, in.thetaDeg)});
         }
         c.marker = {{in.thicknessNm, trans}};
-        c.legend = "I_t = cos²(2πnt/λ)   ● t = " + num(in.thicknessNm) + " nm";
+        c.legend = "I_t = 1 − R(λ)   ● t = " + num(in.thicknessNm) + " nm";
         return out;
     }
     LcdRegister a;
     a.title = "OPTICAL PATH / PHASE";
-    a.lines = {"OPD = 2nt", " = 2 × " + num(in.n) + " × " + num(in.thicknessNm) + " nm", " = " + num(opd) + " nm",
-               "Δψ = 4πnt/λ − π = " + NF::fixed(std::fmod(dpsi + 1e-12, 2 * std::numbers::pi), 4) + " rad", "I_r/I_r,max = sin²(2πnt/λ)"};
+    a.lines = {"OPD = 2nt·cosθₜ", " = 2 × " + num(in.n) + " × " + num(in.thicknessNm) + " × cosθₜ", " = " + num(opd) + " nm",
+               "Δψ = 4πnt·cosθₜ/λ " + (oneReversal ? "− π" : "") + " = " + NF::fixed(std::fmod(4.0 * std::numbers::pi * opd / in.lambdaNm - (oneReversal ? std::numbers::pi : 0.0) + 1e-12, 2 * std::numbers::pi), 4) + " rad",
+               "I_r/I_r,max = " + (oneReversal ? "sin²(2πnt·cosθₜ/λ)" : "cos²(2πnt·cosθₜ/λ)")};
     a.resultLabel = "NORMALIZED REFLECTION";
     a.resultValue = fx(refl);
     LcdRegister b;
-    b.title = "ONE PHASE REVERSAL";
-    b.lines = {"Bright: 2nt = (q + ½)λ", "Dark: 2nt = qλ", "q = 0, 1, 2, …"};
+    const std::string brightCondR = oneReversal ? "Bright: 2nt·cosθₜ = (q + ½)λ" : "Bright: 2nt·cosθₜ = qλ";
+    const std::string darkCondR = oneReversal ? "Dark: 2nt·cosθₜ = qλ" : "Dark: 2nt·cosθₜ = (q + ½)λ";
+    b.title = oneReversal ? "ONE PHASE REVERSAL" : "TWO PHASE REVERSALS";
+    b.lines = {brightCondR, darkCondR, "q = 0, 1, 2, …"};
     b.resultLabel = "FIRST BRIGHT THICKNESS";
     b.resultValue = fx(firstBright) + " nm";
     rep.registers = {a, b};
-    rep.notices = {interpretation("With one reflection phase reversal, thickness λ/(4n) gives the first bright reflection; thickness λ/(2n) returns to dark."), guard(guardText)};
+    rep.notices = {interpretation(oneReversal ? "One net phase reversal: thickness λ/(4n) gives the first bright reflection; λ/(2n) returns to dark."
+                                                : "Two net phase reversals: thickness λ/(4n) gives the first dark reflection; λ/(2n) returns to bright."), guard(guardText)};
     rep.headline = "I_r/I_r,max = " + fx(refl);
-    rep.retained = retained({"λ = " + NF::fixed(in.lambdaNm, 1) + " nm · n = " + fx(in.n), "t = " + NF::fixed(in.thicknessNm, 2) + " nm"}, "RETAINED REFLECTION", a.resultValue);
-    rep.parameters = {{"λ", num(in.lambdaNm) + " nm"}, {"n", num(in.n)}, {"t", num(in.thicknessNm) + " nm"}, {"mode", "reflection"}};
+    rep.retained = retained({"λ = " + NF::fixed(in.lambdaNm, 1) + " nm · n = " + fx(in.n) + " · n₂ = " + fx(in.n2), "t = " + NF::fixed(in.thicknessNm, 2) + " nm"}, "RETAINED REFLECTION", a.resultValue);
+    rep.parameters = {{"λ", num(in.lambdaNm) + " nm"}, {"n", num(in.n)}, {"n₂", num(in.n2)}, {"t", num(in.thicknessNm) + " nm"}, {"mode", "reflection"}};
 
     ChartData& c = out.chart;
     c.xLabel = "t (nm)"; c.yLabel = "I_r / I_r,max";
@@ -319,13 +402,12 @@ ModelReport thinFilm(const ThinFilmInput& in, const ReportContext& ctx) {
     c.xTicks = static_cast<int>(c.xMax / 100); c.yTicks = 2; c.xDecimals = 0; c.yDecimals = 1;
     for (int k = 0; k <= 400; ++k) {
         const double t = c.xMax * k / 400.0;
-        c.curve.push_back({t, std::pow(std::sin(2 * std::numbers::pi * in.n * t / in.lambdaNm), 2)});
+        c.curve.push_back({t, thinFilmReflectance(t, 1.0, in.n, in.n2, in.lambdaNm, in.thetaDeg)});
     }
     c.marker = {{in.thicknessNm, refl}};
-    c.legend = "I_r = sin²(2πnt/λ)   ● t = " + num(in.thicknessNm) + " nm";
+    c.legend = "I_r = " + (oneReversal ? "sin²(2πnt·cosθₜ/λ)" : "cos²(2πnt·cosθₜ/λ)") + "   ● t = " + num(in.thicknessNm) + " nm";
     return out;
 }
-
 // ================================================================================ diffraction grating
 std::vector<int> allowedGratingOrders(double linesPerCm, double lambdaNm, double incidenceDeg) {
     std::vector<int> orders;
@@ -333,13 +415,14 @@ std::vector<int> allowedGratingOrders(double linesPerCm, double lambdaNm, double
     const double d = 0.01 / linesPerCm, lam = lambdaNm * 1e-9, si = std::sin(incidenceDeg * kDeg);
     const int limit = static_cast<int>(std::floor(2.0 * d / lam)) + 1;
     for (int m = -limit; m <= limit; ++m)
-        if (std::fabs(m * lam / d + si) <= 1.0 + 1e-12) orders.push_back(m);
+        if (std::fabs(m * lam / d - si) <= 1.0 + 1e-12) orders.push_back(m);
     return orders;
 }
 
 double gratingIntensity(double thetaDeg, double linesPerCm, double lambdaNm, double slits, double incidenceDeg) {
     const double d = 0.01 / linesPerCm, lam = lambdaNm * 1e-9;
-    const double phi = 2 * std::numbers::pi * d * (std::sin(thetaDeg * kDeg) - std::sin(incidenceDeg * kDeg)) / lam;
+    // Grating equation: d(sin θ + sin θᵢ) = mλ  (same-side incidence convention)
+    const double phi = 2 * std::numbers::pi * d * (std::sin(thetaDeg * kDeg) + std::sin(incidenceDeg * kDeg)) / lam;
     const double den = slits * std::sin(phi / 2);
     if (std::fabs(den) < 1e-9) return 1.0;                          // principal maximum
     const double v = std::sin(slits * phi / 2) / den;
@@ -355,8 +438,13 @@ ModelReport grating(const GratingInput& in, const ReportContext& ctx) {
     const std::string guardText = "Require N, λ > 0 and integer M ≥ 2. Reject selected m if |mλ/d| > 1; never evaluate asin outside its domain.";
     if (issues.empty()) {
         const double d = 0.01 / in.linesPerCm, lam = in.lambdaNm * 1e-9;
-        const double s = in.order * lam / d + std::sin(in.incidenceDeg * kDeg);
+        const double s = in.order * lam / d - std::sin(in.incidenceDeg * kDeg);
         if (std::fabs(s) > 1.0) issues.push_back({FieldIds::order, "No real angle: |mλ/d| > 1.", "m"});
+        if (in.lambda2Nm > 0.0) {
+            const double lam2 = in.lambda2Nm * 1e-9;
+            const double s2 = in.order * lam2 / d - std::sin(in.incidenceDeg * kDeg);
+            if (std::fabs(s2) > 1.0) issues.push_back({FieldIds::wavelength, "No real angle for λ₂: |mλ₂/d| > 1.", "λ₂"});
+        }
     }
     if (!issues.empty())
         return paused(issues.front().label + " out of range", issues, {"N = " + num(in.linesPerCm) + " lines/cm   λ = " + num(in.lambdaNm) + " nm", "m = " + num(in.order) + "   M = " + num(in.slits), "ACTION: " + issues.front().message},
@@ -364,7 +452,7 @@ ModelReport grating(const GratingInput& in, const ReportContext& ctx) {
 
     const int m = static_cast<int>(std::lround(in.order));
     const double d = 0.01 / in.linesPerCm, lam = in.lambdaNm * 1e-9;
-    const double sinTheta = m * lam / d + std::sin(in.incidenceDeg * kDeg);
+    const double sinTheta = m * lam / d - std::sin(in.incidenceDeg * kDeg);
     const double angle = std::asin(sinTheta) / kDeg;
     const auto orders = allowedGratingOrders(in.linesPerCm, in.lambdaNm, in.incidenceDeg);
 
@@ -373,7 +461,7 @@ ModelReport grating(const GratingInput& in, const ReportContext& ctx) {
     if (in.orderList) {
         // Second tab: the order table — every propagating order with the angle it lands at.
         const int capacity = static_cast<int>(std::floor(d / lam + 1e-9));
-        auto angleOf = [&](int k) { return std::asin(std::clamp(k * lam / d + std::sin(in.incidenceDeg * kDeg), -1.0, 1.0)) / kDeg; };
+        auto angleOf = [&](int k) { return std::asin(std::clamp(k * lam / d - std::sin(in.incidenceDeg * kDeg), -1.0, 1.0)) / kDeg; };
         std::vector<std::string> table{"m = 0 at " + NF::fixed(angleOf(0), 2) + "°"};
         for (int k = 1; k <= std::min(capacity, 3); ++k)
             table.push_back("±" + std::to_string(k) + " at ±" + NF::fixed(angleOf(k), 2) + "°");
@@ -414,8 +502,10 @@ ModelReport grating(const GratingInput& in, const ReportContext& ctx) {
     LcdRegister a;
     a.title = "DENSITY + SPACING / SI";
     a.lines = {"d = 0.01 / N", " = 0.01 / " + num(in.linesPerCm) + " m", " = " + NF::scientific(d, 4) + " m",
-               in.incidenceDeg == 0 ? "d sin θₘ = mλ" : "d (sin θₘ − sin θᵢ) = mλ",
+               in.incidenceDeg == 0 ? "d sin θₘ = mλ" : "d (sin θₘ + sin θᵢ) = mλ",
                "sin θ" + sub(std::abs(m)) + " = " + num(std::fabs(m) * in.lambdaNm) + " nm / " + num(d * 1e9) + " nm"};
+    if (in.lambda2Nm > 0.0)
+        a.lines.push_back("λ₂ = " + num(in.lambda2Nm) + " nm · sin θ₂ = " + num(std::fabs(m) * in.lambda2Nm) + " nm / " + num(d * 1e9) + " nm");
     a.resultLabel = std::string("ORDER ") + (m > 0 ? "+" : "") + std::to_string(m) + " ANGLE";
     a.resultValue = (m == 0 ? fx(0.0) : NF::signedFixed(angle)) + "°";
     LcdRegister b;
@@ -427,8 +517,11 @@ ModelReport grating(const GratingInput& in, const ReportContext& ctx) {
     b.resultValue = std::to_string(orders.size()) + " orders";
     rep.registers = {a, b};
     std::string angles;
-    for (int k = 1; k <= static_cast<int>(std::floor(d / lam + 1e-9)); ++k)
-        angles += (k > 1 ? ", " : "") + std::string(k == 1 ? "±" : "±") + std::to_string(k) + " at ±" + NF::fixed(std::asin(k * lam / d) / kDeg, 2) + "°";
+    const double si = std::sin(in.incidenceDeg * kDeg);
+    for (int k = 1; k <= static_cast<int>(std::floor(d / lam + 1e-9)); ++k) {
+        const double sk = std::clamp(k * lam / d - si, -1.0, 1.0);
+        angles += (k > 1 ? ", " : "") + std::string(k == 1 ? "±" : "±") + std::to_string(k) + " at ±" + NF::fixed(std::asin(sk) / kDeg, 2) + "°";
+    }
     rep.notices = {interpretation("The zero order is undeviated. Order angles: " + angles + "; the next order has no real angle."), guard(guardText)};
     rep.headline = "θ" + std::string(m > 0 ? "₊" : "") + sub(std::abs(m)) + " = " + a.resultValue;
     rep.retained = retained({"N = " + num(in.linesPerCm) + " lines/cm · λ = " + NF::fixed(in.lambdaNm, 1) + " nm", "m = " + std::to_string(m) + " · M = " + num(in.slits)}, "RETAINED ORDER ANGLE", a.resultValue);
@@ -443,7 +536,32 @@ ModelReport grating(const GratingInput& in, const ReportContext& ctx) {
         c.curve.push_back({th, gratingIntensity(th, in.linesPerCm, in.lambdaNm, in.slits, in.incidenceDeg)});
     }
     c.marker = {{angle, 1.0}};
-    c.legend = "M = " + num(in.slits) + " slits · no envelope   ● order " + std::string(m > 0 ? "+" : "") + std::to_string(m);
+    c.legend = "M = " + num(in.slits) + " slits · no envelope   ● order " + std::string(m > 0 ? "+" : "") + std::to_string(m) + " @ " + num(in.lambdaNm) + " nm";
+    if (in.lambda2Nm > 0.0) {
+        const double lam2 = in.lambda2Nm * 1e-9;
+        const double sinTheta2 = m * lam2 / d - std::sin(in.incidenceDeg * kDeg);
+        const bool secondPropagates = std::fabs(sinTheta2) <= 1.0;
+        for (int k = 0; k <= 1800; ++k) {
+            const double th = -90 + k * 0.1;
+            c.curve2.push_back({th, gratingIntensity(th, in.linesPerCm, in.lambda2Nm, in.slits, in.incidenceDeg)});
+        }
+        if (secondPropagates) {
+            const double angle2 = std::asin(sinTheta2) / kDeg;
+            c.marker.push_back({angle2, 1.0});
+        }
+        c.legend2 = "M = " + num(in.slits) + " slits · ● order " + std::string(m > 0 ? "+" : "") + std::to_string(m) + " @ " + num(in.lambda2Nm) + " nm" +
+                    (secondPropagates ? "" : "  (λ₂ order does not propagate)");
+        // Overlap flag
+        if (secondPropagates) {
+            const double sep = std::fabs(angle - angle2);
+            const double width = 1.0 / (in.slits * std::abs(d / lam));   // approximate peak width
+            if (sep < 2 * width) {
+                rep.notices.push_back(interpretation("Overlap warning: order m = " + std::to_string(m) +
+                    " for λ₁ = " + num(in.lambdaNm) + " nm and λ₂ = " + num(in.lambda2Nm) + " nm are separated by only " +
+                    NF::fixed(sep, 2) + "° — peaks may not be resolved."));
+            }
+        }
+    }
     return out;
 }
 
@@ -467,7 +585,10 @@ ModelReport singleSlit(const SingleSlitInput& in, const ReportContext& ctx) {
     const double a = in.widthMm * 1e-3, lam = in.lambdaNm * 1e-9;
     const double s1 = lam / a;
     const double theta = std::asin(s1) / kDeg;
-    const double w = 2 * in.screenM * std::tan(theta * kDeg);
+    // Item 13: exact vs small-angle approximation for the central maximum width
+    const double w = in.exactGeometry
+        ? 2 * in.screenM * std::tan(theta * kDeg)          // exact: w = 2L·tan(asin(λ/a))
+        : 2 * in.screenM * (lam / a);                      // small-angle: w ≈ 2L·λ/a
 
     ModelReport out;
     Report& rep = out.report;
@@ -509,7 +630,9 @@ ModelReport singleSlit(const SingleSlitInput& in, const ReportContext& ctx) {
     r1.resultValue = fx(theta) + "°";
     LcdRegister r2;
     r2.title = "CENTRAL MAXIMUM";
-    r2.lines = {"w = 2L tan θ₁", " = 2 × " + num(in.screenM) + " × tan(" + fx(theta) + "°)", " = " + NF::fixed(w, 9) + " m"};
+    r2.lines = {"w = " + (in.exactGeometry ? "2L tan θ₁" : "≈ 2L λ/a"),
+                " = 2 × " + num(in.screenM) + " × " + (in.exactGeometry ? "tan(" + fx(theta) + "°)" : "λ/a"),
+                " = " + NF::fixed(w, 9) + " m"};
     r2.resultLabel = "FULL WIDTH ON SCREEN";
     r2.resultValue = fx(w * 1e3) + " mm";
     rep.registers = {r1, r2};
@@ -545,7 +668,7 @@ ModelReport polarization(const PolarizationInput& in, const ReportContext& ctx) 
 
     const double i0 = in.unpolarized ? in.incidentIntensity / 2 : in.incidentIntensity;
     const double c2 = std::pow(std::cos(in.angleDeg * kDeg), 2);
-    const double out2 = i0 * c2;
+    const double out2 = i0 * c2 < 1e-12 ? 0.0 : i0 * c2;   // clamp tiny floating-point residual at θ = 90°
     const double brewster = std::atan(in.n2 / in.n1) / kDeg;
     auto medium = [](double n) { return std::fabs(n - 1.0) < 1e-6 ? "AIR" : std::fabs(n - 1.5) < 1e-6 ? "GLASS" : std::fabs(n - 1.333) < 1e-3 ? "WATER" : "MEDIUM"; };
 
@@ -592,15 +715,17 @@ ModelReport polarization(const PolarizationInput& in, const ReportContext& ctx) 
         rep.parameters = {{"n₁", num(in.n1)}, {"n₂", num(in.n2)}, {"Iᵢₙ", num(in.incidentIntensity) + " W/m²"}, {"mode", "brewster"}};
 
         ChartData& c = out.chart;
-        c.xLabel = "θ (degrees)"; c.yLabel = "R_p";
+        c.xLabel = "θ (degrees)"; c.yLabel = "R";
         c.xMin = 0; c.xMax = 90; c.yMin = 0; c.yMax = 1; c.xTicks = 3; c.yTicks = 2; c.xDecimals = 0; c.yDecimals = 1;
         for (int k = 0; k <= 180; ++k) {
             double rs = 0, rp = 0;
             fresnel(k * 0.5 * kDeg, rs, rp);
             c.curve.push_back({k * 0.5, rp});
+            c.curve2.push_back({k * 0.5, rs});
         }
         c.marker = {{brewster, rpB}};
-        c.legend = "R_p(θ) reaches 0 at θB = " + fx(brewster) + "°   ● Brewster";
+        c.legend = "R_p(θ) reaches 0 at θB = " + fx(brewster) + "°   ● p-pol";
+        c.legend2 = "R_s(θ) stays non-zero   ● s-pol";
         return out;
     }
     LcdRegister a;
@@ -790,6 +915,23 @@ double thinFilmReflectance(double thicknessNm, double n, double wavelengthNm) {
     return std::pow(std::sin(2 * std::numbers::pi * n * thicknessNm / wavelengthNm), 2);
 }
 
+/// Reflectance with substrate index n2 and angle of incidence thetaDeg.
+/// Phase reversal: π at top if n > n0, π at bottom if n2 > n. Net phase determines sin² vs cos².
+/// OPD = 2 n t cos(θₜ) via Snell's law: sin(θₜ) = (n0/n) sin(θ₀).
+double thinFilmReflectance(double thicknessNm, double n0, double n, double n2, double wavelengthNm, double thetaDeg) {
+    if (wavelengthNm <= 0 || thicknessNm <= 0 || n <= 0.0 || n2 <= 0.0) return 0.0;
+    // Snell's law: angle inside film
+    const double sinThetaT = std::fabs(n0 / n) * std::sin(thetaDeg * kDeg);
+    const double cosThetaT = std::sqrt(std::max(0.0, 1.0 - sinThetaT * sinThetaT));
+    const double opd = 2.0 * n * thicknessNm * cosThetaT;          // nm
+    // Phase shifts: top = π if n > n0, bottom = π if n2 > n
+    const bool topRev = n > n0;
+    const bool botRev = n2 > n;
+    const bool oneReversal = topRev != botRev;                     // XOR → net π phase shift → sin²
+    const double phase = std::numbers::pi * opd / wavelengthNm;   // 2πnt·cosθₜ/λ = π·opd/λ
+    return oneReversal ? std::pow(std::sin(phase), 2) : std::pow(std::cos(phase), 2);
+}
+
 double thinFilmColourVisibility(double thicknessNm, double n) {
     const double opd = 2 * n * thicknessNm;
     if (opd <= 0) return 0.0;
@@ -798,8 +940,12 @@ double thinFilmColourVisibility(double thicknessNm, double n) {
 }
 
 FilmColour thinFilmColour(double thicknessNm, double n) {
+    return thinFilmColour(thicknessNm, n, n);                        // n2 = n: no substrate contrast → two reversals → cos²
+}
+
+FilmColour thinFilmColour(double thicknessNm, double n, double n2) {
     FilmColour out;
-    const auto refl = [thicknessNm, n](double w) { return thinFilmReflectance(thicknessNm, n, w); };
+    const auto refl = [thicknessNm, n, n2](double w) { return thinFilmReflectance(thicknessNm, 1.0, n, n2, w, 0.0); };
     const Rgb rgb = Spectrum::reflectanceToRgb(refl);
     const double vis = thinFilmColourVisibility(thicknessNm, n);
     // dominant hue: the strongest reflected line (a washed-out film has none -> neutral)
