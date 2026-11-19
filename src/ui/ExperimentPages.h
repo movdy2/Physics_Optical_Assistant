@@ -5,6 +5,7 @@
 #include <QList>
 #include <vector>
 
+class QCheckBox;
 class QComboBox;
 class QLabel;
 class QPushButton;
@@ -125,6 +126,16 @@ private:
     NoticeCard* m_notice;
     QLabel* m_caption;
     bool m_syncing = false;
+    // ---- Principal-ray toggles (Item 18) ----
+    QCheckBox* m_rayParallel = nullptr;
+    QCheckBox* m_rayFocal = nullptr;
+    QCheckBox* m_rayCenter = nullptr;
+    // ---- Preset scenario buttons (Item 19) ----
+    QPushButton* m_presetBeyond2f = nullptr;
+    QPushButton* m_presetAt2f = nullptr;
+    QPushButton* m_presetBetweenF2f = nullptr;
+    QPushButton* m_presetAtF = nullptr;
+    QPushButton* m_presetInsideF = nullptr;
 };
 
 /// Experiment 03: refraction through a prism, minimum deviation, dispersion.

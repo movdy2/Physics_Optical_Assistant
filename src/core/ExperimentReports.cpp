@@ -489,18 +489,26 @@ Report imaging(const ImagingInput& in, const ReportContext& ctx) {
     Report rep;
     LcdRegister r1;
     const std::string fText = in.f < 0 ? "(" + num(in.f) + ")" : num(in.f);
-    r1.lines = {"01  1/f = 1/dₒ + 1/dᵢ", "02  1/dᵢ = 1/" + fText + " - 1/" + num(in.s)};
+    const std::string sText = num(in.s);
     const std::string invDi = NF::fixed(1.0 / in.f - 1.0 / in.s, 6);
+    const std::string hText = num(in.h);
+    // ---- Step-by-step solution panel (Item 16) ----
+    r1.lines = {"01  Gaussian imaging: 1/f = 1/dₒ + 1/dᵢ   ·   m = −dᵢ/dₒ",
+                "02  Substitution:  1/dᵢ = 1/" + fText + " − 1/" + sText};
     if (in.mirrorMode) {
         r1.title = "GAUSSIAN MIRROR REGISTER";
         r1.mode = "OK";
         r1.lines.push_back("03  1/dᵢ = " + invDi + " cm⁻¹");
-        r1.lines.push_back("04  dᵢ = (" + invDi + ")⁻¹");
+        r1.lines.push_back("04  dᵢ = (" + invDi + ")⁻¹ = " + fx(img.imageDistance) + " cm");
+        r1.lines.push_back("05  m = −dᵢ/dₒ = −(" + fx(img.imageDistance) + ")/(" + sText + ") = " + fx(m));
+        r1.lines.push_back("06  hᵢ = m × hₒ = " + fx(m) + " × " + hText + " = " + fx(m * in.h) + " cm");
         r1.resultLabel = "IMAGE DISTANCE / cm";
         r1.resultValue = fx(img.imageDistance);
     } else {
         r1.lines.push_back("03  1/dᵢ = " + invDi + " cm⁻¹");
-        r1.lines.push_back("04  dᵢ = " + NF::signedFixed(img.imageDistance) + " cm");
+        r1.lines.push_back("04  dᵢ = (" + invDi + ")⁻¹ = " + NF::signedFixed(img.imageDistance) + " cm");
+        r1.lines.push_back("05  m = −dᵢ/dₒ = −(" + NF::signedFixed(img.imageDistance) + ")/(" + sText + ") = " + fx(m));
+        r1.lines.push_back("06  hᵢ = m × hₒ = " + fx(m) + " × " + hText + " = " + fx(m * in.h) + " cm");
         r1.resultLabel = "MAGNIFICATION · m = -dᵢ/dₒ";
         r1.resultValue = fx(m);
     }
@@ -516,15 +524,13 @@ Report imaging(const ImagingInput& in, const ReportContext& ctx) {
 
     LcdRegister r2;
     r2.title = "IMAGE PROPERTIES";
-    if (in.mirrorMode) {
-        r2.mode = "OK";
-        r2.lines = {"m = -dᵢ/dₒ = " + NF::signedFixed(m), "hᵢ = m × hₒ = " + NF::signedFixed(m * in.h) + " cm",
-                    std::string("IMAGE: ") + (img.real ? "REAL" : "VIRTUAL"), std::string("ORIENTATION: ") + (img.upright ? "UPRIGHT" : "INVERTED"),
-                    "SIZE: " + sizeDescription(m)};
-    } else {
-        r2.lines = {"hᵢ = m × hₒ", "hᵢ = " + fx(m * in.h) + " cm", std::string("IMAGE: ") + (img.real ? "REAL" : "VIRTUAL"),
-                    std::string("ORIENTATION: ") + (img.upright ? "UPRIGHT" : "INVERTED"), "MIRROR: SAME RESULTS"};
-    }
+    r2.mode = "OK";
+    r2.lines = {
+        std::string("IMAGE: ") + (img.real ? "REAL" : "VIRTUAL"),
+        std::string("ORIENTATION: ") + (img.upright ? "UPRIGHT" : "INVERTED"),
+        "SIZE: " + sizeDescription(m),
+        std::string("dᵢ sign: ") + (img.imageDistance > 0 ? "positive (real space)" : "negative (virtual space)"),
+        std::string("m sign: ") + (m > 0 ? "positive (upright)" : "negative (inverted)")};
     if (uncertain && heightEstimate.valid)
         r2.extraLines.push_back("σ(hᵢ) = " + num(heightEstimate.standardUncertainty) + " cm (1σ)");
     rep.registers.push_back(r2);

@@ -42,10 +42,19 @@ class LensCanvas : public GridCanvas {
 public:
     explicit LensCanvas(QWidget* parent = nullptr);
     void setInput(const ImagingInput& in) { m_in = in; update(); }
+    void setShowParallelRay(bool on) { m_showParallelRay = on; update(); }
+    void setShowFocalRay(bool on)     { m_showFocalRay     = on; update(); }
+    void setShowCenterRay(bool on)    { m_showCenterRay    = on; update(); }
+    bool showParallelRay() const { return m_showParallelRay; }
+    bool showFocalRay()     const { return m_showFocalRay;     }
+    bool showCenterRay()    const { return m_showCenterRay;    }
 protected:
     void paintDiagram(QPainter& p, const QRectF& area) override;
 private:
     ImagingInput m_in;
+    bool m_showParallelRay = true;
+    bool m_showFocalRay     = true;
+    bool m_showCenterRay    = true;
 };
 
 /// Spherical mirror (concave / convex) with two principal rays.
@@ -56,11 +65,20 @@ public:
     void setInput(const ImagingInput& in) { m_in = in; update(); }
     /// Detailed mode (mirror screen): real / virtual space labels, dimension lines, object and image labels.
     void setDetailed(bool detailed) { m_detailed = detailed; update(); }
+    void setShowParallelRay(bool on) { m_showParallelRay = on; update(); }
+    void setShowFocalRay(bool on)    { m_showFocalRay    = on; update(); }
+    void setShowCenterRay(bool on)   { m_showCenterRay   = on; update(); }
+    bool showParallelRay() const { return m_showParallelRay; }
+    bool showFocalRay()    const { return m_showFocalRay;    }
+    bool showCenterRay()   const { return m_showCenterRay;   }
 protected:
     void paintDiagram(QPainter& p, const QRectF& area) override;
 private:
     ImagingInput m_in;
     bool m_detailed = false;
+    bool m_showParallelRay = true;
+    bool m_showFocalRay    = true;
+    bool m_showCenterRay   = true;
 };
 
 /// One wavelength through the prism; one path per visible spectral colour is drawn in dispersion mode.
