@@ -92,7 +92,7 @@ void MarkdownEditor::toggleBullet() {
 void MarkdownEditor::keyPressEvent(QKeyEvent* e) {
     if (e->key() == Qt::Key_Tab && !(e->modifiers() & Qt::ControlModifier)) { insertPlainText("    "); return; }
     if ((e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) && !(e->modifiers() & Qt::ShiftModifier)) {
-        // continue a list: std::string("- item") + Enter -> "- "; Enter on an empty item ends the list
+        // continue a list: QString("m") + Enter -> "- "; Enter on an empty item ends the list
         static const QRegularExpression item("^(\\s*)([-*+]|\\d+[.)])\\s(.*)$");
         QTextCursor c = textCursor();
         const QString line = c.block().text();
@@ -253,7 +253,7 @@ QWidget* MarkdownWorkspace::buildToolbar() {
         auto* line = new QFrame;
         line->setFrameShape(QFrame::VLine);
         line->setFixedHeight(18);
-        line->setStyleSheet(std::string("color: ") + ThemeManager::instance().theme().border.name() + ";");
+        line->setStyleSheet(QString(" ") + ThemeManager::instance().theme().border.name() + ";");
         row->addSpacing(2);
         row->addWidget(line);
         row->addSpacing(2);
@@ -299,7 +299,7 @@ QWidget* MarkdownWorkspace::buildToolbar() {
         QAction* a = menu->addAction(f.name);
         connect(a, &QAction::triggered, this, [this, n = QString(f.name), fm = QString(f.formula)] {
             if (m_mode == Preview) setMode(Split);
-            snippet(std::string("\n### ") + LanguageManager::instance().text(n) + std::string("\n- $") + fm + "$\n");
+            snippet(QString(" ") + LanguageManager::instance().text(n) + QString("$") + fm + "$\n");
         });
     }
     formulas->setMenu(menu);

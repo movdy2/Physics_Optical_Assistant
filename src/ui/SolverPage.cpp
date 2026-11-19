@@ -349,7 +349,7 @@ void SolverPage::showFormula(const Formula& formula) {
         const auto ov = formula.unitOverrides.find(var.id);
         const std::string unit = ov != formula.unitOverrides.end() ? ov->second : var.unit;
         edit->setPlaceholderText(unit.empty() ? "number" : QString::fromStdString(unit));
-        edit->setToolTip(QString::fromStdString(var.name + (var.description.empty() ? "" : std::string(" - ") + var.description)));
+        edit->setToolTip(QString::fromStdString(var.name + (var.description.empty() ? "" : QString(" ") + var.description)));
         edit->setMinimumWidth(220);
         connect(edit, &QLineEdit::returnPressed, this, &SolverPage::onSolve);
         m_edits[var.id] = edit;
@@ -367,9 +367,9 @@ void SolverPage::showFormula(const Formula& formula) {
                        + QString::fromStdString(unit) + "]</span>";
         }
         auto* label = new QLabel(QString::fromStdString(var.display) + "  <span style='color:gray'>" +
-                                 QString::fromStdString(var.name).toHtmlEscaped() + std::string("</span>") + tag + unitChip);
+                                 QString::fromStdString(var.name).toHtmlEscaped() + QString(">") + tag + unitChip);
         label->setTextFormat(Qt::RichText);
-        label->setToolTip(QString::fromStdString(var.name + (var.description.empty() ? "" : std::string(" - ") + var.description)));
+        label->setToolTip(QString::fromStdString(var.name + (var.description.empty() ? "" : QString(" ") + var.description)));
         m_form->addRow(label, edit);
     }
     setStatus("", "");
@@ -379,7 +379,7 @@ void SolverPage::showFormula(const Formula& formula) {
 
 void SolverPage::setStatus(const QString& kind, const QString& text) {
     if (kind.isEmpty()) { m_status->hide(); return; }
-    m_status->setObjectName(std::string("status") + kind);
+    m_status->setObjectName(QString("s") + kind);
     m_status->setText(text);
     m_status->style()->unpolish(m_status);                        // re-apply the style sheet for the new objectName
     m_status->style()->polish(m_status);
@@ -398,14 +398,14 @@ void SolverPage::onSolve() {
         const QString message = QString::fromStdString(r.error);
         if (r.physical) {                                         // physics warning: orange
             const QString hint = QString::fromStdString(r.hint);
-            setStatus("Warn", std::string("⚠ ") + (hint.isEmpty() ? message : hint));
+            setStatus("Warn", QString("⚠ ") + (hint.isEmpty() ? message : hint));
         } else {                                                  // input mistake: red
-            setStatus("Error", std::string("✖ ") + message);
+            setStatus("Error", QString(" ") + message);
         }
         return;
     }
 
-    setStatus("Ok", std::string("✔ Solved   ·   check: ") + QString::fromStdString(r.checkSummary));
+    setStatus("Ok", QString(" ") + QString::fromStdString(r.checkSummary));
     m_answer->setLatex(QString::fromStdString(r.answerLatex));
     m_answer->setInkColor(ThemeManager::instance().theme().lime);
     m_answer->show();

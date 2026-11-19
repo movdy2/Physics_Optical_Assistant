@@ -230,7 +230,7 @@ void EquationLabPage::evaluate() {
     try {
         expr = EquationText::latexToExpression(line.toStdString());
     } catch (const std::exception& e) {
-        m_parse->setText(std::string("● Syntax: ") + QString::fromStdString(e.what()));
+        m_parse->setText(QString(" ") + QString::fromStdString(e.what()));
         m_parse->setStyleSheet(QString("color: %1;").arg(ThemeManager::instance().theme().error.name()));
         m_renderPanel->setMeta("INVALID");
         rebuildTable({}, "");
@@ -257,8 +257,8 @@ void EquationLabPage::evaluate() {
             VariableMap vars;
             for (const auto& id : ids) vars[id] = m_values[id].value.toDouble() * Units::toSI(m_values[id].unit.toStdString()).value_or(1.0);
             const double v = ExpressionEvaluator::evaluate(expr, vars);
-            m_result->setLatex(std::string("=") + shownNumber(v));
-            m_resultText = std::string("= ") + shownNumber(v);
+            m_result->setLatex(QString("=") + shownNumber(v));
+            m_resultText = QString(" ") + shownNumber(v);
             return;
         }
         if (output.empty()) { m_substitution->setText("Leave one value empty (or write  y = …) to choose the output."); return; }
@@ -278,16 +278,16 @@ void EquationLabPage::evaluate() {
             inputs[id] = numberText(base * scale.value_or(1.0));
         }
         const SolveResult r = SolverEngine().solve(formula, inputs);
-        if (!r.ok) { m_substitution->setText(std::string("✖ ") + QString::fromStdString(r.error)); m_renderPanel->setMeta("NO RESULT"); return; }
+        if (!r.ok) { m_substitution->setText(QString(" ") + QString::fromStdString(r.error)); m_renderPanel->setMeta("NO RESULT"); return; }
         for (const auto& s : r.steps) if (s.rfind("Substitute:", 0) == 0) m_substitution->setText(QString::fromStdString(s.substr(12)));
         const std::string unit = m_values[output].unit.toStdString();
         const double shown = r.value / Units::toSI(unit).value_or(1.0);
         QString symbol;
         try { symbol = QString::fromStdString(EquationText::expressionToLatex(output)); } catch (...) { symbol = QString::fromStdString(output); }
-        m_result->setLatex(symbol + std::string("=") + shownNumber(shown) + (unit.empty() ? "" : std::string("\\,\\text{") + QString::fromStdString(unit) + "}"));
-        m_resultText = QString("%1 = %2%3").arg(QString::fromStdString(output), shownNumber(shown), unit.empty() ? "" : std::string(" ") + QString::fromStdString(unit));
+        m_result->setLatex(symbol + QString("=") + shownNumber(shown) + (unit.empty() ? "" : QString("{") + QString::fromStdString(unit) + "}"));
+        m_resultText = QString("%1 = %2%3").arg(QString::fromStdString(output), shownNumber(shown), unit.empty() ? "" : QString(" ") + QString::fromStdString(unit));
     } catch (const std::exception& e) {
-        m_substitution->setText(std::string("✖ ") + QString::fromStdString(e.what()));
+        m_substitution->setText(QString(" ") + QString::fromStdString(e.what()));
         m_renderPanel->setMeta("NO RESULT");
     }
 }
