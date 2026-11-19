@@ -205,7 +205,7 @@ ModelReport NewtonRingsPage::compute(const ReportContext& ctx) {
 }
 void NewtonRingsPage::updateCanvas() {
     const bool transmitted = m_viewing->currentData().toDouble() > 0.5;
-    m_canvas->setInput({m_lambda->value(), m_radius->value(), m_order->value(), m_medium->currentData().toDouble(), transmitted});
+    m_canvas->setInput({m_lambda->value(), m_radius->value(), m_order->value(), m_medium->currentData().toDouble(), static_cast<double>(transmitted)});
     retitle(transmitted ? "Lens on plate / transmitted rings" : "Lens on plate / reflected rings",
             transmitted ? "Transmitted dark-ring radius squared vs half order" : "Dark-ring radius squared vs order");
 }
@@ -383,7 +383,7 @@ void MichelsonPage::updateCanvas() {
     const double n = m_medium->currentIndex() == m_medium->count() - 1
         ? m_nSlider->value() / 1000.0
         : m_medium->currentData().toDouble();
-    m_canvas->setInput({m_lambda->value(), m_dx->value(), n, m_balance->currentData().toDouble(), fringes, piezo,
+    m_canvas->setInput({m_lambda->value(), m_dx->value(), n, m_balance->currentData().toDouble(), static_cast<double>(fringes), static_cast<double>(piezo),
                         m_coherenceLength->value(), m_tiltSlider->value() / 1000.0,
                         m_plateThickness->value(), m_plateIndex->value()});
     retitle(fringes ? (piezo ? "Optical bench / piezo scan of M2" : "Optical bench / fringe pattern") : "Optical bench / detector fringes",
@@ -557,7 +557,7 @@ void GratingPage::updateCanvas() {
     const int tab = m_tabs->current();
     const bool orders = tab == 1;
     m_canvas->setInput({m_density->value(), m_lambda->value(), m_lambda2->value(), m_order->value(), m_slits->value(),
-                        m_incidence->currentData().toDouble(), orders});
+                        m_incidence->currentData().toDouble(), static_cast<double>(orders)});
     retitle(tab == 2 ? "Grating / two lines one Rayleigh step apart" : orders ? "Grating / every propagating order" : "Grating / angular observation screen",
             tab == 2 ? "Single line and a just-resolved pair" : orders ? "Order angles and where every peak sits" : "Diffracted intensity vs angle");
 }
@@ -699,7 +699,7 @@ ModelReport PolarizationPage::compute(const ReportContext& ctx) {
 }
 void PolarizationPage::updateCanvas() {
     const bool brewster = m_tabs->current() == 1;
-    m_canvas->setInput({m_intensity->value(), m_angle->value(), m_n1->value(), m_n2->value(), m_beam->currentData().toDouble() > 0.5, brewster});
+    m_canvas->setInput({m_intensity->value(), m_angle->value(), m_n1->value(), m_n2->value(), static_cast<double>(m_beam->currentData().toDouble() > 0.5), static_cast<double>(brewster)});
     retitle(brewster ? "Interface at Brewster / reflected beam s-polarized" : "Two polarizers / independent Brewster reference",
             brewster ? "p-polarized reflectance vs incidence" : "Intensity vs relative angle");
 }
