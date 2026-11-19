@@ -74,9 +74,10 @@ protected:
 private:
     void setMirrorDisplacement(double displacementUm);
 
-    UnitField *m_lambda, *m_dx;
+    UnitField *m_lambda, *m_dx, *m_coherenceLength, *m_plateThickness, *m_plateIndex;
     QSlider* m_dxSlider;
     QSlider* m_nSlider;
+    QSlider* m_tiltSlider;
     QComboBox *m_source, *m_medium, *m_reference, *m_balance;
     QPushButton *m_presetAir, *m_presetCrown, *m_presetFlint, *m_presetFringes;
     bool m_syncing = false;

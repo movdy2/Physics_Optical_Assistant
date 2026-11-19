@@ -35,7 +35,10 @@ struct NewtonInput    {
 };
 /// `fringes` selects the spacing/count view; `piezo` selects the movable mirror's actuator (otherwise a micrometer).
 /// The classroom stage models mirror travel from −2 to +2 µm; moving it changes round-trip OPD by 2nΔx.
-struct MichelsonInput { double lambdaNm = 632.8, displacementUm = 0.75, n = 1.0, visibility = 1.0; bool fringes = false, piezo = false; };
+/// `coherenceLengthUm` = 0 means infinite coherence (V constant). Otherwise V decays as exp(-|ΔOPD|/Lc).
+/// `tiltMrad` is the M2 tilt in milliradians; affects the canvas fringe pattern, not the 1D intensity curve.
+/// `plateThicknessUm` / `plateIndex` model a glass plate inserted in one arm: ΔOPD_plate = 2(n_plate − 1)·t.
+struct MichelsonInput { double lambdaNm = 632.8, displacementUm = 0.75, n = 1.0, visibility = 1.0; bool fringes = false, piezo = false; double coherenceLengthUm = 0.0; double tiltMrad = 0.0; double plateThicknessUm = 0.0, plateIndex = 1.5; };
 /// `transmission` picks the second mode tab: reflected (false) or transmitted (true) light.
 /// `colours` is the third tab: every wavelength at once - the perceived colour of the film.
 /// `n2` is the substrate index; phase reversal depends on n₀ < n vs n vs n₂ relations.

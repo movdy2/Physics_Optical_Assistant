@@ -47,5 +47,9 @@ inline constexpr char filmSubstrateIndex[] = "n2film";
 inline constexpr char filmIncidenceAngle[] = "thetaFilm";
 inline constexpr char sigmaFilmSubstrate[] = "sigmaN2film";
 inline constexpr char sigmaFilmIncidence[] = "sigmaThetaFilm";
+inline constexpr char michelsonCoherenceLength[] = "cohLengthMichelson";
+inline constexpr char michelsonTiltMrad[] = "tiltMichelson";
+inline constexpr char michelsonPlateThickness[] = "plateThicknessMichelson";
+inline constexpr char michelsonPlateIndex[] = "plateIndexMichelson";
 
 } // namespace phy104::FieldIds
