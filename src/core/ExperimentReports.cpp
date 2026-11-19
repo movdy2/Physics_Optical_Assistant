@@ -797,7 +797,7 @@ Report doubleSlit(const SlitInput& in, const ReportContext& ctx) {
     const auto fringeEstimate = propagateUncertainty(slitValues, slitSigmas, [order = in.order](const std::vector<double>& v) {
         return order * v[0] * 1e-9 * v[2] / (v[1] * 1e-3) * 1e3; // y_m in millimetres
     });
-    const auto intensityEstimate = propagateUncertainty(slitValues, slitSigmas, [yMm = ym * 1e3](const std::vector<double>& v) {
+    const auto intensityEstimate = propagateUncertainty(slitValues, slitSigmas, [yMm = ym * 1e3, &in](const std::vector<double>& v) {
         return PC::relativeIntensityUnequal(yMm * 1e-3, v[0] * 1e-9, v[2], v[1] * 1e-3, in.intensityRatio);
     });
     const bool uncertain = anyUncertainty({in.sigmaWavelengthNm, in.sigmaSeparationMm, in.sigmaScreenM});
@@ -839,7 +839,7 @@ Report doubleSlit(const SlitInput& in, const ReportContext& ctx) {
         assumptions += " Ideal narrow slits; no diffraction envelope.";
     if (in.intensityRatio != 1.0)
         assumptions += " Unequal slit intensities I₂/I₁ = " + fx(in.intensityRatio) + ".";
-    assumptions += " " + (in.useExactFormula ? "Exact geometry y = L tan(asin(mλ/d))." : "Small-angle geometry y ≈ Lθ.");
+    assumptions += std::string(" ") + (in.useExactFormula ? "Exact geometry y = L tan(asin(mλ/d))." : "Small-angle geometry y ≈ Lθ.");
     assumptions += " Entered uncertainties are independent 1σ standard uncertainties.";
     rep.notices.push_back({"Model assumptions", assumptions, false});
     rep.headline = "β = " + fx(beta * 1e3) + " mm";

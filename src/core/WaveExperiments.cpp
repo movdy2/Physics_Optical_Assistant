@@ -26,6 +26,10 @@ std::string sub(int i) {
 }
 bool isInteger(double v) { return std::fabs(v - std::round(v)) < 1e-9; }
 
+bool anyUncertainty(std::initializer_list<double> values) {
+    return std::any_of(values.begin(), values.end(), [](double value) { return value > 0.0; });
+}
+
 LcdRegister retained(std::vector<std::string> lines, const std::string& label, const std::string& value) {
     LcdRegister r;
     r.title = "LAST VALID";
@@ -378,8 +382,8 @@ ModelReport thinFilm(const ThinFilmInput& in, const ReportContext& ctx) {
     LcdRegister a;
     a.title = "OPTICAL PATH / PHASE";
     a.lines = {"OPD = 2nt·cosθₜ", " = 2 × " + num(in.n) + " × " + num(in.thicknessNm) + " × cosθₜ", " = " + num(opd) + " nm",
-               "Δψ = 4πnt·cosθₜ/λ " + (oneReversal ? "− π" : "") + " = " + NF::fixed(std::fmod(4.0 * std::numbers::pi * opd / in.lambdaNm - (oneReversal ? std::numbers::pi : 0.0) + 1e-12, 2 * std::numbers::pi), 4) + " rad",
-               "I_r/I_r,max = " + (oneReversal ? "sin²(2πnt·cosθₜ/λ)" : "cos²(2πnt·cosθₜ/λ)")};
+               std::string("Δψ = 4πnt·cosθₜ/λ ") + (oneReversal ? "− π" : "") + " = " + NF::fixed(std::fmod(4.0 * std::numbers::pi * opd / in.lambdaNm - (oneReversal ? std::numbers::pi : 0.0) + 1e-12, 2 * std::numbers::pi), 4) + " rad",
+               std::string("I_r/I_r,max = ") + (oneReversal ? "sin²(2πnt·cosθₜ/λ)" : "cos²(2πnt·cosθₜ/λ)")};
     a.resultLabel = "NORMALIZED REFLECTION";
     a.resultValue = fx(refl);
     LcdRegister b;
@@ -405,7 +409,7 @@ ModelReport thinFilm(const ThinFilmInput& in, const ReportContext& ctx) {
         c.curve.push_back({t, thinFilmReflectance(t, 1.0, in.n, in.n2, in.lambdaNm, in.thetaDeg)});
     }
     c.marker = {{in.thicknessNm, refl}};
-    c.legend = "I_r = " + (oneReversal ? "sin²(2πnt·cosθₜ/λ)" : "cos²(2πnt·cosθₜ/λ)") + "   ● t = " + num(in.thicknessNm) + " nm";
+    c.legend = std::string("I_r = ") + (oneReversal ? "sin²(2πnt·cosθₜ/λ)" : "cos²(2πnt·cosθₜ/λ)") + "   ● t = " + num(in.thicknessNm) + " nm";
     return out;
 }
 // ================================================================================ diffraction grating
@@ -545,8 +549,9 @@ ModelReport grating(const GratingInput& in, const ReportContext& ctx) {
             const double th = -90 + k * 0.1;
             c.curve2.push_back({th, gratingIntensity(th, in.linesPerCm, in.lambda2Nm, in.slits, in.incidenceDeg)});
         }
+        double angle2 = 0.0;
         if (secondPropagates) {
-            const double angle2 = std::asin(sinTheta2) / kDeg;
+            angle2 = std::asin(sinTheta2) / kDeg;
             c.marker.push_back({angle2, 1.0});
         }
         c.legend2 = "M = " + num(in.slits) + " slits · ● order " + std::string(m > 0 ? "+" : "") + std::to_string(m) + " @ " + num(in.lambda2Nm) + " nm" +
@@ -630,7 +635,7 @@ ModelReport singleSlit(const SingleSlitInput& in, const ReportContext& ctx) {
     r1.resultValue = fx(theta) + "°";
     LcdRegister r2;
     r2.title = "CENTRAL MAXIMUM";
-    r2.lines = {"w = " + (in.exactGeometry ? "2L tan θ₁" : "≈ 2L λ/a"),
+    r2.lines = {std::string("w = ") + (in.exactGeometry ? "2L tan θ₁" : "≈ 2L λ/a"),
                 " = 2 × " + num(in.screenM) + " × " + (in.exactGeometry ? "tan(" + fx(theta) + "°)" : "λ/a"),
                 " = " + NF::fixed(w, 9) + " m"};
     r2.resultLabel = "FULL WIDTH ON SCREEN";
@@ -921,7 +926,7 @@ double thinFilmReflectance(double thicknessNm, double n, double wavelengthNm) {
 double thinFilmReflectance(double thicknessNm, double n0, double n, double n2, double wavelengthNm, double thetaDeg) {
     if (wavelengthNm <= 0 || thicknessNm <= 0 || n <= 0.0 || n2 <= 0.0) return 0.0;
     // Snell's law: angle inside film
-    const double sinThetaT = std::fabs(n0 / n) * std::sin(thetaDeg * kDeg);
+    const double sinThetaT = std::fabs(n0 / n) * std::sin(thetaDeg * std::numbers::pi / 180.0);
     const double cosThetaT = std::sqrt(std::max(0.0, 1.0 - sinThetaT * sinThetaT));
     const double opd = 2.0 * n * thicknessNm * cosThetaT;          // nm
     // Phase shifts: top = π if n > n0, bottom = π if n2 > n
