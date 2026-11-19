@@ -275,8 +275,10 @@ int main() {
         auto r = ER::refraction({});
         CHECK(r.valid && !r.paused && r.registers.size() == 2);
         CHECK(r.registers[0].resultValue == "48.5904°" && r.registers[0].resultLabel == "REFRACTION ANGLE · θ₂");
-        CHECK(hasLine(r.registers[0], "02  sin θ₂ = 1.5 × 0.5") && hasLine(r.registers[0], "03  sin θ₂ = 0.7500"));
-        CHECK(hasLine(r.registers[0], "04  θ₂ = asin(0.7500)"));
+        CHECK(hasLine(r.registers[0], "02  n₁ sin θ₁ = 0.7500") && hasLine(r.registers[0], "03  n₂ sin θ₂ = 0.7500"));
+        CHECK(hasLine(r.registers[0], "04  sin θ₂ = 0.7500"));
+        CHECK(hasLine(r.registers[0], "05  θ₂ = asin(0.7500)"));
+        CHECK(hasLine(r.registers[0], "06  Reflectance R = 0.0551"));
         CHECK(r.registers[1].title == "TIR COMPARISON" && hasLine(r.registers[1], "θc = 41.8103°"));
         CHECK(hasLine(r.registers[1], "θ₁ = 50° > θc") && hasLine(r.registers[1], "sin θ₂ = 1.1491 > 1"));
         CHECK(hasLine(r.registers[1], "STATUS: TOTAL REFLECTION"));
@@ -316,10 +318,13 @@ int main() {
     // --- Lenses & Mirrors: thin lens (f = 10, do = 30, ho = 3)
     {
         auto r = ER::imaging({});
-        CHECK(r.valid && hasLine(r.registers[0], "02  1/dᵢ = 1/10 - 1/30") && hasLine(r.registers[0], "03  1/dᵢ = 0.066667 cm⁻¹"));
-        CHECK(hasLine(r.registers[0], "04  dᵢ = +15.0000 cm") && r.registers[0].resultValue == "-0.5000");
-        CHECK(r.registers[1].title == "IMAGE PROPERTIES" && hasLine(r.registers[1], "hᵢ = -1.5000 cm"));
-        CHECK(hasLine(r.registers[1], "IMAGE: REAL") && hasLine(r.registers[1], "ORIENTATION: INVERTED") && hasLine(r.registers[1], "MIRROR: SAME RESULTS"));
+        CHECK(r.valid && hasLine(r.registers[0], "02  Substitution:  1/dᵢ = 1/10 - 1/30") && hasLine(r.registers[0], "03  1/dᵢ = 0.066667 cm⁻¹"));
+        CHECK(hasLine(r.registers[0], "04  dᵢ = (...)⁻¹ = +15.0000 cm") && hasLine(r.registers[0], "05  m = −dᵢ/dₒ = −(+15.0000)/(30) = -0.5000"));
+        CHECK(hasLine(r.registers[0], "06  hᵢ = m × hₒ = -0.5000 × 3 = -1.5000 cm"));
+        CHECK(r.registers[0].resultValue == "-0.5000");
+        CHECK(r.registers[1].title == "IMAGE PROPERTIES");
+        CHECK(hasLine(r.registers[1], "IMAGE: REAL") && hasLine(r.registers[1], "ORIENTATION: INVERTED"));
+        CHECK(hasLine(r.registers[1], "dᵢ sign: positive (real space)") && hasLine(r.registers[1], "m sign: negative (inverted)"));
         CHECK(r.notices[0].error && r.notices[0].title == "Guarded case / E_FOCAL_PLANE" && r.headline == "dᵢ = +15.0000 cm");
         CHECK(r.retained.resultValue == "+15.0000 cm" && hasLine(r.retained, "m = -0.5000 · hᵢ = -1.5000 cm"));
         ImagingInput div; div.f = -10;
@@ -331,11 +336,15 @@ int main() {
         ImagingInput in; in.f = -10; in.mirrorMode = true;
         auto r = ER::imaging(in);
         CHECK(r.valid && r.registers[0].title == "GAUSSIAN MIRROR REGISTER" && r.registers[0].mode == "OK");
-        CHECK(hasLine(r.registers[0], "01  1/f = 1/dₒ + 1/dᵢ") && hasLine(r.registers[0], "02  1/dᵢ = 1/(-10) - 1/30"));
-        CHECK(hasLine(r.registers[0], "03  1/dᵢ = -0.133333 cm⁻¹") && hasLine(r.registers[0], "04  dᵢ = (-0.133333)⁻¹"));
+        CHECK(hasLine(r.registers[0], "01  Gaussian imaging: 1/f = 1/dₒ + 1/dᵢ   ·   m = −dᵢ/dₒ"));
+        CHECK(hasLine(r.registers[0], "02  Substitution:  1/dᵢ = 1/(-10) - 1/30"));
+        CHECK(hasLine(r.registers[0], "03  1/dᵢ = -0.133333 cm⁻¹") && hasLine(r.registers[0], "04  dᵢ = (...)⁻¹ = -7.5000 cm"));
+        CHECK(hasLine(r.registers[0], "05  m = −dᵢ/dₒ = −(-7.5000)/(30) = +0.2500"));
+        CHECK(hasLine(r.registers[0], "06  hᵢ = m × hₒ = +0.2500 × 3 = +0.7500 cm"));
         CHECK(r.registers[0].resultLabel == "IMAGE DISTANCE / cm" && r.registers[0].resultValue == "-7.5000");
-        CHECK(hasLine(r.registers[1], "m = -dᵢ/dₒ = +0.2500") && hasLine(r.registers[1], "hᵢ = m × hₒ = +0.7500 cm"));
-        CHECK(hasLine(r.registers[1], "IMAGE: VIRTUAL") && hasLine(r.registers[1], "ORIENTATION: UPRIGHT") && hasLine(r.registers[1], "SIZE: DIMINISHED (¼×)"));
+        CHECK(hasLine(r.registers[1], "IMAGE: VIRTUAL") && hasLine(r.registers[1], "ORIENTATION: UPRIGHT"));
+        CHECK(hasLine(r.registers[1], "dᵢ sign: negative (virtual space)") && hasLine(r.registers[1], "m sign: positive (upright)"));
+        CHECK(hasLine(r.registers[1], "SIZE: DIMINISHED (¼×)"));
         CHECK(r.notices[0].title == "Negative distance ≠ invalid input" && r.footnote == "P: pole · F: -10 cm · C: -20 cm");
         CHECK(r.statusText == "Virtual image · negative distances are valid");
         CHECK(ER::sizeDescription(2.5) == "ENLARGED (2.5×)" && ER::sizeDescription(-1.0) == "SAME SIZE (1×)" && ER::sizeDescription(0.5) == "DIMINISHED (½×)");

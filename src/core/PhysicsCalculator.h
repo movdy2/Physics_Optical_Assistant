@@ -18,6 +18,15 @@ struct RefractionResult {
 };
 RefractionResult refraction(double n1, double n2, double theta1Deg);
 std::optional<double> criticalAngleDeg(double n1, double n2);   // nullopt if n1 <= n2
+
+// ---- Fresnel reflectance (unpolarized light) ----
+struct FresnelResult {
+    double Rs = 0.0;                      // s-polarized reflectance
+    double Rp = 0.0;                      // p-polarized reflectance
+    double R = 0.0;                       // unpolarized reflectance = (Rs + Rp) / 2
+    bool   tir = false;                   // true when R = 1 (total internal reflection)
+};
+FresnelResult fresnelReflectance(double n1, double n2, double theta1Deg);
 std::optional<double> refractiveIndex(double speedOfLight, double speedInMedium);
 
 // ---- prism (relative index n = n_prism / n_surrounding) ----

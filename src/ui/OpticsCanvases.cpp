@@ -259,15 +259,40 @@ void LensCanvas::paintDiagram(QPainter& p, const QRectF& a) {
         text(p, QPointF(a.center().x(), a.top() + 22), "Image at infinity (object in the focal plane)", t.error, 10, Qt::AlignHCenter);
     } else {
         const QPointF T(lx + img.imageDistance * sc, axisY - img.magnification * hp);
-        const QPointF hits[3] = {QPointF(lx, tip.y()), QPointF(lx, axisY), QPointF(lx, T.y())};
-        for (const QPointF& h : hits) {
-            ray(p, tip, h, t.amber, 1.3);
+        // Principal ray 1: parallel to axis → through far focal point (hits lens at object height)
+        if (m_showParallelRay) {
+            const QPointF h1(lx, tip.y());
+            ray(p, tip, h1, t.amber, 1.3);
             if (img.real) {
-                ray(p, h, extendTo(h, T, a.right() - 10), t.amber, 1.3);
+                ray(p, h1, extendTo(h1, T, a.right() - 10), t.amber, 1.3);
             } else {
-                const QPointF away = h + unit(h - T) * 1000;
-                ray(p, h, extendTo(h, away, a.right() - 10), t.amber, 1.3);
-                ray(p, h, T, t.muted, 1, -1, Qt::DashLine);                    // virtual extension
+                const QPointF away1 = h1 + unit(h1 - T) * 1000;
+                ray(p, h1, extendTo(h1, away1, a.right() - 10), t.amber, 1.3);
+                ray(p, h1, T, t.muted, 1, -1, Qt::DashLine);                    // virtual extension
+            }
+        }
+        // Principal ray 2: through lens center → undeviated (hits lens at axis height)
+        if (m_showCenterRay) {
+            const QPointF h2(lx, axisY);
+            ray(p, tip, h2, t.amber, 1.3);
+            if (img.real) {
+                ray(p, h2, extendTo(h2, T, a.right() - 10), t.amber, 1.3);
+            } else {
+                const QPointF away2 = h2 + unit(h2 - T) * 1000;
+                ray(p, h2, extendTo(h2, away2, a.right() - 10), t.amber, 1.3);
+                ray(p, h2, T, t.muted, 1, -1, Qt::DashLine);                    // virtual extension
+            }
+        }
+        // Principal ray 3: through focal point → emerges parallel (hits lens at image height)
+        if (m_showFocalRay) {
+            const QPointF h3(lx, T.y());
+            ray(p, tip, h3, t.amber, 1.3);
+            if (img.real) {
+                ray(p, h3, extendTo(h3, T, a.right() - 10), t.amber, 1.3);
+            } else {
+                const QPointF away3 = h3 + unit(h3 - T) * 1000;
+                ray(p, h3, extendTo(h3, away3, a.right() - 10), t.amber, 1.3);
+                ray(p, h3, T, t.muted, 1, -1, Qt::DashLine);                    // virtual extension
             }
         }
         p.setPen(QPen(img.real ? t.text : t.muted, 2, img.real ? Qt::SolidLine : Qt::DashLine));
@@ -339,11 +364,19 @@ void MirrorCanvas::paintDiagram(QPainter& p, const QRectF& a) {
         const QPointF T(ix, axisY - img.magnification * hp);
         const double dy = tip.y() - axisY;
         const double hitX = cx + (concave ? 1 : -1) * std::sqrt(std::max(0.0, R * R - dy * dy));
-        const QPointF hits[2] = {QPointF(hitX, tip.y()), QPointF(vx, axisY)};
-        for (const QPointF& h : hits) {
-            ray(p, tip, h, t.amber, 1.4);
-            if (img.real) ray(p, h, extendTo(h, T, 14), t.amber, 1.4);
-            else { ray(p, h, extendTo(h, h + unit(h - T) * 1000, 14), t.amber, 1.4); ray(p, h, T, t.muted, 1, -1, Qt::DashLine); }
+        // Principal ray 1: parallel to axis → reflects through focal point
+        if (m_showParallelRay) {
+            const QPointF h1(hitX, tip.y());
+            ray(p, tip, h1, t.amber, 1.4);
+            if (img.real) ray(p, h1, extendTo(h1, T, 14), t.amber, 1.4);
+            else { ray(p, h1, extendTo(h1, h1 + unit(h1 - T) * 1000, 14), t.amber, 1.4); ray(p, h1, T, t.muted, 1, -1, Qt::DashLine); }
+        }
+        // Principal ray 2: through pole → reflects at equal angle
+        if (m_showCenterRay) {
+            const QPointF h2(vx, axisY);
+            ray(p, tip, h2, t.amber, 1.4);
+            if (img.real) ray(p, h2, extendTo(h2, T, 14), t.amber, 1.4);
+            else { ray(p, h2, extendTo(h2, h2 + unit(h2 - T) * 1000, 14), t.amber, 1.4); ray(p, h2, T, t.muted, 1, -1, Qt::DashLine); }
         }
         p.setPen(QPen(img.real ? t.text : t.sage, 2, img.real ? Qt::SolidLine : Qt::SolidLine));
         p.drawLine(QPointF(T.x(), axisY), T);
