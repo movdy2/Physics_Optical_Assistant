@@ -55,7 +55,10 @@ protected:
     QString runDescription() const override;
 private:
     UnitField *m_lambda, *m_radius, *m_order;
+    UnitField *m_sigmaLambda, *m_sigmaRadius, *m_sigmaN;
     QComboBox *m_medium, *m_viewing;
+    QPushButton *m_presetAir, *m_presetWater, *m_presetOil, *m_presetTransmitted;
+    bool m_syncing = false;
     class NewtonCanvas* m_canvas;
 };
 
@@ -75,6 +78,8 @@ private:
     QSlider* m_dxSlider;
     QSlider* m_nSlider;
     QComboBox *m_source, *m_medium, *m_reference, *m_balance;
+    QPushButton *m_presetAir, *m_presetCrown, *m_presetFlint, *m_presetFringes;
+    bool m_syncing = false;
     class MichelsonCanvas* m_canvas;
 };
 
@@ -90,7 +95,9 @@ protected:
     void resetFields() override;
     QString runDescription() const override;
 private:
-    UnitField *m_lambda, *m_n, *m_t;
+    UnitField *m_lambda, *m_n, *m_n2, *m_t, *m_theta;
+    QPushButton *m_presetSoap, *m_presetOil, *m_presetTransmission;
+    bool m_syncing = false;
     QLabel* m_swatch = nullptr;
     class ThinFilmCanvas* m_canvas;
 };
@@ -107,6 +114,8 @@ protected:
 private:
     UnitField *m_density, *m_lambda, *m_order, *m_slits;
     QComboBox* m_incidence;
+    QPushButton *m_presetStandard, *m_presetHighDensity, *m_presetResolution;
+    bool m_syncing = false;
     class GratingCanvas* m_canvas;
 };
 
@@ -122,6 +131,8 @@ protected:
 private:
     UnitField *m_width, *m_lambda, *m_screen, *m_separation;
     QComboBox *m_wave, *m_scale;
+    QPushButton *m_presetStandard, *m_presetGeometry, *m_presetEnvelope;
+    bool m_syncing = false;
     class SingleSlitCanvas* m_canvas;
 };
 
@@ -137,6 +148,8 @@ protected:
 private:
     UnitField *m_intensity, *m_angle, *m_n1, *m_n2;
     QComboBox* m_beam;
+    QPushButton *m_presetMalus, *m_presetBrewster;
+    bool m_syncing = false;
     class PolarizationCanvas* m_canvas;
 };
 

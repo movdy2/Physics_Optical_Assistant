@@ -26,13 +26,19 @@ struct ModelReport {
 };
 
 /// `transmitted` picks the second mode tab: reflected (false) or transmitted (true) light.
-struct NewtonInput    { double lambdaNm = 600, radiusM = 1.0, order = 4, n = 1.0; bool transmitted = false; };
+struct NewtonInput    {
+    double lambdaNm = 600, radiusM = 1.0, order = 4, n = 1.0;
+    double sigmaLambdaNm = 0.0, sigmaRadiusM = 0.0, sigmaN = 0.0;   // independent 1σ uncertainties
+    bool transmitted = false;
+};
 /// `fringes` selects the spacing/count view; `piezo` selects the movable mirror's actuator (otherwise a micrometer).
 /// The classroom stage models mirror travel from −2 to +2 µm; moving it changes round-trip OPD by 2nΔx.
 struct MichelsonInput { double lambdaNm = 632.8, displacementUm = 0.75, n = 1.0, visibility = 1.0; bool fringes = false, piezo = false; };
 /// `transmission` picks the second mode tab: reflected (false) or transmitted (true) light.
 /// `colours` is the third tab: every wavelength at once - the perceived colour of the film.
-struct ThinFilmInput  { double lambdaNm = 600, n = 1.5, thicknessNm = 100; bool transmission = false; bool colours = false; };
+/// `n2` is the substrate index; phase reversal depends on n₀ < n vs n vs n₂ relations.
+/// `thetaDeg` is the angle of incidence from normal; OPD becomes 2nt·cos(θₜ) via Snell's law.
+struct ThinFilmInput  { double lambdaNm = 600, n = 1.5, thicknessNm = 100, n2 = 1.5, thetaDeg = 0.0; bool transmission = false; bool colours = false; };
 
 /// One entry of the colour tab's readout: a spectral line, its local reflectance and its swatch.
 struct FilmColourSample {
@@ -51,11 +57,14 @@ struct FilmColour {
 
 /// Reflectance of the film at one wavelength: one phase reversal, equal amplitudes.
 double thinFilmReflectance(double thicknessNm, double n, double wavelengthNm);
+/// Reflectance with substrate index n2 and angle of incidence thetaDeg.
+double thinFilmReflectance(double thicknessNm, double n0, double n, double n2, double wavelengthNm, double thetaDeg);
 /// Visibility of the interference colours: 1 when the order difference across the visible range is large
 /// (thin films), 0 when many orders overlap and the colours wash out to grey.
 double thinFilmColourVisibility(double thicknessNm, double n);
 /// The film colour; `visibility = 0` returns the neutral grey of a washed-out film.
 FilmColour thinFilmColour(double thicknessNm, double n);
+FilmColour thinFilmColour(double thicknessNm, double n, double n2);
 /// `orderList` is the second tab: every propagating order with its angle instead of the intensity fan.
 struct GratingInput   { double linesPerCm = 5000, lambdaNm = 600, order = 1, slits = 20, incidenceDeg = 0; bool orderList = false; };
 /// `geometry` is the second tab: where the minima land on the screen instead of the intensity envelope.

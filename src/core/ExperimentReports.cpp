@@ -672,11 +672,11 @@ Report prism(const PrismInput& in, const ReportContext& ctx) {
     LcdRegister r;
     if (in.dispersion) r.lines.push_back("λ = " + NF::general(in.wavelengthNm, 5) + " nm   n = " + fx(n));
     r.lines.push_back("01  r₁ = asin(sin i₁ / n)");
-    r.lines.push_back("    r₁ = " + fx(p.r1) + "°");
-    r.lines.push_back("02  r₂ = A - r₁ = " + num(std::round(p.r2 * 1e4) / 1e4) + "°");
+    r.lines.push_back("    = asin(sin " + fx(in.incidence) + "° / " + fx(n) + ") = " + fx(p.r1) + "°");
+    r.lines.push_back("02  r₂ = A − r₁ = " + fx(in.apex) + "° − " + fx(p.r1) + "° = " + fx(p.r2) + "°");
     r.lines.push_back("03  i₂ = asin(n sin r₂)");
-    r.lines.push_back("    i₂ = " + fx(p.i2) + "°");
-    r.lines.push_back("04  δ = i₁ + i₂ - A");
+    r.lines.push_back("    = asin(" + fx(n) + " × sin " + fx(p.r2) + "°) = " + fx(p.i2) + "°");
+    r.lines.push_back("04  δ = i₁ + i₂ − A = " + fx(in.incidence) + "° + " + fx(p.i2) + "° − " + fx(in.apex) + "° = " + fx(p.deviation) + "°");
     r.resultLabel = symmetric ? "MINIMUM DEVIATION · δmin" : "DEVIATION · δ";
     r.resultValue = fx(p.deviation) + "°";
     if (uncertain && deviationEstimate.valid) {
@@ -762,7 +762,7 @@ Report doubleSlit(const SlitInput& in, const ReportContext& ctx) {
     if (!std::isfinite(in.wavelengthNm) || in.wavelengthNm <= 0.0) issues.push_back({FieldIds::wavelength, "Enter λ > 0 nm.", "λ"});
     if (!std::isfinite(in.separationMm) || in.separationMm <= 0.0) issues.push_back({FieldIds::slitSeparation, "Enter d > 0 mm.", "d"});
     if (!std::isfinite(in.screenM) || in.screenM <= 0.0) issues.push_back({FieldIds::screenDistance, "Enter L > 0 m.", "L"});
-    if (in.order < 0) issues.push_back({FieldIds::order, "Enter m ≥ 0.", "m"});
+    if (!std::isfinite(static_cast<double>(in.order))) issues.push_back({FieldIds::order, "Enter an integer order m.", "m"});
     validateSigma(issues, FieldIds::sigmaWavelength, in.sigmaWavelengthNm, "σ(λ)");
     validateSigma(issues, FieldIds::sigmaSlitSeparation, in.sigmaSeparationMm, "σ(d)");
     validateSigma(issues, FieldIds::sigmaScreenDistance, in.sigmaScreenM, "σ(L)");
@@ -786,8 +786,9 @@ Report doubleSlit(const SlitInput& in, const ReportContext& ctx) {
 
     const double lam = in.wavelengthNm * 1e-9, d = in.separationMm * 1e-3, L = in.screenM;
     const double beta = PC::fringeSpacing(lam, L, d);
-    const double ym = PC::fringePosition(in.order, lam, L, d);
-    const double intensity = PC::relativeIntensity(ym, lam, L, d);
+    const double ym = in.useExactFormula ? PC::fringePositionExact(in.order, lam, L, d) : PC::fringePosition(in.order, lam, L, d);
+    const double env = in.showEnvelope && in.slitWidthMm > 0.0 ? PC::singleSlitEnvelope(ym, lam, L, in.slitWidthMm * 1e-3) : 1.0;
+    const double intensity = PC::relativeIntensityUnequal(ym, lam, L, d, in.intensityRatio) * env;
     const std::vector<double> slitValues{in.wavelengthNm, in.separationMm, in.screenM};
     const std::vector<double> slitSigmas{in.sigmaWavelengthNm, in.sigmaSeparationMm, in.sigmaScreenM};
     const auto betaEstimate = propagateUncertainty(slitValues, slitSigmas, [](const std::vector<double>& v) {
@@ -797,13 +798,15 @@ Report doubleSlit(const SlitInput& in, const ReportContext& ctx) {
         return order * v[0] * 1e-9 * v[2] / (v[1] * 1e-3) * 1e3; // y_m in millimetres
     });
     const auto intensityEstimate = propagateUncertainty(slitValues, slitSigmas, [yMm = ym * 1e3](const std::vector<double>& v) {
-        return PC::relativeIntensity(yMm * 1e-3, v[0] * 1e-9, v[2], v[1] * 1e-3);
+        return PC::relativeIntensityUnequal(yMm * 1e-3, v[0] * 1e-9, v[2], v[1] * 1e-3, in.intensityRatio);
     });
     const bool uncertain = anyUncertainty({in.sigmaWavelengthNm, in.sigmaSeparationMm, in.sigmaScreenM});
 
     Report rep;
     LcdRegister r1;
-    r1.lines = {"01  λ = " + NF::scientific(lam) + " m", "02  d = " + NF::scientific(d) + " m", "03  β = λL / d", "    β = " + NF::fixed(beta, 6) + " m"};
+    r1.lines = {"01  λ = " + NF::scientific(lam) + " m", "02  d = " + NF::scientific(d) + " m"};
+    r1.lines.push_back(in.useExactFormula ? "03  β = λL / d (exact geometry)" : "03  β = λL / d (small angle)");
+    r1.lines.push_back("    β = " + NF::fixed(beta, 6) + " m");
     r1.resultLabel = "FRINGE SPACING · β";
     r1.resultValue = fx(beta * 1e3) + " mm";
     if (uncertain && betaEstimate.valid) {
@@ -816,19 +819,34 @@ Report doubleSlit(const SlitInput& in, const ReportContext& ctx) {
     r2.title = ordinal(in.order);
     const std::string m = std::to_string(in.order);
     static const char* sub[] = {"₀", "₁", "₂", "₃", "₄", "₅", "₆", "₇", "₈", "₉"};
-    const std::string yName = in.order < 10 ? std::string("y") + sub[in.order] : "y(m)";
-    r2.lines = {"m = " + m, yName + " = mλL / d", yName + " = " + NF::signedFixed(ym * 1e3) + " mm",
-                "Δ = " + m + "λ = " + NF::fixed(in.order * in.wavelengthNm, 1) + " nm", "I(" + yName + ") / I₀ = " + fx(intensity)};
+    const std::string yName = (in.order >= 0 && in.order < 10) ? std::string("y") + sub[in.order] : "y(m)";
+    const std::string formula = in.useExactFormula ? yName + " = L tan(asin(mλ/d))" : yName + " = mλL / d";
+    r2.lines = {"m = " + m, formula, yName + " = " + NF::signedFixed(ym * 1e3) + " mm",
+                "Δ = " + m + "λ = " + NF::fixed(std::abs(in.order) * in.wavelengthNm, 1) + " nm", "I(" + yName + ") / I₀ = " + fx(intensity)};
+    if (in.showEnvelope && in.slitWidthMm > 0.0)
+        r2.lines.push_back("Envelope sinc² = " + fx(env));
+    if (in.intensityRatio != 1.0)
+        r2.lines.push_back("Intensity ratio I₂/I₁ = " + fx(in.intensityRatio) + " · visibility V = " + fx(2.0 * std::sqrt(in.intensityRatio) / (1.0 + in.intensityRatio)));
     if (uncertain && fringeEstimate.valid)
         r2.extraLines.push_back("σ(" + yName + ") = " + num(fringeEstimate.standardUncertainty) + " mm (1σ)");
     if (uncertain && intensityEstimate.valid)
         r2.extraLines.push_back("σ(I/I₀) = " + num(intensityEstimate.standardUncertainty) + " (1σ)");
     rep.registers.push_back(r2);
-    rep.notices.push_back({"Model assumptions", "Equal slit intensities, coherent sources and L ≫ d. The plot shows normalized interference only; no diffraction envelope. "
-                           "Entered uncertainties are independent 1σ standard uncertainties.", false});
+    std::string assumptions = "Equal slit intensities, coherent sources and L ≫ d.";
+    if (in.showEnvelope && in.slitWidthMm > 0.0)
+        assumptions += " Single-slit envelope sinc²(π a y / λL) applied with a = " + NF::fixed(in.slitWidthMm, 3) + " mm.";
+    else
+        assumptions += " Ideal narrow slits; no diffraction envelope.";
+    if (in.intensityRatio != 1.0)
+        assumptions += " Unequal slit intensities I₂/I₁ = " + fx(in.intensityRatio) + ".";
+    assumptions += " " + (in.useExactFormula ? "Exact geometry y = L tan(asin(mλ/d))." : "Small-angle geometry y ≈ Lθ.");
+    assumptions += " Entered uncertainties are independent 1σ standard uncertainties.";
+    rep.notices.push_back({"Model assumptions", assumptions, false});
     rep.headline = "β = " + fx(beta * 1e3) + " mm";
     if (uncertain && betaEstimate.valid) rep.headline += " ± " + num(betaEstimate.standardUncertainty) + " mm";
     std::vector<std::string> retainedExtra{"m = " + m + " · " + yName + " = " + NF::signedFixed(ym * 1e3) + " mm"};
+    if (in.showEnvelope && in.slitWidthMm > 0.0)
+        retainedExtra.push_back("envelope = " + fx(env));
     if (uncertain && fringeEstimate.valid)
         retainedExtra.push_back("σ(" + yName + ") = " + num(fringeEstimate.standardUncertainty) + " mm (1σ)");
     rep.retained = retainedRegister({"λ = " + NF::fixed(in.wavelengthNm, 1) + " nm", "d = " + NF::fixed(in.separationMm, 3) + " mm · L = " + NF::fixed(in.screenM, 3) + " m"},
@@ -836,27 +854,40 @@ Report doubleSlit(const SlitInput& in, const ReportContext& ctx) {
     rep.parameters = {{"Wavelength λ", measured(in.wavelengthNm, in.sigmaWavelengthNm, "nm")},
                       {"Slit separation d", measured(in.separationMm, in.sigmaSeparationMm, "mm")},
                       {"Screen distance L", measured(in.screenM, in.sigmaScreenM, "m")}, {"Fringe order m", m}};
+    if (in.showEnvelope && in.slitWidthMm > 0.0)
+        rep.parameters.emplace_back("Slit width a", measured(in.slitWidthMm, 0.0, "mm"));
+    if (in.intensityRatio != 1.0)
+        rep.parameters.emplace_back("Intensity ratio I₂/I₁", measured(in.intensityRatio, 0.0));
+    rep.parameters.emplace_back("Formula", in.useExactFormula ? "Exact" : "Small-angle");
     return rep;
 }
 
 DataSeries doubleSlitSweep(const SlitInput& in) {
-    DataSeries s{"double_slit_sweep", "Double-slit intensity",
-                 NF::general(in.wavelengthNm, 5) + " nm · d = " + NF::general(in.separationMm, 4) + " mm · L = " + NF::general(in.screenM, 5) + " m",
-                 "ideal coherent sources; σ(I/I₀) is an independent-input 1σ uncertainty; no diffraction envelope",
+    std::string desc = NF::general(in.wavelengthNm, 5) + " nm · d = " + NF::general(in.separationMm, 4) + " mm · L = " + NF::general(in.screenM, 5) + " m";
+    if (in.showEnvelope && in.slitWidthMm > 0.0)
+        desc += " · envelope a = " + NF::general(in.slitWidthMm, 3) + " mm";
+    if (in.intensityRatio != 1.0)
+        desc += " · I₂/I₁ = " + NF::general(in.intensityRatio, 3);
+    desc += in.useExactFormula ? " · exact" : " · small-angle";
+    DataSeries s{"double_slit_sweep", "Double-slit intensity", desc,
+                 "ideal coherent sources; σ(I/I₀) is an independent-input 1σ uncertainty",
                  {"y (mm)", "I / I₀", "σ(I / I₀)"}, {}, {}};
     s.analysis = {{"Input wavelength λ", measured(in.wavelengthNm, in.sigmaWavelengthNm, "nm")},
                   {"Input slit separation d", measured(in.separationMm, in.sigmaSeparationMm, "mm")},
                   {"Input screen distance L", measured(in.screenM, in.sigmaScreenM, "m")}};
     const double lam = in.wavelengthNm * 1e-9, d = in.separationMm * 1e-3, L = in.screenM;
+    const double slitWidthM = in.slitWidthMm * 1e-3;
     const std::vector<double> values{in.wavelengthNm, in.separationMm, in.screenM};
     const std::vector<double> sigmas{in.sigmaWavelengthNm, in.sigmaSeparationMm, in.sigmaScreenM};
-    for (int k = -10; k <= 10; ++k) {
-        const double y = k * 1e-3;
-        const double intensity = d > 0 ? PC::relativeIntensity(y, lam, L, d) : kNaN;
-        const auto error = propagateUncertainty(values, sigmas, [y](const std::vector<double>& v) {
-            return PC::relativeIntensity(y, v[0] * 1e-9, v[2], v[1] * 1e-3);
+    for (int k = -20; k <= 20; ++k) {
+        const double y = k * 0.5e-3;
+        const double env = in.showEnvelope && slitWidthM > 0.0 ? PC::singleSlitEnvelope(y, lam, L, slitWidthM) : 1.0;
+        const double intensity = d > 0 ? PC::relativeIntensityUnequal(y, lam, L, d, in.intensityRatio) * env : kNaN;
+        const auto error = propagateUncertainty(values, sigmas, [y, slitWidthM, &in](const std::vector<double>& v) {
+            const double env = in.showEnvelope && slitWidthM > 0.0 ? PC::singleSlitEnvelope(y, v[0] * 1e-9, v[2], slitWidthM) : 1.0;
+            return PC::relativeIntensityUnequal(y, v[0] * 1e-9, v[2], v[1] * 1e-3, in.intensityRatio) * env;
         });
-        s.rows.push_back({double(k), intensity, std::isfinite(intensity) && error.valid ? error.standardUncertainty : kNaN});
+        s.rows.push_back({double(k) * 0.5, intensity, std::isfinite(intensity) && error.valid ? error.standardUncertainty : kNaN});
     }
     const double betaMm = PC::fringeSpacing(lam, L, d) * 1e3;
     const auto betaError = propagateUncertainty(values, sigmas, [](const std::vector<double>& v) {

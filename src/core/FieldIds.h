@@ -34,10 +34,17 @@ inline constexpr char order[] = "m";
 inline constexpr char radiusOfCurvature[] = "R";
 inline constexpr char refractiveIndex[] = "n";
 inline constexpr char thickness[] = "t";
+inline constexpr char sigmaNewtonLambda[] = "sigmaNewtonLambda";
+inline constexpr char sigmaNewtonRadius[] = "sigmaNewtonRadius";
+inline constexpr char sigmaNewtonIndex[] = "sigmaNewtonIndex";
 inline constexpr char gratingDensity[] = "N";
 inline constexpr char illuminatedSlits[] = "M";
 inline constexpr char slitWidth[] = "a";
 inline constexpr char incidentIntensity[] = "I";
 inline constexpr char mirrorDisplacement[] = "dx";
+inline constexpr char filmSubstrateIndex[] = "n2film";
+inline constexpr char filmIncidenceAngle[] = "thetaFilm";
+inline constexpr char sigmaFilmSubstrate[] = "sigmaN2film";
+inline constexpr char sigmaFilmIncidence[] = "sigmaThetaFilm";
 
 } // namespace phy104::FieldIds

@@ -493,10 +493,12 @@ void PrismCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     };
 
     const Trace main = trace(m_in.nPrism, m_in.nMedium);
-    // normals
-    p.setPen(QPen(t.dim, 1, Qt::DashLine));
-    p.drawLine(P1 - nL * 40, P1 + nL * 60);
-    if (main.ok) p.drawLine(main.P2 - nR * 40, main.P2 + nR * 60);
+    // normals (gated by toggle)
+    if (m_showNormals) {
+        p.setPen(QPen(t.dim, 1, Qt::DashLine));
+        p.drawLine(P1 - nL * 40, P1 + nL * 60);
+        if (main.ok) p.drawLine(main.P2 - nR * 40, main.P2 + nR * 60);
+    }
 
     if (!spectrumMode) {
         drawPath(main, t.amber, true, true);
@@ -517,14 +519,16 @@ void PrismCanvas::paintDiagram(QPainter& p, const QRectF& a) {
         arcDirs(p, main.X, main.d0, main.d2, 24, t.text);
         text(p, main.P2 + QPointF(26, 44), "δ = " + num(res.deviation) + "°", t.amber, 10);
     }
-    arcDirs(p, P1, nL, -main.d0, 24, t.text);
-    text(p, P1 + QPointF(-6, -22), "i₁ = " + num(m_in.incidence) + "°", t.text, 9, Qt::AlignRight);
-    if (main.ok && !main.tir) {
-        arcDirs(p, main.P2, nR, main.d2, 24, t.text);
-        text(p, main.P2 + QPointF(6, -22), "i₂ = " + num(res.i2) + "°", t.text, 9);
-        const bool sym = std::fabs(res.r1 - res.r2) < 0.005;
-        text(p, (P1 + main.P2) / 2 + QPointF(0, 18), sym ? "r₁ = r₂ = " + QString::number(res.r1, 'g', 6) + "°"
-                                                         : "r₁ = " + num(res.r1, 2) + "°  r₂ = " + num(res.r2, 2) + "°", t.text, 9, Qt::AlignHCenter);
+    if (m_showBends) {
+        arcDirs(p, P1, nL, -main.d0, 24, t.text);
+        text(p, P1 + QPointF(-6, -22), "i₁ = " + num(m_in.incidence) + "°", t.text, 9, Qt::AlignRight);
+        if (main.ok && !main.tir) {
+            arcDirs(p, main.P2, nR, main.d2, 24, t.text);
+            text(p, main.P2 + QPointF(6, -22), "i₂ = " + num(res.i2) + "°", t.text, 9);
+            const bool sym = std::fabs(res.r1 - res.r2) < 0.005;
+            text(p, (P1 + main.P2) / 2 + QPointF(0, 18), sym ? "r₁ = r₂ = " + QString::number(res.r1, 'g', 6) + "°"
+                                                             : "r₁ = " + num(res.r1, 2) + "°  r₂ = " + num(res.r2, 2) + "°", t.text, 9, Qt::AlignHCenter);
+        }
     }
     arcDirs(p, apex, unit(left - apex), unit(right - apex), 26, t.text);
     text(p, apex + QPointF(0, 44), "A = " + QString::number(m_in.apex, 'g', 5) + "°", t.text, 9, Qt::AlignHCenter);
@@ -597,7 +601,7 @@ void WaveCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     const double ym = cy - m_in.order * pitch;
     for (const QPointF& s : {S1, S2}) ray(p, s, QPointF(sx, ym), t.text, 1, -1, Qt::DashLine);
     for (const QPointF& s : {S1, S2}) ray(p, s, QPointF(sx, cy), t.text, 1, -1, Qt::DashLine);
-    text(p, QPointF(sx - 10, ym - 8), "m = +" + QString::number(m_in.order), t.amber, 9, Qt::AlignRight);
+    text(p, QPointF(sx - 10, ym - 8), QString("m = %1").arg(m_in.order), t.amber, 9, Qt::AlignRight);
     text(p, QPointF(sx - 10, cy + 12), "m = 0", t.amber, 9, Qt::AlignRight);
 
     text(p, QPointF(a.left() + 14, cy + 105), "d = " + QString::number(m_in.separationMm, 'g', 4) + " mm", t.amber, 10);
@@ -889,7 +893,17 @@ void ThinFilmCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     const double thick = std::clamp(m_in.thicknessNm / 400.0, 0.12, 1.0) * 90;
     const double filmBot = filmTop + thick;
     const bool transmission = m_in.transmission;
-    text(p, QPointF(14, a.top() + 18), transmission ? "NORMAL INCIDENCE · TRANSMITTED BEAM" : "NORMAL INCIDENCE · SINGLE FILM", t.amber, 10);
+    const bool topRev = m_in.n > 1.0;
+    const bool botRev = m_in.n2 > m_in.n;
+    const bool oneReversal = topRev != botRev;
+    // Snell's law: sin(θₜ) = sin(θ₀)/n (n₀ = 1.0)
+    const double sinThetaT = std::sin(std::fabs(m_in.thetaDeg) * kDeg) / m_in.n;
+    const double cosThetaT = std::sqrt(std::max(0.0, 1.0 - sinThetaT * sinThetaT));
+    const double opd = 2.0 * m_in.n * m_in.thicknessNm * cosThetaT;
+
+    const bool oblique = std::fabs(m_in.thetaDeg) > 0.5;
+    text(p, QPointF(14, a.top() + 18), (oblique ? "OBLIQUE INCIDENCE" : "NORMAL INCIDENCE") +
+                                (transmission ? " · TRANSMITTED BEAM" : " · SINGLE FILM"), t.amber, 10);
     QColor film = t.blue; film.setAlpha(60);
     QColor sub = t.sage; sub.setAlpha(40);
     p.setPen(Qt::NoPen);
@@ -897,33 +911,39 @@ void ThinFilmCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     p.setBrush(sub); p.drawRect(QRectF(left, filmBot, right - left, a.bottom() - filmBot - 70));
     p.setPen(QPen(t.sage, 1.5)); p.drawLine(QPointF(left, filmTop), QPointF(right, filmTop)); p.drawLine(QPointF(left, filmBot), QPointF(right, filmBot));
     text(p, QPointF(left + 6, filmTop - 12), "Air · n₀ = 1.0000", t.muted, 10);
-    text(p, QPointF(left + 6, filmTop + thick / 2), "Film · n = " + num(m_in.n, 4), t.text, 10);
-    text(p, QPointF(left + 6, filmBot + 16), "Substrate · n₂ > n", t.muted, 10);
+    text(p, QPointF(left + 6, filmTop + thick / 2), "Film · n = " + num(m_in.n), t.text, 10);
+    text(p, QPointF(left + 6, filmBot + 16), "Substrate · n₂ = " + num(m_in.n2), t.muted, 10);
     const double x0 = a.center().x() - 20;
-    ray(p, QPointF(x0 - 60, a.top() + 54), QPointF(x0, filmTop), t.amber, 1.8);                 // incident (drawn slightly oblique)
+    const double dy = oblique ? 24.0 : 0.0;
+    const double dx = oblique ? 40.0 : 60.0;
+    ray(p, QPointF(x0 - dx, a.top() + 54 - dy), QPointF(x0, filmTop), t.amber, 1.8);                 // incident ray
+    if (oblique) {
+        text(p, QPointF(x0 - dx - 40, a.top() + 44), "θ₀ = " + num(m_in.thetaDeg, 1) + "°", t.muted, 9);
+    }
     if (transmission) {
         ray(p, QPointF(x0, filmTop), QPointF(x0 + 20, filmBot), t.amber, 1.3);                  // T1 through the film
         ray(p, QPointF(x0 + 20, filmBot), QPointF(x0 + 34, a.bottom() - 80), t.amber, 1.8);     // T2 down through the substrate
-        text(p, QPointF(x0 + 38, a.bottom() - 80), "T · no net reversal", t.amber, 10);
+        text(p, QPointF(x0 + 38, a.bottom() - 80), "T · " + QString(oneReversal ? "one reversal" : "no net reversal"), t.amber, 10);
         ray(p, QPointF(x0 + 20, filmBot), QPointF(x0 + 6, filmTop), t.dim, 1.1, -1, Qt::DashLine);   // weak internal bounce
     } else {
-        ray(p, QPointF(x0, filmTop), QPointF(x0 + 60, a.top() + 54), t.text, 1.6);              // R1: phase reversal
-        text(p, QPointF(x0 + 64, a.top() + 54), "R1 · phase reversal", t.text, 10);
+        ray(p, QPointF(x0, filmTop), QPointF(x0 + dx, a.top() + 54 + dy), t.text, 1.6);              // R1: reflected at top
+        text(p, QPointF(x0 + dx + 4, a.top() + 54 + dy), "R1 · " + QString(topRev ? "reversal" : "no reversal"), t.text, 10);
         ray(p, QPointF(x0, filmTop), QPointF(x0 + 14, filmBot), t.amber, 1.3);
         ray(p, QPointF(x0 + 14, filmBot), QPointF(x0 + 28, filmTop), t.amber, 1.3);
-        ray(p, QPointF(x0 + 28, filmTop), QPointF(x0 + 88, a.top() + 92), t.amber, 1.6);        // R2
-        text(p, QPointF(x0 + 92, a.top() + 92), "R2 · no reversal", t.amber, 10);
+        ray(p, QPointF(x0 + 28, filmTop), QPointF(x0 + dx + 28, a.top() + 92 + dy), t.amber, 1.6);        // R2
+        text(p, QPointF(x0 + dx + 32, a.top() + 92 + dy), "R2 · " + QString(botRev ? "reversal" : "no reversal"), t.amber, 10);
     }
     p.setPen(QPen(t.text, 1)); p.drawLine(QPointF(right - 24, filmTop), QPointF(right - 24, filmBot));
     text(p, QPointF(right - 30, filmTop + thick / 2), "t = " + num(m_in.thicknessNm) + " nm", t.text, 10, Qt::AlignRight);
-    text(p, QPointF(14, a.bottom() - 46), "OPD = 2nt = " + num(2 * m_in.n * m_in.thicknessNm) + " nm", t.muted, 10);
+    text(p, QPointF(14, a.bottom() - 46), "OPD = 2nt·cosθₜ = " + num(opd) + " nm", t.muted, 10);
     if (transmission) {
-        const double trans = std::pow(std::cos(std::numbers::pi * 2 * m_in.n * m_in.thicknessNm / m_in.lambdaNm), 2);
-        text(p, QPointF(14, a.bottom() - 30), "I_t/I_t,max = cos²(2πnt/λ) = " + num(trans, 4), t.muted, 10);
-        text(p, QPointF(14, a.bottom() - 14), "Bright when 2nt = qλ", t.muted, 10);
+        const double trans = 1.0 - (oneReversal ? std::pow(std::sin(std::numbers::pi * opd / m_in.lambdaNm), 2) :
+                                                std::pow(std::cos(std::numbers::pi * opd / m_in.lambdaNm), 2));
+        text(p, QPointF(14, a.bottom() - 30), "I_t/I_t,max = " + (oneReversal ? "sin²" : "cos²") + "(2πnt·cosθₜ/λ) = " + num(trans), t.muted, 10);
+        text(p, QPointF(14, a.bottom() - 14), "Bright when 2nt·cosθₜ = " + QString(oneReversal ? "(q + ½)λ" : "qλ"), t.muted, 10);
     } else {
-        text(p, QPointF(14, a.bottom() - 30), "Δψ = 4πnt/λ − π", t.muted, 10);
-        text(p, QPointF(14, a.bottom() - 14), "Bright when 2nt = (q + ½)λ", t.muted, 10);
+        text(p, QPointF(14, a.bottom() - 30), "Δψ = 4πnt·cosθₜ/λ " + QString(oneReversal ? "+ π" : "") + " (" + (oneReversal ? "sin²" : "cos²") + ")", t.muted, 10);
+        text(p, QPointF(14, a.bottom() - 14), "Bright when 2nt·cosθₜ = " + QString(oneReversal ? "(q + ½)λ" : "qλ"), t.muted, 10);
     }
 }
 

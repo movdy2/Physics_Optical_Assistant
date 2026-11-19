@@ -69,9 +69,31 @@ ModelReport newtonRings(const NewtonInput& in, const ReportContext& ctx) {
     const double order = in.transmitted ? m + 0.5 : double(m);
     const double r2 = order * lam * in.radiusM / in.n;              // r_m² = m'λR/n
     const double r = std::sqrt(r2);
+
+    // --- Geometry constraint: r must be ≪ R (thin-film / small-angle approximation) ---
+    const bool rExceedsR = r > in.radiusM;
+    if (rExceedsR) {
+        issues.push_back({FieldIds::radiusOfCurvature, "Ring radius r exceeds R: small-angle approximation breaks down.", "R"});
+        const std::string guardText2 = "The computed ring radius r = " + fx(r * 1e3) + " mm exceeds R = " + num(in.radiusM) + " m. The relation t ≈ r²/(2R) is only valid for r ≪ R. Reduce m, λ, or increase R.";
+        return paused("Ring radius exceeds lens curvature", issues,
+                      {"λ = " + num(in.lambdaNm) + " nm   R = " + num(in.radiusM) + " m", "n = " + num(in.n) + "   m = " + num(in.order), "r = " + fx(r * 1e3) + " mm > R = " + num(in.radiusM) + " m", "ACTION: Reduce m, increase R, or choose a smaller λ."},
+                      guardText2 + "\n\nDiagram, chart and retained results show the last valid run.", ctx);
+    }
+
     const double t = order * lam / (2 * in.n);                      // film thickness at ring m
     const std::string ms = sub(m);
     const std::string orderExpr = in.transmitted ? "(" + std::to_string(m) + " + ½)" : std::to_string(m);
+
+    // --- Uncertainty propagation: σ(r)/r = ½(σ(λ)/λ + σ(R)/R + σ(n)/n) ---
+    const bool uncertain = anyUncertainty({in.sigmaLambdaNm, in.sigmaRadiusM, in.sigmaN});
+    double sigmaR = 0.0;
+    if (uncertain && r > 0.0) {
+        const double relErr = 0.5 * std::sqrt(
+            std::pow(in.sigmaLambdaNm / in.lambdaNm, 2) +
+            std::pow(in.sigmaRadiusM / in.radiusM, 2) +
+            std::pow(in.sigmaN / in.n, 2));
+        sigmaR = r * relErr;
+    }
 
     ModelReport out;
     Report& rep = out.report;
@@ -82,6 +104,10 @@ ModelReport newtonRings(const NewtonInput& in, const ReportContext& ctx) {
                " = " + NF::scientific(r2, 4) + " m²", "r" + ms + " = √(" + NF::scientificCompact(r2).substr(0, 0) + NF::general(r2 * 1e6, 5) + "×10⁻⁶) m"};
     a.resultLabel = "RADIUS · r" + ms;
     a.resultValue = fx(r * 1e3) + " mm";
+    if (uncertain && sigmaR > 0.0) {
+        a.resultValue += " ± " + fx(sigmaR * 1e3) + " mm";
+        a.extraLines.push_back("σ(r" + ms + ") = " + fx(sigmaR * 1e3) + " mm (1σ)");
+    }
     LcdRegister b;
     b.title = "DIAMETER / FILM THICKNESS";
     b.lines = {"D" + ms + " = 2r" + ms,
@@ -95,9 +121,15 @@ ModelReport newtonRings(const NewtonInput& in, const ReportContext& ctx) {
                        : "One reflection phase reversal makes the contact point dark. Squared radius, not radius, grows linearly with dark-ring order."),
                    guard(guardText)};
     rep.headline = "r" + ms + " = " + fx(r * 1e3) + " mm";
+    if (uncertain && sigmaR > 0.0) rep.headline += " ± " + fx(sigmaR * 1e3) + " mm";
     rep.retained = retained({"λ = " + NF::fixed(in.lambdaNm, 1) + " nm · R = " + NF::fixed(in.radiusM, 4) + " m", "n = " + NF::fixed(in.n, 4) + " · m = " + std::to_string(m)}, "RETAINED RADIUS · r" + ms, a.resultValue);
     rep.parameters = {{"λ", num(in.lambdaNm) + " nm"}, {"R", num(in.radiusM) + " m"}, {"m", std::to_string(m)}, {"n", num(in.n)},
                       {"mode", in.transmitted ? "transmitted" : "reflected"}};
+    if (uncertain) {
+        rep.parameters.emplace_back("σ(λ)", num(in.sigmaLambdaNm) + " nm");
+        rep.parameters.emplace_back("σ(R)", num(in.sigmaRadiusM) + " m");
+        rep.parameters.emplace_back("σ(n)", num(in.sigmaN));
+    }
 
     const double slope = lam * in.radiusM / in.n * 1e6;             // mm² per order
     ChartData& c = out.chart;
@@ -206,26 +238,38 @@ ModelReport thinFilm(const ThinFilmInput& in, const ReportContext& ctx) {
     std::vector<FieldIssue> issues;
     if (in.lambdaNm <= 0) issues.push_back({FieldIds::wavelength, "Enter λ > 0 nm.", "λ"});
     if (in.n <= 0) issues.push_back({FieldIds::refractiveIndex, "Enter n > 0.", "n"});
+    if (in.n2 <= 0) issues.push_back({FieldIds::filmSubstrateIndex, "Enter n₂ > 0.", "n₂"});
     if (in.thicknessNm <= 0) issues.push_back({FieldIds::thickness, "Enter t > 0 nm.", "t"});
-    const std::string guardText = "Require λ, n, t > 0. Assumes normal incidence, equal-amplitude interface reflections, and a film with n between the surrounding media.";
+    if (std::fabs(in.thetaDeg) > 89.9) issues.push_back({FieldIds::filmIncidenceAngle, "Keep |θ| < 90°.", "θ"});
+    const std::string guardText = "Require λ, n, n₂, t > 0 and |θ| < 90°. Assumes equal-amplitude interface reflections; phase reversal depends on n₀=1.0 vs n vs n₂ relations.";
     if (!issues.empty())
-        return paused(issues.front().label + " out of range", issues, {"λ = " + num(in.lambdaNm) + " nm   n = " + num(in.n), "t = " + num(in.thicknessNm) + " nm", "ACTION: " + issues.front().message},
+        return paused(issues.front().label + " out of range", issues,
+                      {"λ = " + num(in.lambdaNm) + " nm   n = " + num(in.n), "n₂ = " + num(in.n2) + "   t = " + num(in.thicknessNm) + " nm", "θ = " + num(in.thetaDeg) + "°   ACTION: " + issues.front().message},
                       guardText + "\n\nDiagram, chart and retained results show the last valid run.", ctx);
 
-    const double opd = 2 * in.n * in.thicknessNm;
-    const double dpsi = 4 * std::numbers::pi * in.n * in.thicknessNm / in.lambdaNm - std::numbers::pi;
-    const double refl = std::pow(std::sin(2 * std::numbers::pi * in.n * in.thicknessNm / in.lambdaNm), 2);
+    // Snell's law: sin(θₜ) = sin(θ₀)/n (n₀ = 1.0), OPD = 2nt·cos(θₜ)
+    const double sinThetaT = std::sin(std::fabs(in.thetaDeg) * kDeg) / in.n;
+    const double cosThetaT = std::sqrt(std::max(0.0, 1.0 - sinThetaT * sinThetaT));
+    const double opd = 2.0 * in.n * in.thicknessNm * cosThetaT;          // nm
+    // Phase reversal: π at top if n > 1.0, π at bottom if n₂ > n → XOR determines sin² vs cos²
+    const bool topRev = in.n > 1.0;
+    const bool botRev = in.n2 > in.n;
+    const bool oneReversal = topRev != botRev;
+    const double phase = std::numbers::pi * opd / in.lambdaNm;   // 2πnt·cosθₜ/λ = π·opd/λ
+    const double refl = oneReversal ? std::pow(std::sin(phase), 2) : std::pow(std::cos(phase), 2);
     const double firstBright = in.lambdaNm / (4 * in.n);
 
-    if (in.colours) {
+    const bool colours = in.colours;
+    if (colours) {
         // Third tab: every wavelength at once. The film reflects a comb of wavelengths; the eye sees their sum.
-        const FilmColour fc = thinFilmColour(in.thicknessNm, in.n);
+        const FilmColour fc = thinFilmColour(in.thicknessNm, in.n, in.n2);
         const double vis = thinFilmColourVisibility(in.thicknessNm, in.n);
         ModelReport out;
         Report& rep = out.report;
         LcdRegister a;
+        const std::string formula = oneReversal ? "R(λ) = sin²(2πnt/λ)" : "R(λ) = cos²(2πnt/λ)";
         a.title = "FILM COLOUR / λ SWEEP";
-        a.lines = {"R(λ) = sin²(2πnt/λ)", "OPD = 2nt = " + num(opd) + " nm", "visibility V = " + NF::fixed(vis, 3) + "  (1 = saturated, 0 = grey)"};
+        a.lines = {formula, "OPD = 2nt·cosθₜ = " + num(opd) + " nm", "visibility V = " + NF::fixed(vis, 3) + "  (1 = saturated, 0 = grey)"};
         for (const FilmColourSample& s : fc.lines)
             a.lines.push_back(NF::fixed(s.wavelengthNm, 0) + " nm: " + NF::fixed(s.reflectance, 3));
         a.resultLabel = "PERCEIVED COLOUR";
@@ -245,17 +289,17 @@ ModelReport thinFilm(const ThinFilmInput& in, const ReportContext& ctx) {
                                                      : "many wavelengths at once with no clear winner: the film looks grey.")),
                        guard("The swatch is a CIE 1931 integration of R(λ) under a flat illuminant, with equal-amplitude reflections. Real soap films vary in thickness across the surface.")};
         rep.headline = "film " + num(in.thicknessNm) + " nm · " + (fc.hueNm > 0 ? NF::fixed(fc.hueNm, 0) + " nm" : std::string("grey"));
-        rep.retained = retained({"t = " + NF::fixed(in.thicknessNm, 2) + " nm · n = " + fx(in.n), "λ range 400–700 nm"}, "RETAINED FILM COLOUR", fc.hex);
-        rep.parameters = {{"t", num(in.thicknessNm) + " nm"}, {"n", num(in.n)}, {"swatch", fc.hex}, {"mode", "colours"}};
+        rep.retained = retained({"t = " + NF::fixed(in.thicknessNm, 2) + " nm · n = " + fx(in.n) + " · n₂ = " + fx(in.n2), "λ range 400–700 nm"}, "RETAINED FILM COLOUR", fc.hex);
+        rep.parameters = {{"t", num(in.thicknessNm) + " nm"}, {"n", num(in.n)}, {"n₂", num(in.n2)}, {"swatch", fc.hex}, {"mode", "colours"}};
 
         ChartData& c = out.chart;
         c.xLabel = "λ (nm)"; c.yLabel = "R(λ)";
         c.xMin = 400; c.xMax = 700; c.yMin = 0; c.yMax = 1; c.xTicks = 3; c.yTicks = 2; c.xDecimals = 0; c.yDecimals = 1;
         for (int k = 0; k <= 400; ++k) {
             const double w = 400 + 300.0 * k / 400.0;
-            c.curve.push_back({w, thinFilmReflectance(in.thicknessNm, in.n, w)});
+            c.curve.push_back({w, thinFilmReflectance(in.thicknessNm, 1.0, in.n, in.n2, w, in.thetaDeg)});
         }
-        c.marker = {{in.lambdaNm, thinFilmReflectance(in.thicknessNm, in.n, in.lambdaNm)}};
+        c.marker = {{in.lambdaNm, thinFilmReflectance(in.thicknessNm, 1.0, in.n, in.n2, in.lambdaNm, in.thetaDeg)}};
         c.legend = "R(λ) of the film   ● your λ = " + num(in.lambdaNm) + " nm";
         return out;
     }
@@ -267,22 +311,25 @@ ModelReport thinFilm(const ThinFilmInput& in, const ReportContext& ctx) {
         const double firstDark = in.lambdaNm / (4 * in.n);
         LcdRegister a;
         a.title = "OPTICAL PATH / PHASE";
-        a.lines = {"OPD = 2nt", " = 2 × " + num(in.n) + " × " + num(in.thicknessNm) + " nm", " = " + num(opd) + " nm",
-                   "I_t/I_t,max = cos²(2πnt/λ)"};
+        const std::string opdLine = "OPD = 2nt·cosθₜ";
+        a.lines = {opdLine, " = 2 × " + num(in.n) + " × " + num(in.thicknessNm) + " × cosθₜ", " = " + num(opd) + " nm",
+                   "I_t/I_t,max = " + (oneReversal ? "sin²(2πnt·cosθₜ/λ)" : "cos²(2πnt·cosθₜ/λ)")};
         a.resultLabel = "NORMALIZED TRANSMISSION";
         a.resultValue = fx(trans);
         LcdRegister b;
-        b.title = "NO NET PHASE REVERSAL";
-        b.lines = {"Bright: 2nt = qλ", "Dark: 2nt = (q + ½)λ", "q = 0, 1, 2, …"};
+        const std::string brightCond = oneReversal ? "Dark: 2nt·cosθₜ = qλ" : "Bright: 2nt·cosθₜ = qλ";
+        const std::string darkCond = oneReversal ? "Bright: 2nt·cosθₜ = (q + ½)λ" : "Dark: 2nt·cosθₜ = (q + ½)λ";
+        b.title = oneReversal ? "ONE PHASE REVERSAL" : "NO NET PHASE REVERSAL";
+        b.lines = {brightCond, darkCond, "q = 0, 1, 2, …"};
         b.resultLabel = "FIRST DARK THICKNESS";
         b.resultValue = fx(firstDark) + " nm";
         rep.registers = {a, b};
-        rep.notices = {interpretation("Both surfaces reverse the phase on transmission, so the transmitted beams leave in phase: 2nt = qλ is bright and 2nt = (q + ½)λ is dark — the exact complement of the reflection tab, I_t = 1 − I_r."),
+        rep.notices = {interpretation("Transmission is the complement of reflection: I_t = 1 − I_r. Phase reversal depends on whether n₂ > n (substrate denser) or n₂ < n (substrate rarer)."),
                        guard(guardText)};
         rep.headline = "I_t/I_t,max = " + fx(trans);
-        rep.retained = retained({"λ = " + NF::fixed(in.lambdaNm, 1) + " nm · n = " + fx(in.n), "t = " + NF::fixed(in.thicknessNm, 2) + " nm"},
+        rep.retained = retained({"λ = " + NF::fixed(in.lambdaNm, 1) + " nm · n = " + fx(in.n) + " · n₂ = " + fx(in.n2), "t = " + NF::fixed(in.thicknessNm, 2) + " nm"},
                                 "RETAINED TRANSMISSION", a.resultValue);
-        rep.parameters = {{"λ", num(in.lambdaNm) + " nm"}, {"n", num(in.n)}, {"t", num(in.thicknessNm) + " nm"}, {"mode", "transmission"}};
+        rep.parameters = {{"λ", num(in.lambdaNm) + " nm"}, {"n", num(in.n)}, {"n₂", num(in.n2)}, {"t", num(in.thicknessNm) + " nm"}, {"mode", "transmission"}};
 
         ChartData& c = out.chart;
         c.xLabel = "t (nm)"; c.yLabel = "I_t / I_t,max";
@@ -290,28 +337,32 @@ ModelReport thinFilm(const ThinFilmInput& in, const ReportContext& ctx) {
         c.xTicks = static_cast<int>(c.xMax / 100); c.yTicks = 2; c.xDecimals = 0; c.yDecimals = 1;
         for (int k = 0; k <= 400; ++k) {
             const double t = c.xMax * k / 400.0;
-            c.curve.push_back({t, std::pow(std::cos(2 * std::numbers::pi * in.n * t / in.lambdaNm), 2)});
+            c.curve.push_back({t, thinFilmReflectance(t, 1.0, in.n, in.n2, in.lambdaNm, in.thetaDeg)});
         }
         c.marker = {{in.thicknessNm, trans}};
-        c.legend = "I_t = cos²(2πnt/λ)   ● t = " + num(in.thicknessNm) + " nm";
+        c.legend = "I_t = 1 − R(λ)   ● t = " + num(in.thicknessNm) + " nm";
         return out;
     }
     LcdRegister a;
     a.title = "OPTICAL PATH / PHASE";
-    a.lines = {"OPD = 2nt", " = 2 × " + num(in.n) + " × " + num(in.thicknessNm) + " nm", " = " + num(opd) + " nm",
-               "Δψ = 4πnt/λ − π = " + NF::fixed(std::fmod(dpsi + 1e-12, 2 * std::numbers::pi), 4) + " rad", "I_r/I_r,max = sin²(2πnt/λ)"};
+    a.lines = {"OPD = 2nt·cosθₜ", " = 2 × " + num(in.n) + " × " + num(in.thicknessNm) + " × cosθₜ", " = " + num(opd) + " nm",
+               "Δψ = " + (oneReversal ? "4πnt·cosθₜ/λ + π" : "4πnt·cosθₜ/λ") + " = " + NF::fixed(2.0 * phase, 4) + " rad",
+               "I_r/I_r,max = " + (oneReversal ? "sin²(2πnt·cosθₜ/λ)" : "cos²(2πnt·cosθₜ/λ)")};
     a.resultLabel = "NORMALIZED REFLECTION";
     a.resultValue = fx(refl);
     LcdRegister b;
-    b.title = "ONE PHASE REVERSAL";
-    b.lines = {"Bright: 2nt = (q + ½)λ", "Dark: 2nt = qλ", "q = 0, 1, 2, …"};
+    const std::string brightCondR = oneReversal ? "Bright: 2nt·cosθₜ = (q + ½)λ" : "Bright: 2nt·cosθₜ = qλ";
+    const std::string darkCondR = oneReversal ? "Dark: 2nt·cosθₜ = qλ" : "Dark: 2nt·cosθₜ = (q + ½)λ";
+    b.title = oneReversal ? "ONE PHASE REVERSAL" : "TWO PHASE REVERSALS";
+    b.lines = {brightCondR, darkCondR, "q = 0, 1, 2, …"};
     b.resultLabel = "FIRST BRIGHT THICKNESS";
     b.resultValue = fx(firstBright) + " nm";
     rep.registers = {a, b};
-    rep.notices = {interpretation("With one reflection phase reversal, thickness λ/(4n) gives the first bright reflection; thickness λ/(2n) returns to dark."), guard(guardText)};
+    rep.notices = {interpretation(oneReversal ? "One net phase reversal: thickness λ/(4n) gives the first bright reflection; λ/(2n) returns to dark."
+                                                : "Two net phase reversals: thickness λ/(4n) gives the first dark reflection; λ/(2n) returns to bright."), guard(guardText)};
     rep.headline = "I_r/I_r,max = " + fx(refl);
-    rep.retained = retained({"λ = " + NF::fixed(in.lambdaNm, 1) + " nm · n = " + fx(in.n), "t = " + NF::fixed(in.thicknessNm, 2) + " nm"}, "RETAINED REFLECTION", a.resultValue);
-    rep.parameters = {{"λ", num(in.lambdaNm) + " nm"}, {"n", num(in.n)}, {"t", num(in.thicknessNm) + " nm"}, {"mode", "reflection"}};
+    rep.retained = retained({"λ = " + NF::fixed(in.lambdaNm, 1) + " nm · n = " + fx(in.n) + " · n₂ = " + fx(in.n2), "t = " + NF::fixed(in.thicknessNm, 2) + " nm"}, "RETAINED REFLECTION", a.resultValue);
+    rep.parameters = {{"λ", num(in.lambdaNm) + " nm"}, {"n", num(in.n)}, {"n₂", num(in.n2)}, {"t", num(in.thicknessNm) + " nm"}, {"mode", "reflection"}};
 
     ChartData& c = out.chart;
     c.xLabel = "t (nm)"; c.yLabel = "I_r / I_r,max";
@@ -319,13 +370,12 @@ ModelReport thinFilm(const ThinFilmInput& in, const ReportContext& ctx) {
     c.xTicks = static_cast<int>(c.xMax / 100); c.yTicks = 2; c.xDecimals = 0; c.yDecimals = 1;
     for (int k = 0; k <= 400; ++k) {
         const double t = c.xMax * k / 400.0;
-        c.curve.push_back({t, std::pow(std::sin(2 * std::numbers::pi * in.n * t / in.lambdaNm), 2)});
+        c.curve.push_back({t, thinFilmReflectance(t, 1.0, in.n, in.n2, in.lambdaNm, in.thetaDeg)});
     }
     c.marker = {{in.thicknessNm, refl}};
-    c.legend = "I_r = sin²(2πnt/λ)   ● t = " + num(in.thicknessNm) + " nm";
+    c.legend = "I_r = " + (oneReversal ? "sin²(2πnt·cosθₜ/λ)" : "cos²(2πnt·cosθₜ/λ)") + "   ● t = " + num(in.thicknessNm) + " nm";
     return out;
 }
-
 // ================================================================================ diffraction grating
 std::vector<int> allowedGratingOrders(double linesPerCm, double lambdaNm, double incidenceDeg) {
     std::vector<int> orders;
@@ -790,6 +840,23 @@ double thinFilmReflectance(double thicknessNm, double n, double wavelengthNm) {
     return std::pow(std::sin(2 * std::numbers::pi * n * thicknessNm / wavelengthNm), 2);
 }
 
+/// Reflectance with substrate index n2 and angle of incidence thetaDeg.
+/// Phase reversal: π at top if n > n0, π at bottom if n2 > n. Net phase determines sin² vs cos².
+/// OPD = 2 n t cos(θₜ) via Snell's law: sin(θₜ) = (n0/n) sin(θ₀).
+double thinFilmReflectance(double thicknessNm, double n0, double n, double n2, double wavelengthNm, double thetaDeg) {
+    if (wavelengthNm <= 0 || thicknessNm <= 0 || n <= 0.0 || n2 <= 0.0) return 0.0;
+    // Snell's law: angle inside film
+    const double sinThetaT = std::fabs(n0 / n) * std::sin(thetaDeg * kDeg);
+    const double cosThetaT = std::sqrt(std::max(0.0, 1.0 - sinThetaT * sinThetaT));
+    const double opd = 2.0 * n * thicknessNm * cosThetaT;          // nm
+    // Phase shifts: top = π if n > n0, bottom = π if n2 > n
+    const bool topRev = n > n0;
+    const bool botRev = n2 > n;
+    const bool oneReversal = topRev != botRev;                     // XOR → net π phase shift → sin²
+    const double phase = std::numbers::pi * opd / wavelengthNm;   // 2πnt·cosθₜ/λ = π·opd/λ
+    return oneReversal ? std::pow(std::sin(phase), 2) : std::pow(std::cos(phase), 2);
+}
+
 double thinFilmColourVisibility(double thicknessNm, double n) {
     const double opd = 2 * n * thicknessNm;
     if (opd <= 0) return 0.0;
@@ -798,8 +865,12 @@ double thinFilmColourVisibility(double thicknessNm, double n) {
 }
 
 FilmColour thinFilmColour(double thicknessNm, double n) {
+    return thinFilmColour(thicknessNm, n, n);                        // n2 = n: no substrate contrast → two reversals → cos²
+}
+
+FilmColour thinFilmColour(double thicknessNm, double n, double n2) {
     FilmColour out;
-    const auto refl = [thicknessNm, n](double w) { return thinFilmReflectance(thicknessNm, n, w); };
+    const auto refl = [thicknessNm, n, n2](double w) { return thinFilmReflectance(thicknessNm, 1.0, n, n2, w, 0.0); };
     const Rgb rgb = Spectrum::reflectanceToRgb(refl);
     const double vis = thinFilmColourVisibility(thicknessNm, n);
     // dominant hue: the strongest reflected line (a washed-out film has none -> neutral)
