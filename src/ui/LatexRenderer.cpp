@@ -363,7 +363,7 @@ private:
         }
         if (name == "text" || name == "mathrm" || name == "mathbf" || name == "operatorname") {
             skipSpaces();
-            if (peek() != '{') { fail(std::string("\\") + name + " needs {..}"); return {Box(), Kind::Ord}; }
+            if (peek() != '{') { fail(QString("\\") + name + " needs {..}"); return {Box(), Kind::Ord}; }
             ++m_i;
             int start = m_i;
             while (!atEnd() && peek() != '}') ++m_i;
@@ -392,8 +392,8 @@ private:
         }
         if (name == "{" || name == "}") return {text(name, false), Kind::Ord};
 
-        fail(std::string("Unknown command \\") + name);
-        return {text(std::string("\\") + name, false), Kind::Ord};
+        fail(QString("\\") + name);
+        return {text(QString("\\") + name, false), Kind::Ord};
     }
 
     QChar readDelimiter() {

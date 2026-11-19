@@ -321,7 +321,7 @@ StudyHubPage::StudyHubPage(std::vector<StudyTopic> topics, std::vector<StudyNote
     });
     const auto queueStudyNoteSave = [this] {
         if (m_loadingNote || m_notesLoadFailed) return;
-        m_noteStatus->setText(std::string("Unsaved · notes and summary will be saved to ") + QFileInfo(m_notesFilePath).fileName());
+        m_noteStatus->setText(QString(" ") + QFileInfo(m_notesFilePath).fileName());
         m_noteSaveTimer->start();
     };
     connect(m_notesEditor, &QPlainTextEdit::textChanged, this, queueStudyNoteSave);
@@ -334,7 +334,7 @@ StudyHubPage::StudyHubPage(std::vector<StudyTopic> topics, std::vector<StudyNote
     });
     loadCurrentNote();
     if (m_notesLoadFailed)
-        m_noteStatus->setText(std::string("Notes are read-only; the JSON file could not be loaded and was left unchanged. ") + m_notesLoadError);
+        m_noteStatus->setText(QString(" ") + m_notesLoadError);
 
     connect(m_noteViews, &ModeTabs::currentChanged, m_noteStack, &QStackedWidget::setCurrentIndex);
     connect(m_studyMaterialSearch, &QLineEdit::textChanged, this, [this](const QString&) { filterStudyMaterials(); });
@@ -390,7 +390,7 @@ void StudyHubPage::filterStudyMaterials() {
 
         auto* item = new QListWidgetItem(QString::fromStdString(note.title));
         item->setData(Qt::UserRole, static_cast<int>(i));
-        item->setToolTip(chapter + std::string(" · ") + QString::fromStdString(note.type));
+        item->setToolTip(chapter + QString(" ") + QString::fromStdString(note.type));
         const int row = m_studyMaterialList->count();
         m_studyMaterialList->addItem(item);
         if (static_cast<int>(i) == previousIndex) selectedRow = row;
@@ -418,7 +418,7 @@ void StudyHubPage::showStudyMaterial(int row) {
     const StudyNote& note = m_studyMaterials[static_cast<std::size_t>(index)];
     const QString chapter = QString::fromStdString(note.chapter);
     const QString type = QString::fromStdString(note.type);
-    m_studyMaterialMeta->setText(chapter + std::string("  ·  ") + type.toUpper() + std::string("  ·  ") + QString::fromStdString(note.id));
+    m_studyMaterialMeta->setText(chapter + QString(" ") + type.toUpper() + QString(" ") + QString::fromStdString(note.id));
     m_studyMaterialTitle->setText(QString::fromStdString(note.title));
 
     auto* pointsHeading = new QLabel(LanguageManager::instance().text("Key points"));
@@ -482,8 +482,8 @@ void StudyHubPage::loadCurrentNote() {
     m_loadedNoteKey = key;
     m_loadingNote = false;
     if (key.isEmpty()) m_noteStatus->setText("Select a chapter to write its notes.");
-    else if (m_notesDirty) m_noteStatus->setText(std::string("Unsaved chapter changes · JSON save pending for ") + QFileInfo(m_notesFilePath).fileName());
-    else m_noteStatus->setText(std::string("Notes and summaries · autosave to ") + QFileInfo(m_notesFilePath).fileName());
+    else if (m_notesDirty) m_noteStatus->setText(QString(" ") + QFileInfo(m_notesFilePath).fileName());
+    else m_noteStatus->setText(QString(" ") + QFileInfo(m_notesFilePath).fileName());
 }
 
 void StudyHubPage::saveCurrentNote() {
@@ -501,8 +501,8 @@ void StudyHubPage::saveCurrentNote() {
         m_notesDirty = false;
         m_noteStatus->setText(std::string("Saved notes) + QFileInfo(m_notesFilePath).fileName());
     } else {
-        m_noteStatus->setText(std::string("Could not save JSON notes: ") + error);
-        emit m_ctx->message(std::string("Could not save Study Hub notes: ") + error);
+        m_noteStatus->setText(QString(" ") + error);
+        emit m_ctx->message(QString(" ") + error);
     }
 }
 
@@ -526,7 +526,7 @@ void StudyHubPage::selectTopic(int row) {
     m_chapter->setText(QString::fromStdString(topic.chapter).toUpper());
     m_title->setText(QString::fromStdString(topic.title));
     m_summary->setText(QString::fromStdString(topic.summary));
-    m_rulesPanel->setTitle(std::string("Rules · ") + QString::fromStdString(topic.title));
+    m_rulesPanel->setTitle(QString(" ") + QString::fromStdString(topic.title));
 
     clearLayout(m_rules);
     int index = 0;

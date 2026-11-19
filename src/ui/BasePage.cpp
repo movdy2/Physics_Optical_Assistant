@@ -75,7 +75,7 @@ BasePage::BasePage(const QString& title, const QString& subtitle, AppContext* co
         root->addLayout(header);
 
         connect(save, &QPushButton::clicked, this, [this] {
-            if (m_ctx->saveSession()) emit m_ctx->message(std::string("Session saved · ") + m_ctx->sessionFile);
+            if (m_ctx->saveSession()) emit m_ctx->message(QString(" ") + m_ctx->sessionFile);
         });
     }
 

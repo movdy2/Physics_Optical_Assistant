@@ -290,7 +290,7 @@ void RegisterView::setRegister(const LcdRegister& reg) {
     title->setWordWrap(true);
     title->setMinimumWidth(0);
     title->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Minimum);
-    auto* mode = new QLabel(reg.isError ? "● ERR" : std::string("● ") + QString::fromStdString(reg.mode));
+    auto* mode = new QLabel(reg.isError ? "● ERR" : QString(" ") + QString::fromStdString(reg.mode));
     mode->setObjectName("regTitle");
     mode->setProperty("regMode", true);
     mode->setWordWrap(true);
