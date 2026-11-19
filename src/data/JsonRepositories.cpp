@@ -183,7 +183,7 @@ bool loadStudyHubNotes(const QString& path, QMap<QString, StudyHubNote>& notes, 
     QJsonParseError parseError;
     const QJsonDocument doc = QJsonDocument::fromJson(file.readAll(), &parseError);
     if (parseError.error != QJsonParseError::NoError) {
-        if (error) *error = std::string("Could not parse Study Hub notes JSON: ") + parseError.errorString();
+        if (error) *error = "Could not parse Study Hub notes JSON: " + parseError.errorString();
         return false;
     }
     if (!doc.isObject()) {
@@ -202,7 +202,7 @@ bool loadStudyHubNotes(const QString& path, QMap<QString, StudyHubNote>& notes, 
     }
     const double versionNumber = versionValue.isUndefined() ? 1.0 : versionValue.toDouble();
     if (versionNumber != 1.0 && versionNumber != 2.0) {
-        if (error) *error = std::string("Unsupported Study Hub notes version: ") + QString::number(versionNumber);
+        if (error) *error = "Unsupported Study Hub notes version: " + QString::number(versionNumber);
         return false;
     }
     const int version = static_cast<int>(versionNumber);
