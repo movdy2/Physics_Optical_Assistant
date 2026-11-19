@@ -1,5 +1,6 @@
 #include "PhysicsCalculator.h"
 
+#include <algorithm>
 #include <cmath>
 #include <numbers>
 
@@ -7,6 +8,8 @@ namespace phy104::PhysicsCalculator {
 namespace {
 constexpr double kDegToRad = std::numbers::pi / 180.0;
 constexpr double kRadToDeg = 180.0 / std::numbers::pi;
+/// Tolerance for floating-point comparison at the critical-angle boundary (sin θ₂ ≈ 1).
+constexpr double kTirEpsilon = 1e-9;
 }
 
 RefractionResult refraction(double n1, double n2, double theta1Deg) {
@@ -14,12 +17,53 @@ RefractionResult refraction(double n1, double n2, double theta1Deg) {
     r.reflectedDeg = theta1Deg;
     if (n1 <= 0.0 || n2 <= 0.0) { r.valid = false; return r; }
     const double sinTheta2 = n1 * std::sin(theta1Deg * kDegToRad) / n2;   // Snell's law
-    if (std::fabs(sinTheta2) > 1.0) {
+    if (sinTheta2 > 1.0 + kTirEpsilon) {
         r.totalInternalReflection = true;
     } else {
-        r.refractedDeg = std::asin(sinTheta2) * kRadToDeg;    // NOTE: refractedDeg, not reflectedDeg
+        const double clamped = std::max(-1.0, std::min(1.0, sinTheta2));
+        r.refractedDeg = std::asin(clamped) * kRadToDeg;    // θ₂ = 90° at the critical limit
     }
     return r;
+}
+
+FresnelResult fresnelReflectance(double n1, double n2, double theta1Deg) {
+    FresnelResult fr;
+    const auto ref = refraction(n1, n2, theta1Deg);
+    fr.tir = ref.totalInternalReflection;
+    if (fr.tir) {
+        fr.Rs = 1.0; fr.Rp = 1.0; fr.R = 1.0;
+        return fr;
+    }
+    const double t1 = theta1Deg * kDegToRad;
+    const double t2 = ref.refractedDeg * kDegToRad;
+    const double sum = t1 + t2;
+    const double diff = t1 - t2;
+    // Normal incidence: tan(0)/tan(0) is 0/0, use the known closed form.
+    if (std::fabs(theta1Deg) < 1e-9) {
+        const double r0 = (n1 - n2) / (n1 + n2);
+        fr.Rs = r0 * r0;
+        fr.Rp = r0 * r0;
+        fr.R = r0 * r0;
+        return fr;
+    }
+    // Fresnel equations for dielectric interface (no absorption).
+    double rs = 0.0, rp = 0.0;
+    const double sinSum = std::sin(sum);
+    if (std::fabs(sinSum) > 1e-12) {
+        const double sinDiff = std::sin(diff);
+        rs = (sinDiff / sinSum) * (sinDiff / sinSum);
+    }
+    const double cosSum = std::cos(sum);
+    if (std::fabs(cosSum) > 1e-12) {
+        const double tanDiff = std::tan(diff);
+        const double tanSum = std::tan(sum);
+        rp = (tanDiff / tanSum) * (tanDiff / tanSum);
+    }
+    // Clamp tiny negative values from roundoff.
+    fr.Rs = std::max(0.0, std::min(1.0, rs));
+    fr.Rp = std::max(0.0, std::min(1.0, rp));
+    fr.R = 0.5 * (fr.Rs + fr.Rp);
+    return fr;
 }
 
 std::optional<double> criticalAngleDeg(double n1, double n2) {

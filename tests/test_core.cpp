@@ -275,8 +275,10 @@ int main() {
         auto r = ER::refraction({});
         CHECK(r.valid && !r.paused && r.registers.size() == 2);
         CHECK(r.registers[0].resultValue == "48.5904°" && r.registers[0].resultLabel == "REFRACTION ANGLE · θ₂");
-        CHECK(hasLine(r.registers[0], "02  sin θ₂ = 1.5 × 0.5") && hasLine(r.registers[0], "03  sin θ₂ = 0.7500"));
-        CHECK(hasLine(r.registers[0], "04  θ₂ = asin(0.7500)"));
+        CHECK(hasLine(r.registers[0], "02  n₁ sin θ₁ = 0.7500") && hasLine(r.registers[0], "03  n₂ sin θ₂ = 0.7500"));
+        CHECK(hasLine(r.registers[0], "04  sin θ₂ = 0.7500"));
+        CHECK(hasLine(r.registers[0], "05  θ₂ = asin(0.7500)"));
+        CHECK(hasLine(r.registers[0], "06  Reflectance R = 0.0551"));
         CHECK(r.registers[1].title == "TIR COMPARISON" && hasLine(r.registers[1], "θc = 41.8103°"));
         CHECK(hasLine(r.registers[1], "θ₁ = 50° > θc") && hasLine(r.registers[1], "sin θ₂ = 1.1491 > 1"));
         CHECK(hasLine(r.registers[1], "STATUS: TOTAL REFLECTION"));

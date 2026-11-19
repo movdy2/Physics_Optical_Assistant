@@ -126,17 +126,25 @@ Report refraction(const RefractionInput& in, const ReportContext& ctx) {
         });
         const double sinA = std::sin(thetaA * kDeg);
         const double sin2 = in.n1 * sinA / in.n2;
+        const double n1sin1 = in.n1 * sinA;                          // n₁ sin θ₁
+        const double n2sin2 = ref.totalInternalReflection
+            ? kNaN
+            : in.n2 * std::sin(ref.refractedDeg * kDeg);             // n₂ sin θ₂ (independent)
+        const auto fresnel = PC::fresnelReflectance(in.n1, in.n2, thetaA);
         LcdRegister r;
         r.lines = {"01  n₁ sin θ₁ = n₂ sin θ₂",
-                   "02  sin θ₂ = " + num(in.n1 / in.n2) + " × " + num(std::round(sinA * 1e4) / 1e4),
-                   "03  sin θ₂ = " + fx(sin2)};
+                   "02  n₁ sin θ₁ = " + fx(n1sin1),
+                   "03  n₂ sin θ₂ = " + fx(n2sin2),
+                   "04  sin θ₂ = " + fx(sin2)};
         r.resultLabel = "REFRACTION ANGLE · θ₂";
         if (ref.totalInternalReflection) {
-            r.lines.push_back("04  θ₂ undefined: sin θ₂ > 1");
+            r.lines.push_back("05  θ₂ undefined: sin θ₂ > 1");
+            r.lines.push_back("06  Reflectance R = 1.000 (TIR)");
             r.resultValue = "TIR";
             rep.headline = "θ₂ = TIR";
         } else {
-            r.lines.push_back("04  θ₂ = asin(" + fx(sin2) + ")");
+            r.lines.push_back("05  θ₂ = asin(" + fx(sin2) + ")");
+            r.lines.push_back("06  Reflectance R = " + fx(fresnel.R));
             r.resultValue = fx(ref.refractedDeg) + "°";
             rep.headline = "θ₂ = " + fx(ref.refractedDeg) + "°";
             if (thetaEstimate.valid && anyUncertainty({in.sigmaN1, in.sigmaN2, in.sigmaTheta1})) {
@@ -201,7 +209,9 @@ Report tirReport(const RefractionInput& in, const ReportContext&) {
     const auto crit = PC::criticalAngleDeg(in.n1, in.n2);
     const double th = in.theta1;
     const double sin2 = in.n1 * std::sin(th * kDeg) / in.n2;
-    const bool tir = crit && th > *crit && sin2 > 1.0;
+    const auto ref = PC::refraction(in.n1, in.n2, th);           // consistent TIR boundary (epsilon tolerance)
+    const bool tir = crit && ref.totalInternalReflection;
+    const auto fresnel = PC::fresnelReflectance(in.n1, in.n2, th);
     const std::vector<double> values{in.n1, in.n2, th};
     const std::vector<double> sigmas{in.sigmaN1, in.sigmaN2, in.sigmaTheta1};
     const UncertainEstimate criticalEstimate = propagateUncertainty({in.n1, in.n2}, {in.sigmaN1, in.sigmaN2},
@@ -241,14 +251,16 @@ Report tirReport(const RefractionInput& in, const ReportContext&) {
     if (in.sigmaTheta1 > 0.0) r2.extraLines.push_back("σ(θᵣ) = " + num(in.sigmaTheta1) + "° (1σ)");
     if (tir) {
         r2.lines.push_back("TRANSMISSION: NONE");
+        r2.lines.push_back("Reflectance R = 1.000 (TIR)");
         r2.lines.push_back("STATUS: VALID / TIR");
         r2.resultLabel = "ABOVE CRITICAL BY";
         r2.resultValue = fx(th - *crit) + "°";
     } else {
-        r2.lines.push_back("TRANSMISSION: θ₂ = " + fx(std::asin(std::min(1.0, sin2)) / kDeg) + "°");
+        r2.lines.push_back("TRANSMISSION: θ₂ = " + fx(ref.refractedDeg) + "°");
+        r2.lines.push_back("Reflectance R = " + fx(fresnel.R));
         r2.lines.push_back(std::string("STATUS: VALID / ") + (crit ? "REFRACTION" : "NO TIR"));
         if (crit) { r2.resultLabel = "BELOW CRITICAL BY"; r2.resultValue = fx(*crit - th) + "°"; }
-        if (sin2 <= 1.0 && anyUncertainty({in.sigmaN1, in.sigmaN2, in.sigmaTheta1})) {
+        if (!ref.totalInternalReflection && anyUncertainty({in.sigmaN1, in.sigmaN2, in.sigmaTheta1})) {
             const UncertainEstimate thetaEstimate = propagateUncertainty(values, sigmas, [](const std::vector<double>& v) {
                 const double q = v[0] * std::sin(v[2] * kDeg) / v[1];
                 return std::fabs(q) <= 1.0 ? std::asin(q) / kDeg : std::numeric_limits<double>::quiet_NaN();
