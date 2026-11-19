@@ -689,8 +689,8 @@ int main() {
         auto pu = WE::polarization(polUnpol);
         CHECK(pu.report.registers[0].resultValue == "12.5000 W/m²");
         PolarizationInput polPol; polPol.unpolarized = false; polPol.incidentIntensity = 100; polPol.angleDeg = 60;
-        auto pp = WE::polarization(polPol);
-        CHECK(pp.report.registers[0].resultValue == "25.0000 W/m²");
+        auto ppol = WE::polarization(polPol);
+        CHECK(ppol.report.registers[0].resultValue == "25.0000 W/m²");
         // --- Brewster angle for water: n₁=1.0, n₂=1.33 → θB ≈ 53.06°
         PolarizationInput pbw; pbw.brewster = true; pbw.n1 = 1.0; pbw.n2 = 1.33;
         auto pbwr = WE::polarization(pbw);
