@@ -860,11 +860,11 @@ void MichelsonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
          QString::fromStdString(std::string("ΔN = ") + (shift >= 0 ? "+" : "-") + NumberFormat::fixed(std::fabs(shift), 4) + " fringes"),
          shift >= 0 ? t.lime : t.amber, 10, Qt::AlignLeft, true);
     text(p, QPointF(detector.x() + 12, detector.y() + 38),
-         QString::fromStdString(QString(" ") + NumberFormat::signedFixed(dphi) + " rad = " +
-                                NumberFormat::signedFixed(dphi * 180.0 / std::numbers::pi) + "°"),
+QString::fromStdString(std::string(" ") + NumberFormat::signedFixed(dphi) + " rad = " +
+                               NumberFormat::signedFixed(dphi * 180.0 / std::numbers::pi) + "°"),
          t.amber, 9);
     text(p, QPointF(detector.x() + 12, detector.y() + 52),
-         QString::fromStdString(QString(" ") + NumberFormat::fixed(std::fabs(shift), 4)),
+         QString::fromStdString(std::string(" ") + NumberFormat::fixed(std::fabs(shift), 4)),
          t.muted, 9);
 
     // Circular detector fringes are a schematic radial phase map. At r = 0 it uses the same
@@ -946,7 +946,7 @@ void ThinFilmCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     const double opd = 2.0 * m_in.n * m_in.thicknessNm * cosThetaT;
 
     const bool oblique = std::fabs(m_in.thetaDeg) > 0.5;
-    text(p, QPointF(14, a.top() + 18), (oblique ? "OBLIQUE INCIDENCE" : "NORMAL INCIDENCE") +
+    text(p, QPointF(14, a.top() + 18), std::string(oblique ? "OBLIQUE INCIDENCE" : "NORMAL INCIDENCE") +
                                 (transmission ? " · TRANSMITTED BEAM" : " · SINGLE FILM"), t.amber, 10);
     QColor film = t.blue; film.setAlpha(60);
     QColor sub = t.sage; sub.setAlpha(40);
