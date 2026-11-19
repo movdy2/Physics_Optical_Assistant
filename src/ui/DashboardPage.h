@@ -15,6 +15,7 @@ namespace phy104 {
 
 class LineChart;
 struct ChartSeries;
+struct DataSeries;
 struct RunRecord;
 
 class DashboardPage : public BasePage {
