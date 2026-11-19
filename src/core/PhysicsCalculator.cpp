@@ -83,6 +83,9 @@ PrismResult prism(double np, double nm, double apexDeg, double i1Deg) {
     const double s1 = nm * std::sin(i1Deg * kDegToRad) / np;
     if (std::fabs(s1) > 1.0) { r.entryTir = true; return r; }
     r.r1 = std::asin(s1) * kRadToDeg;
+    // The refracted ray must reach the second face: r1 < A. If r1 >= A the ray
+    // strikes the base instead and never emerges from the exit face.
+    if (r.r1 >= apexDeg - 1e-9) { r.exitTir = true; return r; }
     r.r2 = apexDeg - r.r1;
     const double s2 = np * std::sin(r.r2 * kDegToRad) / nm;
     if (std::fabs(s2) > 1.0) { r.exitTir = true; return r; }
@@ -154,6 +157,29 @@ double relativeIntensity(double y, double lambda, double R, double d) {
     const double phase = std::numbers::pi * d * y / (lambda * R);
     const double c = std::cos(phase);
     return c * c;                                      // I = I0 cos²(π d y / λR)
+}
+
+double fringePositionExact(int m, double lambda, double R, double d) {
+    if (d == 0.0) return 0.0;
+    const double sinTheta = m * lambda / d;
+    if (std::fabs(sinTheta) > 1.0) return 0.0;          // order does not propagate
+    return R * std::tan(std::asin(sinTheta));
+}
+
+double singleSlitEnvelope(double y, double lambda, double R, double slitWidth) {
+    if (slitWidth <= 0.0 || lambda * R == 0.0) return 1.0;
+    const double beta = std::numbers::pi * slitWidth * y / (lambda * R);
+    if (std::fabs(beta) < 1e-12) return 1.0;
+    const double s = std::sin(beta) / beta;
+    return s * s;
+}
+
+double relativeIntensityUnequal(double y, double lambda, double R, double d, double ratio) {
+    if (lambda * R == 0.0) return 0.0;
+    const double phase = std::numbers::pi * d * y / (lambda * R);
+    const double c = std::cos(phase);
+    const double i1 = 1.0, i2 = ratio;
+    return i1 + i2 + 2.0 * std::sqrt(i1 * i2) * c;
 }
 
 } // namespace phy104::PhysicsCalculator

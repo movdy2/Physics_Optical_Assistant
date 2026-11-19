@@ -148,12 +148,19 @@ protected:
     void reset() override;
 private:
     double indexOf(QComboBox* combo, double wavelengthNm) const;
+    void setMinimumDeviation();
+    void applyPreset(double apex, double incidence, const QString& material, const QString& surround);
 
     ModeTabs* m_mode;
     QComboBox *m_material, *m_surround;
     QLabel *m_materialLabel, *m_surroundLabel;
     UnitField *m_apex, *m_incidence, *m_lambda;
     UnitField *m_sigmaNPrism, *m_sigmaNMedium, *m_sigmaApex, *m_sigmaIncidence, *m_sigmaLambda;
+    QPushButton *m_presetEquilateral, *m_presetMinDev, *m_presetThin, *m_presetHighIndex;
+    QPushButton* m_btnMinDev;
+    QCheckBox* m_chkNormals;
+    QCheckBox* m_chkBends;
+    bool m_syncing = false;
     PrismCanvas* m_canvas;
     LineChart* m_chart;
     Panel *m_diagram, *m_chartPanel, *m_results;
@@ -177,6 +184,9 @@ private:
     QComboBox* m_source;
     UnitField *m_lambda, *m_d, *m_L, *m_order;
     UnitField *m_sigmaLambda, *m_sigmaD, *m_sigmaL;
+    UnitField *m_slitWidth, *m_intensityRatio;
+    QCheckBox* m_chkExact;
+    QCheckBox* m_chkEnvelope;
     ModeTabs* m_view;
     WaveCanvas* m_canvas;
     LineChart* m_chart;

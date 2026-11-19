@@ -8,6 +8,7 @@
 #include "ThemeManager.h"
 #include "Uncertainty.h"
 
+#include <QCheckBox>
 #include <QComboBox>
 #include <QLabel>
 #include <QHBoxLayout>
@@ -831,11 +832,57 @@ PrismsPage::PrismsPage(AppContext* ctx, QWidget* parent)
     f->addWidget(labeled("Wavelength · λ", m_lambda));
     f->addWidget(uncertaintyInputs({{"σ(n prism)", m_sigmaNPrism}, {"σ(n medium)", m_sigmaNMedium},
                                     {"σ(A)", m_sigmaApex}, {"σ(i₁)", m_sigmaIncidence}, {"σ(λ)", m_sigmaLambda}}));
+    // ---- Preset scenario buttons (Item 19) ----
+    auto* presetLabel = new QLabel("Presets:");
+    presetLabel->setObjectName("fieldLabel");
+    f->addWidget(presetLabel);
+    auto* presetRow = new QHBoxLayout;
+    presetRow->setSpacing(4);
+    auto makePreset = [&](const QString& label, double apex, double incidence, const QString& material, const QString& surround) {
+        auto* b = new QPushButton(label);
+        b->setObjectName("presetBtn");
+        b->setCursor(Qt::PointingHandCursor);
+        b->setMinimumHeight(30);
+        connect(b, &QPushButton::clicked, this, [this, apex, incidence, material, surround] {
+            m_syncing = true;
+            applyPreset(apex, incidence, material, surround);
+            m_syncing = false;
+            apply(false);
+        });
+        presetRow->addWidget(b);
+        return b;
+    };
+    m_presetEquilateral = makePreset("Equilateral · crown", 60.0, 48.5904, "crown", "air");
+    m_presetMinDev = makePreset("Min dev finder · 60°", 60.0, 30.0, "crown", "air");
+    m_presetThin = makePreset("Thin prism · A=10°", 10.0, 5.0, "crown", "air");
+    m_presetHighIndex = makePreset("High index · flint", 60.0, 45.0, "flint", "air");
+    f->addLayout(presetRow);
+    // ---- Minimum-deviation finder (Item 17) ----
+    m_btnMinDev = new QPushButton("Set i → i_min (δmin)");
+    m_btnMinDev->setObjectName("primaryAction");
+    m_btnMinDev->setCursor(Qt::PointingHandCursor);
+    m_btnMinDev->setMinimumHeight(44);
+    f->addWidget(m_btnMinDev);
     buildButtons(f, "SI units · angles in degrees");
 
     m_canvas = new PrismCanvas;
+    // ---- Normal and bend toggles (Item 21) ----
+    m_chkNormals = new QCheckBox("Show normals");
+    m_chkNormals->setChecked(true);
+    m_chkNormals->setObjectName("rayToggle");
+    m_chkBends = new QCheckBox("Show bend angles");
+    m_chkBends->setChecked(true);
+    m_chkBends->setObjectName("rayToggle");
+    auto* toggleBar = new QWidget;
+    auto* toggleLayout = new QHBoxLayout(toggleBar);
+    toggleLayout->setContentsMargins(8, 4, 8, 4);
+    toggleLayout->setSpacing(8);
+    toggleLayout->addWidget(m_chkNormals);
+    toggleLayout->addWidget(m_chkBends);
+    toggleLayout->addStretch();
     m_diagram = new Panel("Prism ray path", "SYMMETRIC PASSAGE");
     m_diagram->body()->setContentsMargins(0, 0, 0, 0);
+    m_diagram->body()->addWidget(toggleBar);
     m_diagram->body()->addWidget(m_canvas);
     m_chart = new LineChart;
     m_chartPanel = new Panel("Deviation vs. incidence angle", "");
@@ -864,6 +911,9 @@ PrismsPage::PrismsPage(AppContext* ctx, QWidget* parent)
     connect(m_surround, &QComboBox::activated, this, [this] { apply(false); });
     for (auto* field : {m_apex, m_incidence, m_lambda, m_sigmaNPrism, m_sigmaNMedium, m_sigmaApex, m_sigmaIncidence, m_sigmaLambda})
         connect(field, &UnitField::edited, this, [this] { apply(false); });
+    connect(m_btnMinDev, &QPushButton::clicked, this, &PrismsPage::setMinimumDeviation);
+    connect(m_chkNormals, &QCheckBox::toggled, m_canvas, &PrismCanvas::setShowNormals);
+    connect(m_chkBends, &QCheckBox::toggled, m_canvas, &PrismCanvas::setShowBends);
     reset();
 }
 
@@ -871,6 +921,28 @@ double PrismsPage::indexOf(QComboBox* combo, double lambda) const {
     const auto* m = m_ctx->presets.findMedium(combo->currentData().toString().toStdString());
     if (!m) return 1.5;
     return (m->cauchyA != 0.0 || m->cauchyB != 0.0) ? PC::cauchyIndex(m->cauchyA, m->cauchyB, lambda) : m->n;
+}
+
+void PrismsPage::applyPreset(double apex, double incidence, const QString& material, const QString& surround) {
+    m_apex->setValue(apex, 2);
+    m_incidence->setValue(incidence, 4);
+    for (int i = 0; i < m_material->count(); ++i) {
+        if (m_material->itemData(i).toString() == material) { m_material->setCurrentIndex(i); break; }
+    }
+    for (int i = 0; i < m_surround->count(); ++i) {
+        if (m_surround->itemData(i).toString() == surround) { m_surround->setCurrentIndex(i); break; }
+    }
+}
+
+void PrismsPage::setMinimumDeviation() {
+    const double nPrism = indexOf(m_material, m_lambda->value());
+    const double nMedium = indexOf(m_surround, m_lambda->value());
+    const auto imin = PC::minimumDeviationIncidenceDeg(nPrism, nMedium, m_apex->value());
+    if (!imin) return;
+    m_syncing = true;
+    m_incidence->setValue(*imin, 4);
+    m_syncing = false;
+    apply(false);
 }
 
 void PrismsPage::reset() {
@@ -887,7 +959,7 @@ void PrismsPage::reset() {
 }
 
 void PrismsPage::apply(bool record) {
-    if (!readFields()) return;
+    if (m_syncing || !readFields()) return;
     PrismInput in;
     in.apex = m_apex->value(); in.incidence = m_incidence->value(); in.wavelengthNm = m_lambda->value();
     in.sigmaNPrism = m_sigmaNPrism->value(); in.sigmaNMedium = m_sigmaNMedium->value();
@@ -997,6 +1069,12 @@ WavePage::WavePage(AppContext* ctx, QWidget* parent)
     bind(QString::fromLatin1(FieldIds::wavelength), m_lambda); bind(QString::fromLatin1(FieldIds::slitSeparation), m_d); bind(QString::fromLatin1(FieldIds::screenDistance), m_L); bind(QString::fromLatin1(FieldIds::order), m_order);
     bind(QString::fromLatin1(FieldIds::sigmaWavelength), m_sigmaLambda); bind(QString::fromLatin1(FieldIds::sigmaSlitSeparation), m_sigmaD);
     bind(QString::fromLatin1(FieldIds::sigmaScreenDistance), m_sigmaL);
+
+    m_slitWidth = new UnitField("mm");  m_slitWidth->setSpinner(true, 0.01);
+    m_intensityRatio = new UnitField;  m_intensityRatio->setSpinner(true, 0.01);
+    m_chkExact = new QCheckBox("Exact formula y = L tan(asin(mλ/d))");  m_chkExact->setObjectName("rayToggle");
+    m_chkEnvelope = new QCheckBox("Show diffraction envelope");  m_chkEnvelope->setObjectName("rayToggle");
+
     m_view = new ModeTabs({"Intensity", "Wavefronts"});
     auto* f = controls->body();
     f->addWidget(labeled("Source preset", m_source));
@@ -1004,7 +1082,11 @@ WavePage::WavePage(AppContext* ctx, QWidget* parent)
     f->addWidget(labeled("Slit separation · d", m_d));
     f->addWidget(labeled("Screen distance · L", m_L));
     f->addWidget(labeled("Fringe order · m", m_order));
+    f->addWidget(labeled("Slit width · a (envelope)", m_slitWidth));
+    f->addWidget(labeled("Intensity ratio I₂/I₁", m_intensityRatio));
     f->addWidget(uncertaintyInputs({{"σ(λ)", m_sigmaLambda}, {"σ(d)", m_sigmaD}, {"σ(L)", m_sigmaL}}));
+    f->addWidget(m_chkExact);
+    f->addWidget(m_chkEnvelope);
     f->addWidget(m_view);
     buildButtons(f, "Small angles: y ≈ Lθ. Ideal narrow slits.");
 
@@ -1032,9 +1114,11 @@ WavePage::WavePage(AppContext* ctx, QWidget* parent)
 
     connect(m_source, &QComboBox::activated, this, [this] { onPresetChosen(); });
     connect(m_lambda, &UnitField::edited, this, [this] { onWavelengthEdited(); });
-    for (auto* field : {m_d, m_L, m_order, m_sigmaLambda, m_sigmaD, m_sigmaL})
+    for (auto* field : {m_d, m_L, m_order, m_sigmaLambda, m_sigmaD, m_sigmaL, m_slitWidth, m_intensityRatio})
         connect(field, &UnitField::edited, this, [this] { apply(false); });
     connect(m_view, &ModeTabs::currentChanged, this, [this] { apply(false); });
+    connect(m_chkExact, &QCheckBox::toggled, this, [this] { apply(false); });
+    connect(m_chkEnvelope, &QCheckBox::toggled, this, [this] { apply(false); });
     reset();
 }
 
@@ -1058,6 +1142,10 @@ void WavePage::reset() {
     m_L->setValue(1.5, 3);
     m_order->setValue(2, 0);
     m_sigmaLambda->setValue(0.0, 4); m_sigmaD->setValue(0.0, 4); m_sigmaL->setValue(0.0, 4);
+    m_slitWidth->setValue(0.0, 4);
+    m_intensityRatio->setValue(1.0, 3);
+    m_chkExact->setChecked(false);
+    m_chkEnvelope->setChecked(false);
     m_view->setCurrent(0);
     m_haveLast = false;
     apply(false);
@@ -1069,6 +1157,10 @@ void WavePage::apply(bool record) {
     in.wavelengthNm = m_lambda->value(); in.separationMm = m_d->value(); in.screenM = m_L->value();
     in.sigmaWavelengthNm = m_sigmaLambda->value(); in.sigmaSeparationMm = m_sigmaD->value(); in.sigmaScreenM = m_sigmaL->value();
     in.order = static_cast<int>(std::lround(m_order->value()));
+    in.slitWidthMm = m_slitWidth->value();
+    in.intensityRatio = m_intensityRatio->value();
+    in.useExactFormula = m_chkExact->isChecked();
+    in.showEnvelope = m_chkEnvelope->isChecked();
 
     const Report r = ER::doubleSlit(in, reportContext());
     showRegisters(m_reg1, m_reg2, r);
@@ -1083,9 +1175,11 @@ void WavePage::apply(bool record) {
 
     ChartSeries curve;
     const double lam = in.wavelengthNm * 1e-9, d = in.separationMm * 1e-3;
+    const double slitWidthM = in.slitWidthMm * 1e-3;
     for (int k = -200; k <= 200; ++k) {
         const double y = k * 0.05;                           // mm
-        curve.points << QPointF(y, PC::relativeIntensity(y * 1e-3, lam, in.screenM, d));
+        const double env = in.showEnvelope && slitWidthM > 0.0 ? PC::singleSlitEnvelope(y * 1e-3, lam, in.screenM, slitWidthM) : 1.0;
+        curve.points << QPointF(y, PC::relativeIntensityUnequal(y * 1e-3, lam, in.screenM, d, in.intensityRatio) * env);
     }
     curve.line = true;
     ChartSeries errorSamples;
@@ -1094,9 +1188,22 @@ void WavePage::apply(bool record) {
         errorSamples.points << QPointF(row[0], row[1]);
         errorSamples.xUncertainties << 0.0; errorSamples.yUncertainties << row[2];
     }
+    QList<ChartSeries> seriesList = {curve, errorSamples};
+    if (in.showEnvelope && slitWidthM > 0.0) {
+        ChartSeries envelope;
+        envelope.line = true;
+        for (int k = -200; k <= 200; ++k) {
+            const double y = k * 0.05;
+            envelope.points << QPointF(y, PC::singleSlitEnvelope(y * 1e-3, lam, in.screenM, slitWidthM));
+        }
+        seriesList << envelope;
+    }
     m_chart->setAxes(-10, 10, 4, 0, "y (mm)", 0, 1.0, 2, 1, "I / I₀");
-    m_chart->setSeries({curve, errorSamples});
-    m_chart->setLegend({"Samples · error bars = 1σ"}, QString("cos²(πdy / λL) · d = %1 mm").arg(QString::number(in.separationMm, 'f', 3)));
+    m_chart->setSeries(seriesList);
+    QString legendFormula = in.useExactFormula ? QString("exact y = L tan(asin(mλ/d))") : QString("cos²(πdy / λL)");
+    QString legendEnvelope = in.showEnvelope && slitWidthM > 0.0 ? QString(" · envelope a = %1 mm").arg(QString::number(in.slitWidthMm, 'f', 3)) : QString();
+    QString legendRatio = in.intensityRatio != 1.0 ? QString(" · I₂/I₁ = %1").arg(QString::number(in.intensityRatio, 'f', 2)) : QString();
+    m_chart->setLegend({"Samples · error bars = 1σ"}, legendFormula + legendEnvelope + legendRatio + QString(" · d = %1 mm").arg(QString::number(in.separationMm, 'f', 3)));
 
     m_ctx->publish({"Wave Interference", r.parameters, r.registers, r.headline, ER::doubleSlitSweep(in), {}});
     if (record) {

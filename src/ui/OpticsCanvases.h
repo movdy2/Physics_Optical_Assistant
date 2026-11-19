@@ -96,11 +96,17 @@ public:
     void setInput(const PrismInput& in, const QList<PrismPath>& extraPaths = {});
     /// Current wavelength-resolved paths, empty when Single ray mode is active.
     const QList<PrismPath>& spectrumPaths() const { return m_extra; }
+    void setShowNormals(bool on) { m_showNormals = on; update(); }
+    bool showNormals() const { return m_showNormals; }
+    void setShowBends(bool on) { m_showBends = on; update(); }
+    bool showBends() const { return m_showBends; }
 protected:
     void paintDiagram(QPainter& p, const QRectF& area) override;
 private:
     PrismInput m_in;
     QList<PrismPath> m_extra;
+    bool m_showNormals = true;
+    bool m_showBends = true;
 };
 
 /// Schematic double slit: plane wave, slits, wavefronts, screen with bright fringes.

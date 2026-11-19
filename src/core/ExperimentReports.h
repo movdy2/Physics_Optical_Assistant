@@ -89,6 +89,10 @@ struct SlitInput {
     double wavelengthNm = 532.0, separationMm = 0.25, screenM = 1.5;
     double sigmaWavelengthNm = 0.0, sigmaSeparationMm = 0.0, sigmaScreenM = 0.0;
     int order = 2;
+    double slitWidthMm = 0.0;           // 0 = no diffraction envelope (ideal slits)
+    double intensityRatio = 1.0;        // I2/I1, 1.0 = equal intensities
+    bool useExactFormula = false;       // exact vs small-angle fringe position
+    bool showEnvelope = false;          // draw single-slit envelope on chart
 };
 
 /// What the page knows about the previous valid result (for the paused pattern).
