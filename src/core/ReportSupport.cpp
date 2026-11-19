@@ -41,7 +41,7 @@ Report pausedReport(const std::string& errorCode, std::vector<FieldIssue> issues
     const bool haveLast = context.lastValid && context.lastValid->valid && !context.lastValid->retained.title.empty();
     if (haveLast) {
         LcdRegister kept = context.lastValid->retained;
-        kept.title = "LAST VALID" + (context.runLabel.empty() ? std::string() : std::string(" / ") + context.runLabel);
+        kept.title = std::string("LAST VALID") + (context.runLabel.empty() ? std::string() : std::string(" / ") + context.runLabel);
         kept.footer = "STALE / NOT CURRENT INPUTS";
         report.registers.push_back(kept);
         report.headline = context.lastValid->headline;
@@ -52,7 +52,7 @@ Report pausedReport(const std::string& errorCode, std::vector<FieldIssue> issues
                              context.runLabel.empty() ? "the last valid result" : run);
     report.notices.push_back(std::move(notice));
     report.statusText = errorCode + " · " +
-                        (haveLast ? "last valid " + (context.runLabel.empty() ? std::string("result") : run) + " retained"
+                        (haveLast ? std::string("last valid ") + (context.runLabel.empty() ? std::string("result") : run) + " retained"
                                   : "nothing to retain");
     return report;
 }

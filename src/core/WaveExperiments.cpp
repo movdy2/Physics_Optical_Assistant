@@ -115,7 +115,7 @@ ModelReport newtonRings(const NewtonInput& in, const ReportContext& ctx) {
     LcdRegister b;
     b.title = "DIAMETER / FILM THICKNESS";
     b.lines = {std::string("D") + ms + std::string(" = 2r") + ms,
-               std::string("t") + ms + " = " + (in.transmitted ? std::string("(m+½)λ/(2n)") : std::string("mλ/(2n)")) + std::string(" = ") + NF::general(t * 1e9, 6) + " nm",
+               std::string("t") + ms + std::string(" = ") + (in.transmitted ? std::string("(m+½)λ/(2n)") : std::string("mλ/(2n)")) + std::string(" = ") + NF::general(t * 1e9, 6) + " nm",
                in.transmitted ? "m = 0 → bright center, first dark at ½ order" : "m = 0 → r₀ = 0 (dark)"};
     b.resultLabel = std::string("DIAMETER · D") + ms;
     b.resultValue = fx(2 * r * 1e3) + " mm";
@@ -322,7 +322,7 @@ ModelReport thinFilm(const ThinFilmInput& in, const ReportContext& ctx) {
                                                        ". Thicker films reflect many orders at once and the colours add up to grey — which is why soap films show colour bands only where they are thin."
                                                      : "many wavelengths at once with no clear winner: the film looks grey.")),
                        guard("The swatch is a CIE 1931 integration of R(λ) under a flat illuminant, with equal-amplitude reflections. Real soap films vary in thickness across the surface.")};
-        rep.headline = std::string("film ") + num(in.thicknessNm) + " nm · " + (fc.hueNm > 0 ? NF::fixed(fc.hueNm, 0) + " nm" : std::string("grey"));
+        rep.headline = std::string("film ") + num(in.thicknessNm) + std::string(" nm · ") + (fc.hueNm > 0 ? NF::fixed(fc.hueNm, 0) + " nm" : std::string("grey"));
         rep.retained = retained({std::string("t = ") + NF::fixed(in.thicknessNm, 2) + std::string(" nm · n = ") + fx(in.n) + std::string(" · n₂ = ") + fx(in.n2), "λ range 400–700 nm"}, "RETAINED FILM COLOUR", fc.hex);
         rep.parameters = {{"t", num(in.thicknessNm) + " nm"}, {"n", num(in.n)}, {"n₂", num(in.n2)}, {"swatch", fc.hex}, {"mode", "colours"}};
 
@@ -636,7 +636,7 @@ ModelReport singleSlit(const SingleSlitInput& in, const ReportContext& ctx) {
     LcdRegister r2;
     r2.title = "CENTRAL MAXIMUM";
     r2.lines = {std::string("w = ") + (in.exactGeometry ? "2L tan θ₁" : "≈ 2L λ/a"),
-                std::string(" = 2 × ") + num(in.screenM) + " × " + (in.exactGeometry ? std::string("tan(") + fx(theta) + "°)" : "λ/a"),
+                std::string(" = 2 × ") + num(in.screenM) + std::string(" × ") + (in.exactGeometry ? std::string("tan(") + fx(theta) + "°)" : "λ/a"),
                 std::string(" = ") + NF::fixed(w, 9) + " m"};
     r2.resultLabel = "FULL WIDTH ON SCREEN";
     r2.resultValue = fx(w * 1e3) + " mm";

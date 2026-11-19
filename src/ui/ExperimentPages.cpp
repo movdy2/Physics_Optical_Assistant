@@ -136,8 +136,8 @@ void ExperimentPage::setPanels(Panel* d, Panel* c, Panel* r, const QString& dm, 
 void ExperimentPage::refreshMetas(bool paused) {
     const QString run = lastRunLabel();
     const QString number = run.section(' ', 1);
-    if (m_diagramPanel) m_diagramPanel->setMeta(paused ? "LAST VALID" + (number.isEmpty() ? QString() : std::string(" · ") + number) : m_diagramMeta);
-    if (m_chartPanel) m_chartPanel->setMeta(paused ? "STALE" + (run.isEmpty() ? QString() : std::string(" · ") + run) : m_chartMeta);
+    if (m_diagramPanel) m_diagramPanel->setMeta(paused ? std::string("LAST VALID") + (number.isEmpty() ? QString() : std::string(" · ") + number) : m_diagramMeta);
+    if (m_chartPanel) m_chartPanel->setMeta(paused ? std::string("STALE") + (run.isEmpty() ? QString() : std::string(" · ") + run) : m_chartMeta);
     if (m_resultsPanel) m_resultsPanel->setMeta(paused ? "PAUSED" : m_ctx->nextRunLabel());
 }
 
@@ -225,7 +225,7 @@ void ExperimentPage::applyIssues(const Report& r) {
         QString unit = firstWithValue->field->unit();
         if (unit == "integer" || unit == "order" || unit == "slits") unit.clear();            // labels, not units
         const double v = firstWithValue->lastValid;
-        m_restore->setText(std::string("Restore ") + restoreLabel + " = " + (firstWithValue->field->showsPlus() && v > 0 ? "+" : "") +
+        m_restore->setText(std::string("Restore ") + restoreLabel + std::string(" = ") + (firstWithValue->field->showsPlus() && v > 0 ? "+" : "") +
                            QString::number(v, 'f', firstWithValue->field->decimals()) + (unit.isEmpty() ? "" : std::string(" ") + unit));
     }
     m_hint->setText(paused ? (firstWithValue ? "Restore the last-valid value, then calculate again." : "Edit the highlighted field to continue.") : m_hintText);
