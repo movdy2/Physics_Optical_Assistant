@@ -18,11 +18,10 @@ Theme Theme::figmaDark() {
     t.bg = "#282828";   t.sidebar = "#3c3836";  t.titleBar = "#1d2021";
     t.card = "#3c3836"; t.cardHover = "#504945"; t.input = "#282828";
     t.canvas = "#1d2021"; t.grid = "#2e2c2b";   t.border = "#504945";
-    t.text = "#ebdbb2"; t.muted = "#d5c4a1";    t.dim = "#c7b9a8";   // small grey text: brighter, still quieter than the body
+    t.text = "#ebdbb2"; t.muted = "#d5c4a1";    t.dim = "#c7b9a8";
     t.amber = "#d79921"; t.amberHover = "#e5ac39"; t.amberPressed = "#b57614"; t.amberTint = QColor(215, 153, 33, 36);
     t.lime = "#b8bb26"; t.error = "#fb4934";    t.errorBg = "#442e2a";
     t.sage = "#8fb5a5";
-    t.lcdBg = "#9bb094"; t.lcdText = "#0b1c08"; t.lcdFrame = "#171e15"; t.lcdDivider = "#708369";
     t.yellow = t.amber; t.green = "#98971a"; t.red = "#cc241d"; t.orange = "#d65d0e"; t.blue = "#458588"; t.aqua = "#689d6a";
     return t;
 }
@@ -30,7 +29,6 @@ Theme Theme::figmaDark() {
 Theme Theme::figmaLight() {
     Theme t;
     t.dark = false;
-    // the light theme of the Figma sheet was too white: paper, cards and canvas are all one step darker now
     t.bg = "#f0e2b8";   t.sidebar = "#e2d0a4";  t.titleBar = "#e9daae";
     t.card = "#e5d3a8"; t.cardHover = "#d9c69a"; t.input = "#f6ebcd";
     t.canvas = "#e8dab0"; t.grid = "#dccc9f";   t.border = "#cbb98d";
@@ -38,7 +36,6 @@ Theme Theme::figmaLight() {
     t.amber = "#b57614"; t.amberHover = "#d79921"; t.amberPressed = "#9d6a0f"; t.amberTint = QColor(181, 118, 20, 34);
     t.lime = "#79740e"; t.error = "#9d0006";    t.errorBg = "#f4d9bf";
     t.sage = "#427b58";
-    t.lcdBg = "#9bb094"; t.lcdText = "#0b1c08"; t.lcdFrame = "#171e15"; t.lcdDivider = "#708369";
     t.yellow = t.amber; t.green = "#79740e"; t.red = "#9d0006"; t.orange = "#af3a03"; t.blue = "#076678"; t.aqua = "#427b58";
     return t;
 }
@@ -51,9 +48,7 @@ ThemeManager& ThemeManager::instance() {
 void ThemeManager::loadFonts() {
     for (const char* f : {":/fonts/Inter-Regular.otf", ":/fonts/Inter-Medium.otf", ":/fonts/Inter-SemiBold.otf",
                           ":/fonts/NotoSansArabic.ttf",
-                          ":/fonts/JetBrainsMono-Regular.ttf", ":/fonts/JetBrainsMono-Bold.ttf",
-                          ":/fonts/DSEG7Classic-Bold.ttf", ":/fonts/DSEG14Classic-Bold.ttf",
-                          ":/fonts/CasioCalculatorFont.otf"})
+                          ":/fonts/JetBrainsMono-Regular.ttf", ":/fonts/JetBrainsMono-Bold.ttf"})
         QFontDatabase::addApplicationFont(f);
 }
 
@@ -74,8 +69,6 @@ void ThemeManager::apply(QApplication& app, bool dark) {
 
     app.setStyle(QStyleFactory::create("Fusion"));
     QFont font(uiFont());
-    // Keep the same sans-serif fallback stack in both locales. Inter remains the primary face;
-    // an Arabic-capable sans is used only for glyphs Inter does not provide.
     font.setFamilies(uiFontFamilies());
     font.setPixelSize(13);
     app.setFont(font);
@@ -91,40 +84,8 @@ void ThemeManager::apply(QApplication& app, bool dark) {
     p.setColor(QPalette::Disabled, QPalette::Text, t.dim);
     p.setColor(QPalette::Disabled, QPalette::ButtonText, t.dim);
     app.setPalette(p);
-    // A universal stylesheet font-family would override per-widget LCD segment fonts.
     app.setStyleSheet(styleSheet(t));
     emit themeChanged();
-}
-
-QFont ThemeManager::lcdFont(const QFont& base) {
-    QFont font = base;
-    // Casio segment-style face is the primary LCD face for numeric results; DSEG14 and the
-    // matching sans stack supply glyphs it does not contain (including Arabic text) without
-    // switching the whole display to another font. The bundled font's internal family name is
-    // "CASIO-Calculator-Font" (hyphenated), so use that exact name plus a spaced fallback.
-    QStringList families{"CASIO-Calculator-Font", "Casio-Calculator-Font", "Casio Calculator Font",
-                         "DSEG14 Classic", monoFont()};
-    families.append(uiFontFamilies());
-    font.setFamilies(families);
-    return font;
-}
-
-void ThemeManager::polishLcdFont(QWidget* widget) {
-    if (!widget) return;
-    widget->setFont(lcdFont(widget->font()));
-    QObject::connect(&instance(), &ThemeManager::themeChanged, widget, [widget] {
-        widget->setFont(ThemeManager::lcdFont(widget->font()));
-    });
-}
-
-void ThemeManager::polishLcdInput(QLineEdit* edit) {
-    if (!edit) return;
-    polishLcdFont(edit);
-    QPalette p = edit->palette();
-    QColor ink = Theme::figmaDark().lcdText;
-    ink.setAlpha(115);
-    p.setColor(QPalette::PlaceholderText, ink);
-    edit->setPalette(p);
 }
 
 QString ThemeManager::styleSheet(const Theme& t) {
@@ -177,6 +138,15 @@ QLabel#cardKicker { font-family: 'JetBrains Mono'; font-size: 9px; color: @dim@;
 QLabel#cardTitle { font-size: 16px; font-weight: 600; color: @text@; }
 QLabel#cardText { font-size: 12px; color: @muted@; }
 QLabel#cardResult { font-family: 'JetBrains Mono'; font-size: 10px; color: @sage@; }
+
+/* ---------- calculation register ---------- */
+QFrame#register { background: @card@; border: 1px solid @border@; border-radius: 6px; }
+QFrame#register QFrame#regDivider { background: @border@; max-height: 1px; min-height: 1px; border: none; margin: 4px 0; }
+QLabel#regTitle { font-size: 11px; font-weight: 600; color: @text@; }
+QLabel#regLine { font-family: 'JetBrains Mono'; font-size: 11px; color: @muted@; }
+QLabel#regCaption { font-family: 'JetBrains Mono'; font-size: 9px; color: @dim@; }
+QLabel#regBig { font-family: 'JetBrains Mono'; font-size: 16px; font-weight: 700; color: @amber@; }
+QLabel#regFoot { font-family: 'JetBrains Mono'; font-size: 9px; color: @dim@; }
 
 /* ---------- fields ---------- */
 QFrame#field { background: @input@; border: 1px solid @border@; border-radius: 4px; }
@@ -248,7 +218,7 @@ QPushButton#keyEq:pressed { background: @amberPressed@; }
 /* ---------- Scientific input keyboard (raised keys) ---------- */
 QFrame#sciKeyboard { background: @card@; border: 1px solid @border@; border-radius: 8px; }
 QLabel#sciTitle { font-family: 'JetBrains Mono'; font-size: 10px; font-weight: 700; color: @amber@; }
-QLabel#lcdKeyDisplay { font-size: 20px; font-weight: 700; color: @lcdText@; }
+QLabel#lcdKeyDisplay { font-size: 20px; font-weight: 700; color: @text@; }
 QToolButton#keyClose { background: transparent; border: none; color: @dim@; font-size: 16px; }
 QToolButton#keyClose:hover { color: @amber@; }
 QPushButton#rkey, QPushButton#rkeyCtl { background: @card@; color: @text@; border: 1px solid @border@; border-bottom: 3px solid @titleBar@; border-radius: 4px;
@@ -320,28 +290,6 @@ QStatusBar { background: @titleBar@; color: @dim@; border-top: 1px solid @border
 QStatusBar::item { border: none; }
 QLabel#statusText { font-family: 'JetBrains Mono'; font-size: 10px; color: @dim@; }
 
-/* ---------- Casio LCD typography: shared by the calculator, solver and register displays ---------- */
-QWidget#calcPage QLineEdit#lcdInput { font-size: 22px; font-weight: 700; padding: 10px 12px; }
-QWidget#calcPage QLabel#lcdResult { font-size: 44px; font-weight: 700; padding: 8px 14px; }
-QWidget#calcPage QTextBrowser#lcdScreen { font-size: 13px; font-weight: 700; }
-QWidget#calcPage QLabel#lcdBadge { font-size: 11px; font-weight: 700; }
-
-/* ---------- Casio LCD ---------- */
-QFrame#lcd { background: @lcdBg@; border: 3px solid @lcdFrame@; border-radius: 4px; }
-QLabel#lcdTitle { font-size: 9px; font-weight: 700; color: @lcdText@; }
-QLabel#lcdLine  { font-size: 11px; color: @lcdText@; }
-QLabel#lcdCaption { font-size: 8px; color: @lcdText@; }
-QLabel#lcdBig   { font-size: 26px; font-weight: 700; color: @lcdText@; }
-QLabel#lcdFoot  { font-size: 8px; color: @lcdText@; }
-QFrame#lcdDivider { background: @lcdDivider@; border: none; max-height: 1px; min-height: 1px; }
-QLineEdit#lcdInput { background: @lcdBg@; color: @lcdText@; border: 3px solid @lcdFrame@; border-radius: 4px;
-    font-size: 20px; font-weight: 700; padding: 8px 12px; selection-background-color: @lcdText@; selection-color: @lcdBg@; }
-QLineEdit#lcdInput:focus { border: 3px solid @amber@; padding: 8px 12px; }
-QTextBrowser#lcdScreen, QLabel#lcdScreen { background: @lcdBg@; color: @lcdText@; border: 3px solid @lcdFrame@; border-radius: 4px;
-    font-size: 12px; font-weight: 700; padding: 8px; }
-QLabel#lcdResult { background: @lcdBg@; color: @lcdText@; border: 3px solid @lcdFrame@; border-radius: 4px;
-    font-size: 34px; font-weight: 700; padding: 6px 14px; }
-QLabel#lcdBadge { background: @lcdText@; color: @lcdBg@; border-radius: 3px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
 )CSS";
 
     const std::pair<const char*, QColor> tokens[] = {
@@ -349,8 +297,7 @@ QLabel#lcdBadge { background: @lcdText@; color: @lcdBg@; border-radius: 3px; pad
         {"@input@", t.input}, {"@border@", t.border}, {"@text@", t.text}, {"@muted@", t.muted}, {"@dim@", t.dim},
         {"@amberHover@", t.amberHover}, {"@amberPressed@", t.amberPressed}, {"@amber@", t.amber},
         {"@lime@", t.lime}, {"@errorBg@", t.errorBg}, {"@error@", t.error}, {"@sage@", t.sage},
-        {"@canvas@", t.canvas}, {"@lcdBg@", t.lcdBg}, {"@lcdText@", t.lcdText}, {"@lcdFrame@", t.lcdFrame},
-        {"@lcdDivider@", t.lcdDivider}, {"@calcDim@", t.dark ? QColor(Qt::white) : t.text}};
+        {"@canvas@", t.canvas}, {"@calcDim@", t.dark ? QColor(Qt::white) : t.text}};
     for (const auto& [token, color] : tokens) css.replace(token, color.name());
     css.replace("@amberTint@", QString("rgba(%1,%2,%3,%4)").arg(t.amberTint.red()).arg(t.amberTint.green()).arg(t.amberTint.blue()).arg(t.amberTint.alpha()));
     css.replace("@chevron@", t.dark ? ":/icons/chevron-down-dark.svg" : ":/icons/chevron-down-light.svg");

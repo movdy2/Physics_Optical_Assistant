@@ -77,8 +77,8 @@ ThickLensPage::ThickLensPage(AppContext* ctx, QWidget* parent)
     cols.center->addWidget(m_chartPanel, 2);
 
     m_results = new Panel("Thick-lens calculation", ctx->nextRunLabel());
-    m_reg1 = new LcdRegisterView;
-    m_reg2 = new LcdRegisterView;
+    m_reg1 = new RegisterView;
+    m_reg2 = new RegisterView;
     m_results->body()->addWidget(m_reg1);
     m_results->body()->addWidget(m_reg2);
     m_notice = new NoticeCard;

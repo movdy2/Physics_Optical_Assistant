@@ -10,8 +10,6 @@
 #include <QLineEdit>
 #include <QPalette>
 #include <QPushButton>
-#include <QScrollBar>
-#include <QTextBrowser>
 #include <QVBoxLayout>
 
 namespace phy104 {
@@ -22,14 +20,6 @@ MathSolverPage::MathSolverPage(AppContext* context, QWidget* parent)
 
     auto* columns = new QHBoxLayout;
     columns->setSpacing(12);
-
-    auto* historyPanel = new Panel("History");
-    m_history = new QTextBrowser;
-    m_history->setObjectName("lcdScreen");
-    ThemeManager::polishLcdFont(m_history);
-    m_history->setMinimumWidth(250);
-    historyPanel->body()->addWidget(m_history, 1);
-    columns->addWidget(historyPanel, 2);
 
     auto* calculatorPanel = new Panel("Expression");
     auto* modeRow = new QHBoxLayout;
@@ -45,7 +35,6 @@ MathSolverPage::MathSolverPage(AppContext* context, QWidget* parent)
     m_input = new QLineEdit;
     m_input->setObjectName("lcdInput");
     m_input->setLayoutDirection(Qt::LeftToRight);
-    ThemeManager::polishLcdInput(m_input);
     m_input->setPlaceholderText("Expression");
     const auto refreshPlaceholder = [this] {
         QPalette palette = m_input->palette();
@@ -59,7 +48,6 @@ MathSolverPage::MathSolverPage(AppContext* context, QWidget* parent)
 
     m_result = new QLabel("0");
     m_result->setObjectName("lcdResult");
-    ThemeManager::polishLcdFont(m_result);
     m_result->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_result->setMinimumHeight(64);
     calculatorPanel->body()->addWidget(m_result);
@@ -85,7 +73,6 @@ MathSolverPage::MathSolverPage(AppContext* context, QWidget* parent)
         m_input->setFocus();
     });
     connect(m_angleButton, &QPushButton::toggled, this, &MathSolverPage::toggleAngleMode);
-    showHistory();
 }
 
 void MathSolverPage::calculate() {
@@ -102,19 +89,6 @@ void MathSolverPage::calculate() {
         m_status->setText("✖ " + QString::fromStdString(entry.error));
         m_status->show();
     }
-    showHistory();
-}
-
-void MathSolverPage::showHistory() {
-    QString html = "<table width='100%' cellspacing='2'>";
-    for (const CalcEntry& entry : m_calc.history()) {
-        const QString expression = QString::fromStdString(entry.expression).toHtmlEscaped();
-        const QString result = entry.ok ? "= " + QString::fromStdString(entry.result).toHtmlEscaped() : "ERROR";
-        html += "<tr><td>" + expression + "</td><td align='right'><b>" + result + "</b></td></tr>";
-    }
-    html += "</table>";
-    m_history->setHtml(html);
-    m_history->verticalScrollBar()->setValue(m_history->verticalScrollBar()->maximum());
 }
 
 void MathSolverPage::clearAll() {
@@ -122,7 +96,6 @@ void MathSolverPage::clearAll() {
     m_input->clear();
     m_result->setText("0");
     m_status->hide();
-    showHistory();
     m_input->setFocus();
 }
 

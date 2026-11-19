@@ -24,8 +24,6 @@ struct Theme {
     QColor lime;        // valid / success
     QColor error, errorBg;
     QColor sage;        // optical-bench lines (interfaces, lens, prism outline)
-    // Casio LCD (same olive screen in both modes)
-    QColor lcdBg, lcdText, lcdFrame, lcdDivider;
     // older names still used by the SVG diagrams, LaTeX and formula cards
     QColor yellow, green, red, orange, blue, aqua;
 
@@ -35,7 +33,7 @@ struct Theme {
     static Theme gruvboxLight() { return figmaLight(); }
 };
 
-/// Loads the bundled UI, Arabic fallback, mono and Casio segment fonts, applies palette + style sheet,
+/// Loads the bundled UI, Arabic fallback, and mono fonts, applies palette + style sheet,
 /// and announces theme changes.
 class ThemeManager : public QObject {
     Q_OBJECT
@@ -53,14 +51,6 @@ public:
     bool isDark() const { return m_theme.dark; }
     /// The theme chosen in the last run (saved by apply(); read by main() before the UI is built).
     static bool storedDarkTheme();
-
-    /// One shared Casio segment-style face for every LCD surface (Casio Calculator Font,
-    /// with DSEG14 and JetBrains Mono fallbacks), for glyphs the primary font does not contain.
-    static QFont lcdFont(const QFont& base = QFont());
-    static void polishLcdFont(QWidget* widget);
-
-    /// Call on every Casio-LCD input field (segmented font + readable placeholder colour).
-    static void polishLcdInput(QLineEdit* edit);
 
 signals:
     void themeChanged();

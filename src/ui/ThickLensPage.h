@@ -30,7 +30,7 @@ private:
     LineChart* m_chart = nullptr;
     Panel *m_diagram = nullptr, *m_chartPanel = nullptr, *m_results = nullptr;
     NoticeCard* m_notice = nullptr;
-    LcdRegisterView *m_reg1 = nullptr, *m_reg2 = nullptr;
+    RegisterView *m_reg1 = nullptr, *m_reg2 = nullptr;
     QLabel* m_caption = nullptr;
 };
 
