@@ -648,7 +648,7 @@ QString SingleSlitPage::runDescription() const {
     const int tab = m_tabs->current();
     return QString("a %1 mm · λ %2 nm · %3 · %4 · env%5").arg(m_width->text(), m_lambda->text(),
                                                  tab == 2 ? "envelope" : tab == 1 ? "geometry" : "intensity",
-                                                 m_exactGeom->currentText().section(' ·', 0, 0),
+                                                 m_exactGeom->currentText().section(QString(" ·"), 0, 0),
                                                  m_showEnvelopeOnly->isChecked() ? "only" : "fringes");
 }
 
