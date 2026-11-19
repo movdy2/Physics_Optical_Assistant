@@ -16,7 +16,9 @@ struct ChartData {
     double xMin = 0, xMax = 1, yMin = 0, yMax = 1;
     int xTicks = 4, yTicks = 2, xDecimals = 1, yDecimals = 1;
     std::vector<std::pair<double, double>> curve;
-    std::vector<std::pair<double, double>> marker;      // 0 or 1 points
+    std::vector<std::pair<double, double>> curve2;      // second curve (e.g. λ₂ intensity)
+    std::vector<std::pair<double, double>> marker;      // 0 or 1 points (selected order, λ₁)
+    std::string legend2;                                // legend for second curve
 };
 
 /// A report plus its chart (the diagram is drawn by the page from the same inputs).
@@ -26,13 +28,22 @@ struct ModelReport {
 };
 
 /// `transmitted` picks the second mode tab: reflected (false) or transmitted (true) light.
-struct NewtonInput    { double lambdaNm = 600, radiusM = 1.0, order = 4, n = 1.0; bool transmitted = false; };
+struct NewtonInput    {
+    double lambdaNm = 600, radiusM = 1.0, order = 4, n = 1.0;
+    double sigmaLambdaNm = 0.0, sigmaRadiusM = 0.0, sigmaN = 0.0;   // independent 1σ uncertainties
+    bool transmitted = false;
+};
 /// `fringes` selects the spacing/count view; `piezo` selects the movable mirror's actuator (otherwise a micrometer).
 /// The classroom stage models mirror travel from −2 to +2 µm; moving it changes round-trip OPD by 2nΔx.
-struct MichelsonInput { double lambdaNm = 632.8, displacementUm = 0.75, n = 1.0, visibility = 1.0; bool fringes = false, piezo = false; };
+/// `coherenceLengthUm` = 0 means infinite coherence (V constant). Otherwise V decays as exp(-|ΔOPD|/Lc).
+/// `tiltMrad` is the M2 tilt in milliradians; affects the canvas fringe pattern, not the 1D intensity curve.
+/// `plateThicknessUm` / `plateIndex` model a glass plate inserted in one arm: ΔOPD_plate = 2(n_plate − 1)·t.
+struct MichelsonInput { double lambdaNm = 632.8, displacementUm = 0.75, n = 1.0, visibility = 1.0; bool fringes = false, piezo = false; double coherenceLengthUm = 0.0; double tiltMrad = 0.0; double plateThicknessUm = 0.0, plateIndex = 1.5; };
 /// `transmission` picks the second mode tab: reflected (false) or transmitted (true) light.
 /// `colours` is the third tab: every wavelength at once - the perceived colour of the film.
-struct ThinFilmInput  { double lambdaNm = 600, n = 1.5, thicknessNm = 100; bool transmission = false; bool colours = false; };
+/// `n2` is the substrate index; phase reversal depends on n₀ < n vs n vs n₂ relations.
+/// `thetaDeg` is the angle of incidence from normal; OPD becomes 2nt·cos(θₜ) via Snell's law.
+struct ThinFilmInput  { double lambdaNm = 600, n = 1.5, thicknessNm = 100, n2 = 1.5, thetaDeg = 0.0; bool transmission = false; bool colours = false; };
 
 /// One entry of the colour tab's readout: a spectral line, its local reflectance and its swatch.
 struct FilmColourSample {
@@ -51,16 +62,21 @@ struct FilmColour {
 
 /// Reflectance of the film at one wavelength: one phase reversal, equal amplitudes.
 double thinFilmReflectance(double thicknessNm, double n, double wavelengthNm);
+/// Reflectance with substrate index n2 and angle of incidence thetaDeg.
+double thinFilmReflectance(double thicknessNm, double n0, double n, double n2, double wavelengthNm, double thetaDeg);
 /// Visibility of the interference colours: 1 when the order difference across the visible range is large
 /// (thin films), 0 when many orders overlap and the colours wash out to grey.
 double thinFilmColourVisibility(double thicknessNm, double n);
 /// The film colour; `visibility = 0` returns the neutral grey of a washed-out film.
 FilmColour thinFilmColour(double thicknessNm, double n);
+FilmColour thinFilmColour(double thicknessNm, double n, double n2);
 /// `orderList` is the second tab: every propagating order with its angle instead of the intensity fan.
-struct GratingInput   { double linesPerCm = 5000, lambdaNm = 600, order = 1, slits = 20, incidenceDeg = 0; bool orderList = false; };
+/// `lambda2Nm` is the second wavelength for spectral separation (item 12); when > 0, both λ₁ and λ₂ are shown.
+struct GratingInput   { double linesPerCm = 5000, lambdaNm = 600, lambda2Nm = 0.0, order = 1, slits = 20, incidenceDeg = 0; bool orderList = false; };
 /// `geometry` is the second tab: where the minima land on the screen instead of the intensity envelope.
 /// `envelope` is the third tab: this slit multiplied by a double-slit pattern (finite slit separation).
-struct SingleSlitInput{ double widthMm = 0.1, lambdaNm = 500, screenM = 1.0; bool geometry = false; bool envelope = false; double separationMm = 0.4; };
+/// `exactGeometry` selects exact w = 2L·tan(asin(λ/a)) vs small-angle w ≈ 2L·λ/a (item 13).
+struct SingleSlitInput{ double widthMm = 0.1, lambdaNm = 500, screenM = 1.0; bool geometry = false; bool envelope = false; double separationMm = 0.4; bool exactGeometry = true; };
 /// `slitWidthMm > 0` adds the single-slit envelope  sinc²(π a sin θ / λ)  to the N-slit interference pattern.
 struct GratingResolutionInput { double linesPerCm = 5000, lambdaNm = 600, order = 1, slits = 120; double slitWidthMm = 0.0; };
 /// `brewster` is the second tab: the interface at θB with the Fresnel reflectances instead of Malus' law.

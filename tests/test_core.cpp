@@ -529,8 +529,8 @@ int main() {
         // --- thin film: λ = 600 nm, n = 1.5, t = 100 nm
         auto f = WE::thinFilm({});
         CHECK(has(f.report.registers[0], "OPD = 2nt") && has(f.report.registers[0], " = 2 × 1.5 × 100 nm") && has(f.report.registers[0], " = 300 nm"));
-        CHECK(has(f.report.registers[0], "Δψ = 4πnt/λ − π = 0.0000 rad") && f.report.registers[0].resultValue == "1.0000");
-        CHECK(f.report.registers[1].title == "ONE PHASE REVERSAL" && f.report.registers[1].resultValue == "100.0000 nm" && has(f.report.registers[1], "Dark: 2nt = qλ"));
+        CHECK(has(f.report.registers[0], "Δψ = 4πnt·cosθₜ/λ − π = 0.0000 rad") && f.report.registers[0].resultValue == "1.0000");
+        CHECK(f.report.registers[1].title == "ONE PHASE REVERSAL" && f.report.registers[1].resultValue == "100.0000 nm" && has(f.report.registers[1], "Dark: 2nt·cosθₜ = qλ"));
         ThinFilmInput dark; dark.thicknessNm = 200;
         CHECK(near(std::stod(WE::thinFilm(dark).report.registers[0].resultValue), 0.0, 1e-9));              // t = λ/(2n): dark
         // --- diffraction grating: N = 5000 lines/cm, λ = 600 nm, m = +1, M = 20
@@ -546,6 +546,26 @@ int main() {
         CHECK(ge.report.paused && ge.report.issues[0].field == "m" && ge.report.issues[0].message == "No real angle: |mλ/d| > 1.");
         GratingInput g0; g0.order = 0;
         CHECK(WE::grating(g0).report.registers[0].resultValue == "0.0000°");
+        // --- non-normal incidence: N = 5200, λ = 600, m = 1, θᵢ = 30° → θₘ = -10.83°
+        GratingInput gni; gni.linesPerCm = 5200; gni.lambdaNm = 600; gni.order = 1; gni.incidenceDeg = 30;
+        auto gnir = WE::grating(gni);
+        CHECK(!gnir.report.paused);
+        CHECK(near(std::stod(gnir.report.registers[0].resultValue), -10.83, 0.05));
+        CHECK(has(gnir.report.registers[0], "d (sin θₘ + sin θᵢ) = mλ"));
+        // --- boundary: m = 4, N = 5200, λ = 600, θᵢ = 0 → |mλ/d| = 1.248 > 1 → error
+        GratingInput gb; gb.linesPerCm = 5200; gb.lambdaNm = 600; gb.order = 4;
+        auto gbr = WE::grating(gb);
+        CHECK(gbr.report.paused && gbr.report.issues[0].field == "m");
+        // --- λ₂ spectral separation: N = 5000, λ₁ = 600, λ₂ = 400, m = 1
+        GratingInput g2; g2.linesPerCm = 5000; g2.lambdaNm = 600; g2.lambda2Nm = 400; g2.order = 1;
+        auto g2r = WE::grating(g2);
+        CHECK(!g2r.report.paused);
+        CHECK(!g2r.chart.curve2.empty());
+        CHECK(g2r.chart.legend2.find("400 nm") != std::string::npos);
+        // --- λ₂ order does not propagate: N = 5200, λ₁ = 600, λ₂ = 400, m = 4
+        GratingInput g2b; g2b.linesPerCm = 5200; g2b.lambdaNm = 600; g2b.lambda2Nm = 400; g2b.order = 4;
+        auto g2br = WE::grating(g2b);
+        CHECK(g2br.report.paused);   // λ₁ m=4 doesn't propagate
         // --- single slit: a = 0.1 mm, λ = 500 nm, L = 1 m
         auto s = WE::singleSlit({});
         CHECK(s.report.registers[0].title == "FIRST MINIMUM / DEG" && has(s.report.registers[0], "a sin θ₁ = λ") && has(s.report.registers[0], "sin θ₁ = 5×10⁻⁷ / 10⁻⁴"));
@@ -556,6 +576,29 @@ int main() {
         CHECK(near(s.chart.xMax, 1.2, 1e-9));
         SingleSlitInput sb; sb.widthMm = 0.0001;                                                           // λ/a > 1: no first minimum
         CHECK(WE::singleSlit(sb).report.paused);
+        // --- β = 0 limit: central maximum is exactly 1.0, not NaN
+        CHECK(near(WE::singleSlitIntensity(0.0, 0.1, 500), 1.0, 1e-12));
+        CHECK(near(WE::singleSlitIntensity(0.0, 0.05, 700), 1.0, 1e-12));
+        // --- exact vs small-angle approximation: base case differs negligibly at small angles
+        SingleSlitInput exact; exact.widthMm = 0.1; exact.lambdaNm = 500; exact.screenM = 1.0; exact.exactGeometry = true;
+        auto se = WE::singleSlit(exact);
+        SingleSlitInput approx = exact; approx.exactGeometry = false;
+        auto sa = WE::singleSlit(approx);
+        CHECK(se.report.registers[1].resultValue == "10.0001 mm");
+        CHECK(sa.report.registers[1].resultValue == "10.0000 mm");
+        CHECK(has(sa.report.registers[1], "≈ 2L λ/a"));
+        // --- wider slit: a = 0.2mm → w ≈ 5mm
+        SingleSlitInput wide; wide.widthMm = 0.2; wide.lambdaNm = 500; wide.screenM = 1.0;
+        auto sw = WE::singleSlit(wide);
+        CHECK(sw.report.registers[1].resultValue == "5.0000 mm");
+        // --- narrower slit: a = 0.05mm → w ≈ 20mm
+        SingleSlitInput narrow; narrow.widthMm = 0.05; narrow.lambdaNm = 500; narrow.screenM = 1.0;
+        auto sn = WE::singleSlit(narrow);
+        CHECK(sn.report.registers[1].resultValue == "20.0000 mm");
+        // --- longer wavelength: λ = 700nm, a = 0.1mm → w ≈ 14mm
+        SingleSlitInput longL; longL.widthMm = 0.1; longL.lambdaNm = 700; longL.screenM = 1.0;
+        auto sl = WE::singleSlit(longL);
+        CHECK(sl.report.registers[1].resultValue == "14.0000 mm");
         // --- Malus + Brewster: Iin = 100 W/m² unpolarized, θ = 60°, air -> glass
         auto p = WE::polarization({});
         CHECK(has(p.report.registers[0], "I₀ = Iᵢₙ / 2 = 50 W/m²") && has(p.report.registers[0], "I = I₀ cos²θ") && has(p.report.registers[0], "  = 50 × cos²(60°)") && has(p.report.registers[0], "  = 50 × 0.2500"));
@@ -594,12 +637,29 @@ int main() {
         ThinFilmInput tf; tf.transmission = true;
         auto ft = WE::thinFilm(tf);
         CHECK(ft.report.registers[0].resultLabel == "NORMALIZED TRANSMISSION" && ft.report.registers[0].resultValue == "0.0000");
-        CHECK(ft.report.registers[1].title == "NO NET PHASE REVERSAL" && has(ft.report.registers[1], "Dark: 2nt = (q + ½)λ"));
-        CHECK(ft.report.registers[1].resultValue == "100.0000 nm" && has(ft.report.registers[0], "I_t/I_t,max = cos²(2πnt/λ)"));
+        CHECK(ft.report.registers[1].title == "NO NET PHASE REVERSAL" && has(ft.report.registers[1], "Dark: 2nt·cosθₜ = (q + ½)λ"));
+        CHECK(ft.report.registers[1].resultValue == "100.0000 nm" && has(ft.report.registers[0], "I_t/I_t,max = cos²(2πnt·cosθₜ/λ)"));
         CHECK(near(std::stod(ft.report.registers[0].resultValue) + std::stod(f.report.registers[0].resultValue), 1.0, 1e-9));   // complement
         ThinFilmInput tb; tb.transmission = true; tb.thicknessNm = 200;                                     // 2nt = λ: bright
         CHECK(near(std::stod(WE::thinFilm(tb).report.registers[0].resultValue), 1.0, 1e-9));
         CHECK(near(WE::thinFilm(tb).chart.marker[0].second, 1.0, 1e-9));
+        // --- thin film: n₂-dependent phase reversal (n₂ > n → both reverse → cos²)
+        ThinFilmInput n2hi; n2hi.n2 = 1.52;   // oil film on glass: both interfaces reverse
+        auto fhi = WE::thinFilm(n2hi);
+        CHECK(near(std::stod(fhi.report.registers[0].resultValue), 0.0, 1e-9));   // R(600) = cos²(π/2) = 0
+        CHECK(fhi.report.registers[1].title == "TWO PHASE REVERSALS");
+        // --- thin film: n₂ < n (soap film in air: one reversal → sin², same as base)
+        ThinFilmInput n2lo; n2lo.n2 = 1.0;
+        auto flo = WE::thinFilm(n2lo);
+        CHECK(near(std::stod(flo.report.registers[0].resultValue), 1.0, 1e-9));   // R(600) = sin²(π/2) = 1
+        // --- thin film: angle of incidence shifts peaks to shorter λ
+        ThinFilmInput ttheta; ttheta.thetaDeg = 30.0;
+        auto ft = WE::thinFilm(ttheta);
+        CHECK(ft.report.registers[0].resultValue != "1.0000");   // oblique incidence changes R
+        // --- thin film: zero-thickness guard
+        ThinFilmInput zeroT; zeroT.thicknessNm = 0;
+        auto fz = WE::thinFilm(zeroT);
+        CHECK(near(std::stod(fz.report.registers[0].resultValue), 0.0, 1e-9));   // R = 0 at t = 0
         // --- second mode tabs: grating orders, single-slit geometry, Brewster reflectance
         GratingInput gl; gl.orderList = true;
         auto glr = WE::grating(gl);
@@ -620,6 +680,29 @@ int main() {
         CHECK(near(pbr.chart.marker[0].second, 0.0, 1e-12) && near(pbr.chart.marker[0].first, 56.3099, 1e-3));
         CHECK(near(pbr.chart.curve.front().second, 0.04, 1e-9) && near(pbr.chart.curve.back().second, 1.0, 1e-6));   // normal incidence → grazing
         CHECK(p.report.parameters.back().second == "malus");
+        // --- polarization edge cases: θ = 90° → I = 0 exactly (not floating-point residual)
+        PolarizationInput pol90; pol90.angleDeg = 90;
+        auto p90 = WE::polarization(pol90);
+        CHECK(p90.report.registers[0].resultValue == "0.0000 W/m²");
+        // --- unpolarized vs polarized at same settings
+        PolarizationInput polUnpol; polUnpol.unpolarized = true; polUnpol.incidentIntensity = 100; polUnpol.angleDeg = 60;
+        auto pu = WE::polarization(polUnpol);
+        CHECK(pu.report.registers[0].resultValue == "12.5000 W/m²");
+        PolarizationInput polPol; polPol.unpolarized = false; polPol.incidentIntensity = 100; polPol.angleDeg = 60;
+        auto pp = WE::polarization(polPol);
+        CHECK(pp.report.registers[0].resultValue == "25.0000 W/m²");
+        // --- Brewster angle for water: n₁=1.0, n₂=1.33 → θB ≈ 53.06°
+        PolarizationInput pbw; pbw.brewster = true; pbw.n1 = 1.0; pbw.n2 = 1.33;
+        auto pbwr = WE::polarization(pbw);
+        CHECK(near(std::stod(pbwr.report.registers[0].resultValue.substr(0, pbwr.report.registers[0].resultValue.size() - 1)), 53.06, 0.05));
+        // --- Brewster graph includes R_s curve (curve2)
+        CHECK(!pbr.chart.curve2.empty());
+        CHECK(near(pbr.chart.curve2.front().second, 0.04, 1e-9));  // R_s at normal incidence = ((n1-n2)/(n1+n2))² = 0.04
+        // --- negative n₁ or n₂ rejected
+        PolarizationInput badN; badN.n1 = 0; badN.n2 = 1.5;
+        CHECK(WE::polarization(badN).report.paused);
+        PolarizationInput badN2; badN2.n1 = 1.0; badN2.n2 = -1.0;
+        CHECK(WE::polarization(badN2).report.paused);
         // every screen: the paused report keeps the last valid result
         ReportContext ctx{&nr, "RUN 007"};
         NewtonInput zero; zero.radiusM = 0;
@@ -945,6 +1028,42 @@ int main() {
         auto fm = WE::michelson(mf);
         double expectedCount = 2 * 1.0 * (4.0 * 1000.0) / 632.8;  // 4 µm sweep total
         CHECK(near(std::stod(fm.report.registers[1].resultValue), expectedCount, 0.01));
+
+        // ---- Item 12: explicit fringe count register (full fringes + fractional) ----
+        // Δx = 0.75 µm, λ = 632.8 nm, n = 1 → ΔN = 2×1×0.75×1000/632.8 = 2.3704 fringes
+        MichelsonInput mc; mc.lambdaNm = 632.8; mc.displacementUm = 0.75; mc.n = 1.0;
+        auto rc = WE::michelson(mc);
+        CHECK(near(std::stod(rc.report.registers[0].resultValue), 2.3704, 1e-3));
+        // fullFringes = floor(2.3704) = 2, fractional = 0.3704
+
+        // ---- Item 14: V < 1 reduces contrast; minima don't reach zero ----
+        MichelsonInput mv; mv.lambdaNm = 632.8; mv.displacementUm = 0.1582; mv.n = 1.0; mv.visibility = 0.5;
+        auto rv = WE::michelson(mv);
+        // At ΔN = 0.5, phase = π, I/Imax = (1 + 0.5·cos π)/(1+0.5) = 0.5/1.5 = 0.3333
+        CHECK(near(std::stod(rv.report.registers[1].resultValue), 0.3333, 1e-3));
+
+        // ---- Item 13: coherence length decay V_eff = V·exp(−|ΔOPD|/Lc) ----
+        // ΔOPD = 1500 nm = 1.5 µm, Lc = 1.0 µm → V_eff = exp(-1.5) ≈ 0.2231
+        // ΔN = 2.3704, phase ≈ 14.8938 rad → I/Imax = (1 + 0.2231·cos(14.8938))/(1+0.2231) ≈ 0.6923
+        MichelsonInput mcl; mcl.lambdaNm = 632.8; mcl.displacementUm = 0.75; mcl.n = 1.0;
+        mcl.coherenceLengthUm = 1.0;
+        auto rcl = WE::michelson(mcl);
+        CHECK(near(std::stod(rcl.report.registers[1].resultValue), 0.6923, 1e-2));
+        // V_eff text appears in register line 3
+        CHECK(rcl.report.registers[1].lines.size() >= 4 &&
+              rcl.report.registers[1].lines[3].find("V_eff =") != std::string::npos);
+
+        // ---- Item 15: glass plate OPD: ΔOPD_plate = 2(n_plate−1)t ----
+        // t = 10 µm, n_p = 1.5 → ΔOPD_plate = 2×0.5×10 = 10 µm → ΔN adds 10/0.6328 ≈ 15.80 fringes
+        MichelsonInput mp; mp.lambdaNm = 632.8; mp.displacementUm = 0.0; mp.n = 1.0;
+        mp.plateThicknessUm = 10.0; mp.plateIndex = 1.5;
+        auto rp = WE::michelson(mp);
+        CHECK(near(std::stod(rp.report.registers[0].resultValue), 15.8028, 1e-2));
+
+        // ---- No NaN / Infinity for zero displacement ----
+        MichelsonInput mz; mz.lambdaNm = 632.8; mz.displacementUm = 0.0; mz.n = 1.0;
+        auto rz = WE::michelson(mz);
+        CHECK(std::isfinite(std::stod(rz.report.registers[1].resultValue)));
     }
 
     if (g_failures == 0) std::cout << "All core tests passed\n";

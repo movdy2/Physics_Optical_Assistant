@@ -61,7 +61,14 @@ ImageResult imageFormation(double objectDistance, double focalLength);
 // ---- E: Young double slit ----
 double fringeSpacing(double wavelength, double screenDistance, double slitSeparation);
 double fringePosition(int order, double wavelength, double screenDistance, double slitSeparation);
+/// Exact fringe position using y = L * tan(asin(m*lambda/d)), valid for all angles.
+double fringePositionExact(int order, double wavelength, double screenDistance, double slitSeparation);
 /// Relative intensity (0..1) at screen height y for ideal two-slit interference.
 double relativeIntensity(double y, double wavelength, double screenDistance, double slitSeparation);
+/// Single-slit diffraction envelope sinc²(beta), beta = pi * a * y / (lambda * L).
+double singleSlitEnvelope(double y, double wavelength, double screenDistance, double slitWidth);
+/// Two-slit intensity with unequal slit intensities: I = I1 + I2 + 2*sqrt(I1*I2)*cos(delta).
+/// ratio = I2/I1, default 1.0 (equal intensities, perfect nulls).
+double relativeIntensityUnequal(double y, double wavelength, double screenDistance, double slitSeparation, double ratio);
 
 } // namespace phy104::PhysicsCalculator
