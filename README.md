@@ -87,10 +87,10 @@ More captures are in [`docs/screenshots/`](docs/screenshots/).
 - Qt 6 with **Widgets**, **Svg**, and **PrintSupport**
 - Ninja (recommended)
 
-On Ubuntu, install the build dependencies with:
+On Arch Linux, install the build dependencies with:
 
 ```sh
-sudo apt-get install build-essential cmake ninja-build qt6-base-dev qt6-svg-dev libgl1-mesa-dev libegl1-mesa-dev
+sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-svg mesa libegl
 ```
 
 ### Build and test
