@@ -16,7 +16,9 @@ struct ChartData {
     double xMin = 0, xMax = 1, yMin = 0, yMax = 1;
     int xTicks = 4, yTicks = 2, xDecimals = 1, yDecimals = 1;
     std::vector<std::pair<double, double>> curve;
-    std::vector<std::pair<double, double>> marker;      // 0 or 1 points
+    std::vector<std::pair<double, double>> curve2;      // second curve (e.g. λ₂ intensity)
+    std::vector<std::pair<double, double>> marker;      // 0 or 1 points (selected order, λ₁)
+    std::string legend2;                                // legend for second curve
 };
 
 /// A report plus its chart (the diagram is drawn by the page from the same inputs).
@@ -66,7 +68,8 @@ double thinFilmColourVisibility(double thicknessNm, double n);
 FilmColour thinFilmColour(double thicknessNm, double n);
 FilmColour thinFilmColour(double thicknessNm, double n, double n2);
 /// `orderList` is the second tab: every propagating order with its angle instead of the intensity fan.
-struct GratingInput   { double linesPerCm = 5000, lambdaNm = 600, order = 1, slits = 20, incidenceDeg = 0; bool orderList = false; };
+/// `lambda2Nm` is the second wavelength for spectral separation (item 12); when > 0, both λ₁ and λ₂ are shown.
+struct GratingInput   { double linesPerCm = 5000, lambdaNm = 600, lambda2Nm = 0.0, order = 1, slits = 20, incidenceDeg = 0; bool orderList = false; };
 /// `geometry` is the second tab: where the minima land on the screen instead of the intensity envelope.
 /// `envelope` is the third tab: this slit multiplied by a double-slit pattern (finite slit separation).
 struct SingleSlitInput{ double widthMm = 0.1, lambdaNm = 500, screenM = 1.0; bool geometry = false; bool envelope = false; double separationMm = 0.4; };

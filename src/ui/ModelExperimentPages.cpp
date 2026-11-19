@@ -90,16 +90,24 @@ void ModelPage::retitle(const QString& diagramTitle, const QString& chartTitle) 
 }
 
 void ModelPage::showChart(const ChartData& c) {
-    ChartSeries curve, marker;
+    ChartSeries curve, curve2, marker;
     curve.line = true;
     for (const auto& [x, y] : c.curve) curve.points << QPointF(x, y);
+    if (!c.curve2.empty()) {
+        curve2.line = true;
+        for (const auto& [x, y] : c.curve2) curve2.points << QPointF(x, y);
+    }
     marker.markers = true;
     marker.color = QColor();                                            // theme sage
     for (const auto& [x, y] : c.marker) marker.points << QPointF(x, y);
     m_chart->clearAnnotations();
     m_chart->setAxes(c.xMin, c.xMax, c.xTicks, c.xDecimals, q(c.xLabel), c.yMin, c.yMax, c.yTicks, c.yDecimals, q(c.yLabel));
-    m_chart->setSeries({curve, marker});
-    m_chart->setLegend({}, q(c.legend));
+    QList<ChartSeries> series = {curve, marker};
+    if (!c.curve2.empty()) series.insert(1, curve2);                    // second curve between curve and marker
+    m_chart->setSeries(series);
+    QStringList legends = {q(c.legend)};
+    if (!c.legend2.empty()) legends << q(c.legend2);
+    m_chart->setLegend(legends, q(c.legend));
 }
 
 void ModelPage::reset() {
@@ -469,7 +477,8 @@ GratingPage::GratingPage(AppContext* ctx, QWidget* parent)
     : ModelPage("Diffraction Grating", "Principal maxima of a transmission grating", "Diffraction Grating", ctx, parent) {
     addTabs({"Transmission", "Orders", "Resolution"});
     m_density = addField(QString::fromLatin1(FieldIds::gratingDensity), "Line density · N", "lines/cm", 5000, 0, false, true, 100);
-    m_lambda = addField(QString::fromLatin1(FieldIds::wavelength), "Wavelength · λ", "nm", 600, 2);
+    m_lambda = addField(QString::fromLatin1(FieldIds::wavelength), "Wavelength · λ₁", "nm", 600, 2);
+    m_lambda2 = addField(QString::fromLatin1(FieldIds::gratingLambda2), "Second wavelength · λ₂ (0 = off)", "nm", 0.0, 2);
     m_order = addField(QString::fromLatin1(FieldIds::order), "Selected order · m", "order", 1, 0, true, true, 1);
     m_slits = addField(QString::fromLatin1(FieldIds::illuminatedSlits), "Illuminated slit count · M", "slits", 20, 0, false, true, 1);
     m_incidence = addCombo("Incidence", {"Normal · 0.00°", "15.00°", "30.00°"}, {0, 15, 30});
@@ -508,20 +517,22 @@ GratingPage::GratingPage(AppContext* ctx, QWidget* parent)
 ModelReport GratingPage::compute(const ReportContext& ctx) {
     if (m_tabs->current() == 2)                                        // the third tab: R = mN, δλ and the FSR
         return WE::gratingResolution({m_density->value(), m_lambda->value(), std::max(1.0, m_order->value()), m_slits->value()}, ctx);
-    return WE::grating({m_density->value(), m_lambda->value(), m_order->value(), m_slits->value(), m_incidence->currentData().toDouble(),
-                        m_tabs->current() == 1}, ctx);
+    return WE::grating({m_density->value(), m_lambda->value(), m_lambda2->value(), m_order->value(), m_slits->value(),
+                        m_incidence->currentData().toDouble(), m_tabs->current() == 1}, ctx);
 }
 void GratingPage::updateCanvas() {
     const int tab = m_tabs->current();
     const bool orders = tab == 1;
-    m_canvas->setInput({m_density->value(), m_lambda->value(), m_order->value(), m_slits->value(), m_incidence->currentData().toDouble(), orders});
+    m_canvas->setInput({m_density->value(), m_lambda->value(), m_lambda2->value(), m_order->value(), m_slits->value(),
+                        m_incidence->currentData().toDouble(), orders});
     retitle(tab == 2 ? "Grating / two lines one Rayleigh step apart" : orders ? "Grating / every propagating order" : "Grating / angular observation screen",
             tab == 2 ? "Single line and a just-resolved pair" : orders ? "Order angles and where every peak sits" : "Diffracted intensity vs angle");
 }
-void GratingPage::resetFields() { m_density->setValue(5000, 0); m_lambda->setValue(600, 2); m_order->setValue(1, 0); m_slits->setValue(20, 0); m_incidence->setCurrentIndex(0); m_tabs->setCurrent(0); }
+void GratingPage::resetFields() { m_density->setValue(5000, 0); m_lambda->setValue(600, 2); m_lambda2->setValue(0.0, 2); m_order->setValue(1, 0); m_slits->setValue(20, 0); m_incidence->setCurrentIndex(0); m_tabs->setCurrent(0); }
 QString GratingPage::runDescription() const {
     const int tab = m_tabs->current();
-    return QString("order %1 · N %2 /cm · %3").arg(m_order->text(), m_density->text(),
+    return QString("order %1 · N %2 /cm · λ₁ %3 nm · λ₂ %4 nm · %5").arg(m_order->text(), m_density->text(),
+                                                   m_lambda->text(), m_lambda2->text(),
                                                    tab == 2 ? "resolution" : tab == 1 ? "orders" : "transmission");
 }
 
