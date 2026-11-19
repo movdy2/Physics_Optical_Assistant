@@ -22,6 +22,7 @@ Theme Theme::figmaDark() {
     t.amber = "#d79921"; t.amberHover = "#e5ac39"; t.amberPressed = "#b57614"; t.amberTint = QColor(215, 153, 33, 36);
     t.lime = "#b8bb26"; t.error = "#fb4934";    t.errorBg = "#442e2a";
     t.sage = "#8fb5a5";
+    t.lcdBg = "#9bb094"; t.lcdText = "#0b1c08"; t.lcdFrame = "#171e15"; t.lcdDivider = "#708369";
     t.yellow = t.amber; t.green = "#98971a"; t.red = "#cc241d"; t.orange = "#d65d0e"; t.blue = "#458588"; t.aqua = "#689d6a";
     return t;
 }
@@ -36,6 +37,7 @@ Theme Theme::figmaLight() {
     t.amber = "#b57614"; t.amberHover = "#d79921"; t.amberPressed = "#9d6a0f"; t.amberTint = QColor(181, 118, 20, 34);
     t.lime = "#79740e"; t.error = "#9d0006";    t.errorBg = "#f4d9bf";
     t.sage = "#427b58";
+    t.lcdBg = "#9bb094"; t.lcdText = "#0b1c08"; t.lcdFrame = "#171e15"; t.lcdDivider = "#708369";
     t.yellow = t.amber; t.green = "#79740e"; t.red = "#9d0006"; t.orange = "#af3a03"; t.blue = "#076678"; t.aqua = "#427b58";
     return t;
 }
