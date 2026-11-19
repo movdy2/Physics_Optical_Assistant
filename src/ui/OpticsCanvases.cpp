@@ -1,5 +1,6 @@
 #include "OpticsCanvases.h"
 #include "ExperimentReports.h"
+#include "NumberFormat.h"
 #include "ThickLens.h"
 #include "PhysicsCalculator.h"
 #include "LanguageManager.h"
