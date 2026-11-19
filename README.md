@@ -29,15 +29,15 @@
 
 ![PHY104 Optical Assistant dashboard — a project by Movdy](docs/screenshots/readme-cover.png)
 
-## Download v3.0.0
+## Download v3.0.9
 
 | Platform | Download |
 |---|---|
-| **Windows x64 installer** | [PHY104 Optical Assistant Setup](https://github.com/movdy2/phy104-sim/releases/download/v3.0.0/PHY104OpticalAssistant-3.0.0-Windows-x64-Setup.exe) |
-| **Windows x64 portable** | [Portable ZIP](https://github.com/movdy2/phy104-sim/releases/download/v3.0.0/PHY104OpticalAssistant-3.0.0-Windows-x64-portable.zip) |
-| **Linux x86_64** | [AppImage](https://github.com/movdy2/phy104-sim/releases/download/v3.0.0/PHY104OpticalAssistant-3.0.0-Linux-x86_64.AppImage) |
+| **Windows x64 installer** | [PHY104 Optical Assistant Setup](https://github.com/movdy2/phy104-sim/releases/download/v3.0.9/PHY104OpticalAssistant-3.0.9-Windows-x64-Setup.exe) |
+| **Windows x64 portable** | [Portable ZIP](https://github.com/movdy2/phy104-sim/releases/download/v3.0.9/PHY104OpticalAssistant-3.0.9-Windows-x64-portable.zip) |
+| **Linux x86_64** | [AppImage](https://github.com/movdy2/phy104-sim/releases/download/v3.0.9/PHY104OpticalAssistant-3.0.9-Linux-x86_64.AppImage) |
 
-See the [v3.0.0 release page](https://github.com/movdy2/phy104-sim/releases/tag/v3.0.0) for all files and release notes.
+See the [v3.0.9 release page](https://github.com/movdy2/phy104-sim/releases/tag/v3.0.9) for all files and release notes.
 
 ### Installation
 
@@ -46,8 +46,8 @@ See the [v3.0.0 release page](https://github.com/movdy2/phy104-sim/releases/tag/
 - **Linux:** download the AppImage, make it executable, and run it:
 
   ```sh
-  chmod +x PHY104OpticalAssistant-3.0.0-Linux-x86_64.AppImage
-  ./PHY104OpticalAssistant-3.0.0-Linux-x86_64.AppImage
+  chmod +x PHY104OpticalAssistant-3.0.9-Linux-x86_64.AppImage
+  ./PHY104OpticalAssistant-3.0.9-Linux-x86_64.AppImage
   ```
 
   The AppImage is smoke-tested on Arch Linux. For normal AppImage mounting on Arch, install FUSE 2 and the runtime libraries if needed:

@@ -45,7 +45,7 @@ This document lists planned improvements, fixes, and editions for the app, plus 
 - [x] Build Windows `.exe` installer + portable ZIP (CI: .github/workflows/package.yml windows-installer job, NSIS; builds on v* tags)
 - [x] Build Linux `AppImage` (CI: .github/workflows/package.yml linux-appimage job, linuxdeploy; smoke-tested on Arch; builds on v* tags)
 - [x] Add checksums (SHA256) for all release assets (SHA256SUMS.txt generated and attached to each GitHub Release)
-- [x] Add release notes per version (CHANGELOG.md with v3.0.0 entry and v1.0–v2.9 summary)
+- [x] Add release notes per version (CHANGELOG.md with v3.0.9 entry and v1.0–v2.9 summary)
 
 ---
 
@@ -65,8 +65,8 @@ This document lists planned improvements, fixes, and editions for the app, plus 
 ## 3. Editions / Edits to Do
 
 ### Documentation
-- [x] Update `README.md` with v3.0.0 feature list (download links + install commands now v3.0.0)
-- [x] Add `CHANGELOG.md` with per-version entries (v3.0.0 + v1.0–v2.9 summary)
+- [x] Update `README.md` with v3.0.9 feature list (download links + install commands now v3.0.9)
+- [x] Add `CHANGELOG.md` with per-version entries (v3.0.9 + v1.0–v2.9 summary)
 - [x] Add `CONTRIBUTING.md` for new contributors
 - [x] Add `CREDITS.md` with attribution (Movdy2, Ahmed Samir, Dr. Ashraf)
 - [x] Document the OpenStax/LibreTexts mirror convention conflict (in CREDITS.md)
@@ -78,7 +78,7 @@ This document lists planned improvements, fixes, and editions for the app, plus 
 - [x] Clean up unused includes in header files (removed <QMap> from DashboardPage.h, <QList> from Components.h)
 
 ### Version File
-- [x] Add `version.json` for programmatic version checks (v3.0.0, features, attribution, Michelson convention)
+- [x] Add `version.json` for programmatic version checks (v3.0.9, features, attribution, Michelson convention)
 - [x] Add build date/commit hash infrastructure for About dialog (version.h.in + CMake configure_file; PHY104_GIT_COMMIT, PHY104_BUILD_DATE available as C++ macros)
 
 ---
@@ -91,7 +91,7 @@ Add or update these sections:
 
 ```markdown
 ## Version
-**Current:** v3.0.0
+**Current:** v3.0.9
 
 ## Features
 - Michelson interferometer with movable M2 mirror
@@ -104,8 +104,8 @@ Add or update these sections:
 
 ## Installation
 Download from Releases:
-- Windows: `PHY104OpticalAssistant-3.0.0-Windows-x64-Setup.exe`
-- Linux: `PHY104OpticalAssistant-3.0.0-Linux-x86_64.AppImage`
+- Windows: `PHY104OpticalAssistant-3.0.9-Windows-x64-Setup.exe`
+- Linux: `PHY104OpticalAssistant-3.0.9-Linux-x86_64.AppImage`
 ```
 
 ### Add `CHANGELOG.md`
@@ -113,7 +113,7 @@ Download from Releases:
 ```markdown
 # Changelog
 
-## v3.0.0 (2026-11-13)
+## v3.0.9 (2026-11-13)
 - Michelson: M1 fixed / M2 movable convention restored
 - M2 travel slider synced bidirectionally with displacement field
 - Visual SFX: drag glow, zero-crossing pulse, intensity-driven beam
@@ -166,7 +166,7 @@ Create `CREDITS.md`:
 # Credits
 
 ## Lead Developer
-[Your Name] — All v3.0.0 features, fixes, and releases
+[Your Name] — All v3.0.9 features, fixes, and releases
 
 ## Contributors
 - Ahmed Samir — Original project contribution (preserved per project notes)
@@ -181,7 +181,7 @@ Create `CREDITS.md`:
 In the Qt UI, add an "About" page showing:
 
 ```
-PHY104 Optical Assistant v3.0.0
+PHY104 Optical Assistant v3.0.9
 
 Developed by: [Your Name]
 Contributions: Ahmed Samir (original project)
@@ -209,11 +209,11 @@ Per project constraints, Ahmed Samir's contribution must be preserved in project
 
 | Priority | Task | Why |
 |----------|------|-----|
-| 1 | Update `README.md` with v3.0.0 features | Immediate visibility |
+| 1 | Update `README.md` with v3.0.9 features | Immediate visibility |
 | 2 | Add `CHANGELOG.md` | Track what changed per version |
 | 3 | Add `CREDITS.md` with your name + Ahmed Samir | Attribution requirement |
-| 4 | Build Windows `.exe` and Linux `AppImage` for v3.0.0 | Distributable release |
-| 5 | Create GitHub Release from `v3.0.0` tag with binaries | Public release |
+| 4 | Build Windows `.exe` and Linux `AppImage` for v3.0.9 | Distributable release |
+| 5 | Create GitHub Release from `v3.0.9` tag with binaries | Public release |
 | 6 | Add Michelson fringe counter + wavelength presets | Core feature improvement |
 | 7 | Add more physics formulas to Formula Solver | App scope expansion |
 
