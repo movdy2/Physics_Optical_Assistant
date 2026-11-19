@@ -312,15 +312,17 @@ ModelReport thinFilm(const ThinFilmInput& in, const ReportContext& ctx) {
         LcdRegister a;
         a.title = "OPTICAL PATH / PHASE";
         const std::string opdLine = "OPD = 2nt·cosθₜ";
+        // T = 1 − R: if reflection has one reversal (R = sin²), transmission has no net reversal (T = cos²)
+        const std::string tFormula = oneReversal ? "cos²(2πnt·cosθₜ/λ)" : "sin²(2πnt·cosθₜ/λ)";
         a.lines = {opdLine, " = 2 × " + num(in.n) + " × " + num(in.thicknessNm) + " × cosθₜ", " = " + num(opd) + " nm",
-                   "I_t/I_t,max = " + (oneReversal ? "sin²(2πnt·cosθₜ/λ)" : "cos²(2πnt·cosθₜ/λ)")};
+                   "I_t/I_t,max = " + tFormula};
         a.resultLabel = "NORMALIZED TRANSMISSION";
         a.resultValue = fx(trans);
         LcdRegister b;
-        const std::string brightCond = oneReversal ? "Dark: 2nt·cosθₜ = qλ" : "Bright: 2nt·cosθₜ = qλ";
-        const std::string darkCond = oneReversal ? "Bright: 2nt·cosθₜ = (q + ½)λ" : "Dark: 2nt·cosθₜ = (q + ½)λ";
-        b.title = oneReversal ? "ONE PHASE REVERSAL" : "NO NET PHASE REVERSAL";
-        b.lines = {brightCond, darkCond, "q = 0, 1, 2, …"};
+        const std::string brightCondT = oneReversal ? "Bright: 2nt·cosθₜ = qλ" : "Bright: 2nt·cosθₜ = (q + ½)λ";
+        const std::string darkCondT = oneReversal ? "Dark: 2nt·cosθₜ = (q + ½)λ" : "Dark: 2nt·cosθₜ = qλ";
+        b.title = oneReversal ? "NO NET PHASE REVERSAL" : "ONE PHASE REVERSAL";
+        b.lines = {brightCondT, darkCondT, "q = 0, 1, 2, …"};
         b.resultLabel = "FIRST DARK THICKNESS";
         b.resultValue = fx(firstDark) + " nm";
         rep.registers = {a, b};
@@ -346,7 +348,7 @@ ModelReport thinFilm(const ThinFilmInput& in, const ReportContext& ctx) {
     LcdRegister a;
     a.title = "OPTICAL PATH / PHASE";
     a.lines = {"OPD = 2nt·cosθₜ", " = 2 × " + num(in.n) + " × " + num(in.thicknessNm) + " × cosθₜ", " = " + num(opd) + " nm",
-               "Δψ = " + (oneReversal ? "4πnt·cosθₜ/λ + π" : "4πnt·cosθₜ/λ") + " = " + NF::fixed(2.0 * phase, 4) + " rad",
+               "Δψ = 4πnt·cosθₜ/λ " + (oneReversal ? "− π" : "") + " = " + NF::fixed(std::fmod(4.0 * std::numbers::pi * opd / in.lambdaNm - (oneReversal ? std::numbers::pi : 0.0) + 1e-12, 2 * std::numbers::pi), 4) + " rad",
                "I_r/I_r,max = " + (oneReversal ? "sin²(2πnt·cosθₜ/λ)" : "cos²(2πnt·cosθₜ/λ)")};
     a.resultLabel = "NORMALIZED REFLECTION";
     a.resultValue = fx(refl);

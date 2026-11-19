@@ -529,8 +529,8 @@ int main() {
         // --- thin film: λ = 600 nm, n = 1.5, t = 100 nm
         auto f = WE::thinFilm({});
         CHECK(has(f.report.registers[0], "OPD = 2nt") && has(f.report.registers[0], " = 2 × 1.5 × 100 nm") && has(f.report.registers[0], " = 300 nm"));
-        CHECK(has(f.report.registers[0], "Δψ = 4πnt/λ − π = 0.0000 rad") && f.report.registers[0].resultValue == "1.0000");
-        CHECK(f.report.registers[1].title == "ONE PHASE REVERSAL" && f.report.registers[1].resultValue == "100.0000 nm" && has(f.report.registers[1], "Dark: 2nt = qλ"));
+        CHECK(has(f.report.registers[0], "Δψ = 4πnt·cosθₜ/λ − π = 0.0000 rad") && f.report.registers[0].resultValue == "1.0000");
+        CHECK(f.report.registers[1].title == "ONE PHASE REVERSAL" && f.report.registers[1].resultValue == "100.0000 nm" && has(f.report.registers[1], "Dark: 2nt·cosθₜ = qλ"));
         ThinFilmInput dark; dark.thicknessNm = 200;
         CHECK(near(std::stod(WE::thinFilm(dark).report.registers[0].resultValue), 0.0, 1e-9));              // t = λ/(2n): dark
         // --- diffraction grating: N = 5000 lines/cm, λ = 600 nm, m = +1, M = 20
@@ -594,12 +594,29 @@ int main() {
         ThinFilmInput tf; tf.transmission = true;
         auto ft = WE::thinFilm(tf);
         CHECK(ft.report.registers[0].resultLabel == "NORMALIZED TRANSMISSION" && ft.report.registers[0].resultValue == "0.0000");
-        CHECK(ft.report.registers[1].title == "NO NET PHASE REVERSAL" && has(ft.report.registers[1], "Dark: 2nt = (q + ½)λ"));
-        CHECK(ft.report.registers[1].resultValue == "100.0000 nm" && has(ft.report.registers[0], "I_t/I_t,max = cos²(2πnt/λ)"));
+        CHECK(ft.report.registers[1].title == "NO NET PHASE REVERSAL" && has(ft.report.registers[1], "Dark: 2nt·cosθₜ = (q + ½)λ"));
+        CHECK(ft.report.registers[1].resultValue == "100.0000 nm" && has(ft.report.registers[0], "I_t/I_t,max = cos²(2πnt·cosθₜ/λ)"));
         CHECK(near(std::stod(ft.report.registers[0].resultValue) + std::stod(f.report.registers[0].resultValue), 1.0, 1e-9));   // complement
         ThinFilmInput tb; tb.transmission = true; tb.thicknessNm = 200;                                     // 2nt = λ: bright
         CHECK(near(std::stod(WE::thinFilm(tb).report.registers[0].resultValue), 1.0, 1e-9));
         CHECK(near(WE::thinFilm(tb).chart.marker[0].second, 1.0, 1e-9));
+        // --- thin film: n₂-dependent phase reversal (n₂ > n → both reverse → cos²)
+        ThinFilmInput n2hi; n2hi.n2 = 1.52;   // oil film on glass: both interfaces reverse
+        auto fhi = WE::thinFilm(n2hi);
+        CHECK(near(std::stod(fhi.report.registers[0].resultValue), 0.0, 1e-9));   // R(600) = cos²(π/2) = 0
+        CHECK(fhi.report.registers[1].title == "TWO PHASE REVERSALS");
+        // --- thin film: n₂ < n (soap film in air: one reversal → sin², same as base)
+        ThinFilmInput n2lo; n2lo.n2 = 1.0;
+        auto flo = WE::thinFilm(n2lo);
+        CHECK(near(std::stod(flo.report.registers[0].resultValue), 1.0, 1e-9));   // R(600) = sin²(π/2) = 1
+        // --- thin film: angle of incidence shifts peaks to shorter λ
+        ThinFilmInput ttheta; ttheta.thetaDeg = 30.0;
+        auto ft = WE::thinFilm(ttheta);
+        CHECK(ft.report.registers[0].resultValue != "1.0000");   // oblique incidence changes R
+        // --- thin film: zero-thickness guard
+        ThinFilmInput zeroT; zeroT.thicknessNm = 0;
+        auto fz = WE::thinFilm(zeroT);
+        CHECK(near(std::stod(fz.report.registers[0].resultValue), 0.0, 1e-9));   // R = 0 at t = 0
         // --- second mode tabs: grating orders, single-slit geometry, Brewster reflectance
         GratingInput gl; gl.orderList = true;
         auto glr = WE::grating(gl);
