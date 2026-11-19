@@ -546,6 +546,26 @@ int main() {
         CHECK(ge.report.paused && ge.report.issues[0].field == "m" && ge.report.issues[0].message == "No real angle: |mλ/d| > 1.");
         GratingInput g0; g0.order = 0;
         CHECK(WE::grating(g0).report.registers[0].resultValue == "0.0000°");
+        // --- non-normal incidence: N = 5200, λ = 600, m = 1, θᵢ = 30° → θₘ = -10.83°
+        GratingInput gni; gni.linesPerCm = 5200; gni.lambdaNm = 600; gni.order = 1; gni.incidenceDeg = 30;
+        auto gnir = WE::grating(gni);
+        CHECK(!gnir.report.paused);
+        CHECK(near(std::stod(gnir.report.registers[0].resultValue), -10.83, 0.05));
+        CHECK(has(gnir.report.registers[0], "d (sin θₘ + sin θᵢ) = mλ"));
+        // --- boundary: m = 4, N = 5200, λ = 600, θᵢ = 0 → |mλ/d| = 1.248 > 1 → error
+        GratingInput gb; gb.linesPerCm = 5200; gb.lambdaNm = 600; gb.order = 4;
+        auto gbr = WE::grating(gb);
+        CHECK(gbr.report.paused && gbr.report.issues[0].field == "m");
+        // --- λ₂ spectral separation: N = 5000, λ₁ = 600, λ₂ = 400, m = 1
+        GratingInput g2; g2.linesPerCm = 5000; g2.lambdaNm = 600; g2.lambda2Nm = 400; g2.order = 1;
+        auto g2r = WE::grating(g2);
+        CHECK(!g2r.report.paused);
+        CHECK(!g2r.chart.curve2.empty());
+        CHECK(g2r.chart.legend2.find("400 nm") != std::string::npos);
+        // --- λ₂ order does not propagate: N = 5200, λ₁ = 600, λ₂ = 400, m = 4
+        GratingInput g2b; g2b.linesPerCm = 5200; g2b.lambdaNm = 600; g2b.lambda2Nm = 400; g2b.order = 4;
+        auto g2br = WE::grating(g2b);
+        CHECK(g2br.report.paused);   // λ₁ m=4 doesn't propagate
         // --- single slit: a = 0.1 mm, λ = 500 nm, L = 1 m
         auto s = WE::singleSlit({});
         CHECK(s.report.registers[0].title == "FIRST MINIMUM / DEG" && has(s.report.registers[0], "a sin θ₁ = λ") && has(s.report.registers[0], "sin θ₁ = 5×10⁻⁷ / 10⁻⁴"));

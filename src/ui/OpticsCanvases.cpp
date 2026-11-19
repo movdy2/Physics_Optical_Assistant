@@ -950,7 +950,8 @@ void ThinFilmCanvas::paintDiagram(QPainter& p, const QRectF& a) {
 void GratingCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     const Theme& t = th();
     const double d = 0.01 / std::max(1e-9, m_in.linesPerCm), lam = m_in.lambdaNm * 1e-9;
-    text(p, QPointF(14, a.top() + 18), "NORMAL INCIDENCE · d = " + num(d * 1e6, 4) + " µm", t.amber, 10);
+    text(p, QPointF(14, a.top() + 18), (std::fabs(m_in.incidenceDeg) < 0.5 ? "NORMAL INCIDENCE" : "INCIDENCE θᵢ = " + num(m_in.incidenceDeg, 1) + "°") +
+                                " · d = " + num(d * 1e6, 4) + " µm", t.amber, 10);
     if (m_in.orderList)                                                        // second tab: every peak is the subject
         text(p, QPointF(a.right() - 14, a.top() + 18), "ORDERS VIEW · d/λ = " + num(d / lam, 4), t.amber, 10, Qt::AlignRight);
     const QPointF g(a.left() + a.width() * 0.30, a.top() + a.height() * 0.40);
@@ -959,14 +960,26 @@ void GratingCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     p.setPen(QPen(t.dim, 5, Qt::DotLine)); p.drawLine(QPointF(g.x(), g.y() - 70), QPointF(g.x(), g.y() + 70));
     p.setPen(QPen(t.sage, 2)); p.drawLine(QPointF(sx, g.y() - 100), QPointF(sx, g.y() + 100));
     const auto orders = WaveExperiments::allowedGratingOrders(m_in.linesPerCm, m_in.lambdaNm, m_in.incidenceDeg);
+    const int mSel = static_cast<int>(std::lround(m_in.order));
+    const double sSel = mSel * lam / d - std::sin(m_in.incidenceDeg * std::numbers::pi / 180);
+    const bool selPropagates = std::fabs(sSel) <= 1.0;
+    const double thSel = selPropagates ? std::asin(std::clamp(sSel, -1.0, 1.0)) : 0.0;
     for (int m : orders) {
-        const double s = m * lam / d + std::sin(m_in.incidenceDeg * std::numbers::pi / 180);
+        const double s = m * lam / d - std::sin(m_in.incidenceDeg * std::numbers::pi / 180);
         const double th2 = std::asin(std::clamp(s, -1.0, 1.0));
         const QPointF end(g.x() + len * std::cos(th2) * 0.92, g.y() - len * std::sin(th2) * 0.92);
-        const bool selected = m == static_cast<int>(std::lround(m_in.order)) || m_in.orderList;
+        const bool selected = m == mSel || m_in.orderList;
         p.setPen(QPen(selected ? t.amber : t.sage, selected ? 2.2 : 1.3));
         p.drawLine(g, end);
         text(p, end + QPointF(6, 0), (m > 0 ? "+" : "") + QString::number(m), selected ? t.amber : t.muted, 10);
+    }
+    // Ray angle visualizer: incidence angle and selected diffracted order angle
+    text(p, QPointF(a.left() + 24, g.y() - 80), "θᵢ = " + num(m_in.incidenceDeg, 1) + "°", t.muted, 10);
+    if (selPropagates) {
+        text(p, QPointF(g.x() + len * std::cos(thSel) * 0.92 + 10, g.y() - len * std::sin(thSel) * 0.92 - 14),
+             "θₘ = " + num(thSel * 180 / std::numbers::pi, 2) + "°", t.amber, 10);
+    } else {
+        text(p, QPointF(g.x() + 40, g.y() - 50), "θₘ: no real angle", t.muted, 9);
     }
     text(p, QPointF(a.center().x(), g.y() + 108), "Ray fan schematic · not to scale", t.muted, 10, Qt::AlignHCenter);
     // angular screen: one sharp bar per allowed order
@@ -974,7 +987,7 @@ void GratingCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     text(p, QPointF(14, by - 26), "ANGULAR SCREEN · SHARP ALLOWED ORDERS", t.amber, 10);
     p.setPen(Qt::NoPen); p.setBrush(t.bg); p.drawRect(QRectF(bx, by - 14, bw, 30));
     for (int m : orders) {
-        const double th2 = std::asin(std::clamp(m * lam / d + std::sin(m_in.incidenceDeg * std::numbers::pi / 180), -1.0, 1.0)) * 180 / std::numbers::pi;
+        const double th2 = std::asin(std::clamp(m * lam / d - std::sin(m_in.incidenceDeg * std::numbers::pi / 180), -1.0, 1.0)) * 180 / std::numbers::pi;
         const double x = bx + bw / 2 + th2 / 90.0 * bw / 2;
         const bool selected = m == static_cast<int>(std::lround(m_in.order));
         p.setBrush(selected || m_in.orderList ? t.amber : t.sage); p.drawRect(QRectF(x - 2, by - 12, 4, 26));

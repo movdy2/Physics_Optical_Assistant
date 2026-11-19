@@ -112,7 +112,7 @@ protected:
     void resetFields() override;
     QString runDescription() const override;
 private:
-    UnitField *m_density, *m_lambda, *m_order, *m_slits;
+    UnitField *m_density, *m_lambda, *m_lambda2, *m_order, *m_slits;
     QComboBox* m_incidence;
     QPushButton *m_presetStandard, *m_presetHighDensity, *m_presetResolution;
     bool m_syncing = false;

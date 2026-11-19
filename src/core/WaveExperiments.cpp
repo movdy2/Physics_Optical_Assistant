@@ -385,13 +385,14 @@ std::vector<int> allowedGratingOrders(double linesPerCm, double lambdaNm, double
     const double d = 0.01 / linesPerCm, lam = lambdaNm * 1e-9, si = std::sin(incidenceDeg * kDeg);
     const int limit = static_cast<int>(std::floor(2.0 * d / lam)) + 1;
     for (int m = -limit; m <= limit; ++m)
-        if (std::fabs(m * lam / d + si) <= 1.0 + 1e-12) orders.push_back(m);
+        if (std::fabs(m * lam / d - si) <= 1.0 + 1e-12) orders.push_back(m);
     return orders;
 }
 
 double gratingIntensity(double thetaDeg, double linesPerCm, double lambdaNm, double slits, double incidenceDeg) {
     const double d = 0.01 / linesPerCm, lam = lambdaNm * 1e-9;
-    const double phi = 2 * std::numbers::pi * d * (std::sin(thetaDeg * kDeg) - std::sin(incidenceDeg * kDeg)) / lam;
+    // Grating equation: d(sin θ + sin θᵢ) = mλ  (same-side incidence convention)
+    const double phi = 2 * std::numbers::pi * d * (std::sin(thetaDeg * kDeg) + std::sin(incidenceDeg * kDeg)) / lam;
     const double den = slits * std::sin(phi / 2);
     if (std::fabs(den) < 1e-9) return 1.0;                          // principal maximum
     const double v = std::sin(slits * phi / 2) / den;
@@ -407,8 +408,13 @@ ModelReport grating(const GratingInput& in, const ReportContext& ctx) {
     const std::string guardText = "Require N, λ > 0 and integer M ≥ 2. Reject selected m if |mλ/d| > 1; never evaluate asin outside its domain.";
     if (issues.empty()) {
         const double d = 0.01 / in.linesPerCm, lam = in.lambdaNm * 1e-9;
-        const double s = in.order * lam / d + std::sin(in.incidenceDeg * kDeg);
+        const double s = in.order * lam / d - std::sin(in.incidenceDeg * kDeg);
         if (std::fabs(s) > 1.0) issues.push_back({FieldIds::order, "No real angle: |mλ/d| > 1.", "m"});
+        if (in.lambda2Nm > 0.0) {
+            const double lam2 = in.lambda2Nm * 1e-9;
+            const double s2 = in.order * lam2 / d - std::sin(in.incidenceDeg * kDeg);
+            if (std::fabs(s2) > 1.0) issues.push_back({FieldIds::wavelength, "No real angle for λ₂: |mλ₂/d| > 1.", "λ₂"});
+        }
     }
     if (!issues.empty())
         return paused(issues.front().label + " out of range", issues, {"N = " + num(in.linesPerCm) + " lines/cm   λ = " + num(in.lambdaNm) + " nm", "m = " + num(in.order) + "   M = " + num(in.slits), "ACTION: " + issues.front().message},
@@ -416,7 +422,7 @@ ModelReport grating(const GratingInput& in, const ReportContext& ctx) {
 
     const int m = static_cast<int>(std::lround(in.order));
     const double d = 0.01 / in.linesPerCm, lam = in.lambdaNm * 1e-9;
-    const double sinTheta = m * lam / d + std::sin(in.incidenceDeg * kDeg);
+    const double sinTheta = m * lam / d - std::sin(in.incidenceDeg * kDeg);
     const double angle = std::asin(sinTheta) / kDeg;
     const auto orders = allowedGratingOrders(in.linesPerCm, in.lambdaNm, in.incidenceDeg);
 
@@ -425,7 +431,7 @@ ModelReport grating(const GratingInput& in, const ReportContext& ctx) {
     if (in.orderList) {
         // Second tab: the order table — every propagating order with the angle it lands at.
         const int capacity = static_cast<int>(std::floor(d / lam + 1e-9));
-        auto angleOf = [&](int k) { return std::asin(std::clamp(k * lam / d + std::sin(in.incidenceDeg * kDeg), -1.0, 1.0)) / kDeg; };
+        auto angleOf = [&](int k) { return std::asin(std::clamp(k * lam / d - std::sin(in.incidenceDeg * kDeg), -1.0, 1.0)) / kDeg; };
         std::vector<std::string> table{"m = 0 at " + NF::fixed(angleOf(0), 2) + "°"};
         for (int k = 1; k <= std::min(capacity, 3); ++k)
             table.push_back("±" + std::to_string(k) + " at ±" + NF::fixed(angleOf(k), 2) + "°");
@@ -466,8 +472,10 @@ ModelReport grating(const GratingInput& in, const ReportContext& ctx) {
     LcdRegister a;
     a.title = "DENSITY + SPACING / SI";
     a.lines = {"d = 0.01 / N", " = 0.01 / " + num(in.linesPerCm) + " m", " = " + NF::scientific(d, 4) + " m",
-               in.incidenceDeg == 0 ? "d sin θₘ = mλ" : "d (sin θₘ − sin θᵢ) = mλ",
+               in.incidenceDeg == 0 ? "d sin θₘ = mλ" : "d (sin θₘ + sin θᵢ) = mλ",
                "sin θ" + sub(std::abs(m)) + " = " + num(std::fabs(m) * in.lambdaNm) + " nm / " + num(d * 1e9) + " nm"};
+    if (in.lambda2Nm > 0.0)
+        a.lines.push_back("λ₂ = " + num(in.lambda2Nm) + " nm · sin θ₂ = " + num(std::fabs(m) * in.lambda2Nm) + " nm / " + num(d * 1e9) + " nm");
     a.resultLabel = std::string("ORDER ") + (m > 0 ? "+" : "") + std::to_string(m) + " ANGLE";
     a.resultValue = (m == 0 ? fx(0.0) : NF::signedFixed(angle)) + "°";
     LcdRegister b;
@@ -479,8 +487,11 @@ ModelReport grating(const GratingInput& in, const ReportContext& ctx) {
     b.resultValue = std::to_string(orders.size()) + " orders";
     rep.registers = {a, b};
     std::string angles;
-    for (int k = 1; k <= static_cast<int>(std::floor(d / lam + 1e-9)); ++k)
-        angles += (k > 1 ? ", " : "") + std::string(k == 1 ? "±" : "±") + std::to_string(k) + " at ±" + NF::fixed(std::asin(k * lam / d) / kDeg, 2) + "°";
+    const double si = std::sin(in.incidenceDeg * kDeg);
+    for (int k = 1; k <= static_cast<int>(std::floor(d / lam + 1e-9)); ++k) {
+        const double sk = std::clamp(k * lam / d - si, -1.0, 1.0);
+        angles += (k > 1 ? ", " : "") + std::string(k == 1 ? "±" : "±") + std::to_string(k) + " at ±" + NF::fixed(std::asin(sk) / kDeg, 2) + "°";
+    }
     rep.notices = {interpretation("The zero order is undeviated. Order angles: " + angles + "; the next order has no real angle."), guard(guardText)};
     rep.headline = "θ" + std::string(m > 0 ? "₊" : "") + sub(std::abs(m)) + " = " + a.resultValue;
     rep.retained = retained({"N = " + num(in.linesPerCm) + " lines/cm · λ = " + NF::fixed(in.lambdaNm, 1) + " nm", "m = " + std::to_string(m) + " · M = " + num(in.slits)}, "RETAINED ORDER ANGLE", a.resultValue);
@@ -495,7 +506,32 @@ ModelReport grating(const GratingInput& in, const ReportContext& ctx) {
         c.curve.push_back({th, gratingIntensity(th, in.linesPerCm, in.lambdaNm, in.slits, in.incidenceDeg)});
     }
     c.marker = {{angle, 1.0}};
-    c.legend = "M = " + num(in.slits) + " slits · no envelope   ● order " + std::string(m > 0 ? "+" : "") + std::to_string(m);
+    c.legend = "M = " + num(in.slits) + " slits · no envelope   ● order " + std::string(m > 0 ? "+" : "") + std::to_string(m) + " @ " + num(in.lambdaNm) + " nm";
+    if (in.lambda2Nm > 0.0) {
+        const double lam2 = in.lambda2Nm * 1e-9;
+        const double sinTheta2 = m * lam2 / d - std::sin(in.incidenceDeg * kDeg);
+        const bool secondPropagates = std::fabs(sinTheta2) <= 1.0;
+        for (int k = 0; k <= 1800; ++k) {
+            const double th = -90 + k * 0.1;
+            c.curve2.push_back({th, gratingIntensity(th, in.linesPerCm, in.lambda2Nm, in.slits, in.incidenceDeg)});
+        }
+        if (secondPropagates) {
+            const double angle2 = std::asin(sinTheta2) / kDeg;
+            c.marker.push_back({angle2, 1.0});
+        }
+        c.legend2 = "M = " + num(in.slits) + " slits · ● order " + std::string(m > 0 ? "+" : "") + std::to_string(m) + " @ " + num(in.lambda2Nm) + " nm" +
+                    (secondPropagates ? "" : "  (λ₂ order does not propagate)");
+        // Overlap flag
+        if (secondPropagates) {
+            const double sep = std::fabs(angle - angle2);
+            const double width = 1.0 / (in.slits * std::abs(d / lam));   // approximate peak width
+            if (sep < 2 * width) {
+                rep.notices.push_back(interpretation("Overlap warning: order m = " + std::to_string(m) +
+                    " for λ₁ = " + num(in.lambdaNm) + " nm and λ₂ = " + num(in.lambda2Nm) + " nm are separated by only " +
+                    NF::fixed(sep, 2) + "° — peaks may not be resolved."));
+            }
+        }
+    }
     return out;
 }
 

@@ -38,6 +38,7 @@ inline constexpr char sigmaNewtonLambda[] = "sigmaNewtonLambda";
 inline constexpr char sigmaNewtonRadius[] = "sigmaNewtonRadius";
 inline constexpr char sigmaNewtonIndex[] = "sigmaNewtonIndex";
 inline constexpr char gratingDensity[] = "N";
+inline constexpr char gratingLambda2[] = "lambda2Grating";
 inline constexpr char illuminatedSlits[] = "M";
 inline constexpr char slitWidth[] = "a";
 inline constexpr char incidentIntensity[] = "I";
