@@ -98,8 +98,8 @@ int main() {
             expectNotesData(chapters == expectedChapters, "the catalog covers chapters 1 through 5 in order");
             expectNotesData(types == std::set<std::string>{"concept", "exam", "summary"},
                             "all three study-note types are retained");
-            expectNotesData(contentLines == 94 && equationLines == 57,
-                            "all 94 content points and 57 equations from the uploaded catalog are retained");
+            expectNotesData(contentLines == 98 && equationLines == 57,
+                            "all 98 content points and 57 equations from the uploaded catalog are retained");
         }
 
         // ---- user-authored Study Hub notes use an independent, chapter-keyed JSON file ----
