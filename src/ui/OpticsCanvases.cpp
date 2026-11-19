@@ -946,7 +946,7 @@ void ThinFilmCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     const double opd = 2.0 * m_in.n * m_in.thicknessNm * cosThetaT;
 
     const bool oblique = std::fabs(m_in.thetaDeg) > 0.5;
-    text(p, QPointF(14, a.top() + 18), std::string(oblique ? "OBLIQUE INCIDENCE" : "NORMAL INCIDENCE") +
+    text(p, QPointF(14, a.top() + 18), QString(oblique ? "OBLIQUE INCIDENCE" : "NORMAL INCIDENCE") +
                                 (transmission ? " · TRANSMITTED BEAM" : " · SINGLE FILM"), t.amber, 10);
     QColor film = t.blue; film.setAlpha(60);
     QColor sub = t.sage; sub.setAlpha(40);

@@ -499,7 +499,7 @@ void StudyHubPage::saveCurrentNote() {
     QString error;
     if (saveStudyHubNotes(m_notesFilePath, m_studyNotes, &error)) {
         m_notesDirty = false;
-        m_noteStatus->setText(std::string("Saved notes) + QFileInfo(m_notesFilePath).fileName());
+        m_noteStatus->setText(QString("Saved notes ") + QFileInfo(m_notesFilePath).fileName());
     } else {
         m_noteStatus->setText(QString(" ") + error);
         emit m_ctx->message(QString(" ") + error);
