@@ -62,19 +62,19 @@ bool ExportService::writeSeriesFile(const QString& path, const SessionLog& log, 
 
     const QFileInfo info(path);
     if (!QDir().mkpath(info.absolutePath())) {
-        setError(error, "Cannot create " + info.absolutePath());
+        setError(error, std::string("Cannot create ") + info.absolutePath());
         return false;
     }
 
     QSaveFile file(path);
     if (!file.open(QIODevice::WriteOnly)) {
-        setError(error, "Cannot write " + path + ": " + file.errorString());
+        setError(error, std::string("Cannot write ") + path + std::string(": ") + file.errorString());
         return false;
     }
     if (file.write(contents) != contents.size() || !file.commit()) {
         const QString reason = file.errorString();
         file.cancelWriting();
-        setError(error, "Could not finish writing " + path + (reason.isEmpty() ? QString() : ": " + reason));
+        setError(error, std::string("Could not finish writing ") + path + (reason.isEmpty() ? QString() : std::string(": ") + reason));
         return false;
     }
     return true;

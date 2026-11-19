@@ -26,20 +26,20 @@ std::string sheetXml(const SpreadsheetSheet& sheet) {
     for (const auto& row : sheet.rows) columns = std::max(columns, row.size());
     columns = std::max<std::size_t>(columns, 1);
 
-    std::string xml = "<Worksheet ss:Name=\"" + XlsWriter::xmlEscape(safeSheetName(sheet.name)) + "\"><Table ss:ExpandedColumnCount=\"" +
-                      std::to_string(columns) + "\" ss:ExpandedRowCount=\"" + std::to_string(sheet.rows.size()) + "\" x:FullColumns=\"1\" x:FullRows=\"1\">";
+    std::string xml = std::string("<Worksheet ss:Name=\"") + XlsWriter::xmlEscape(safeSheetName(sheet.name)) + "\"><Table ss:ExpandedColumnCount=\"" +
+                      std::to_string(columns) + std::string("\" ss:ExpandedRowCount=\"") + std::to_string(sheet.rows.size()) + "\" x:FullColumns=\"1\" x:FullRows=\"1\">";
     for (const auto& row : sheet.rows) {
         xml += "<Row>";
         for (const SpreadsheetCell& cell : row) {
             const std::string style = cell.bold ? " ss:StyleID=\"Header\"" : "";
             if (const auto* text = std::get_if<std::string>(&cell.value)) {
-                xml += "<Cell" + style + "><Data ss:Type=\"String\" xml:space=\"preserve\">" +
+                xml += std::string("<Cell") + style + "><Data ss:Type=\"String\" xml:space=\"preserve\">" +
                        XlsWriter::xmlEscape(*text) + "</Data></Cell>";
             } else if (const auto* value = std::get_if<double>(&cell.value)) {
                 if (std::isfinite(*value)) {
-                    xml += "<Cell" + style + "><Data ss:Type=\"Number\">" + number(*value) + "</Data></Cell>";
+                    xml += std::string("<Cell") + style + std::string("><Data ss:Type=\"Number\">") + number(*value) + "</Data></Cell>";
                 } else {
-                    xml += "<Cell" + style + "><Data ss:Type=\"String\">n/a</Data></Cell>";
+                    xml += std::string("<Cell") + style + "><Data ss:Type=\"String\">n/a</Data></Cell>";
                 }
             } else {
                 xml += "<Cell/>";

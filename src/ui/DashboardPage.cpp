@@ -160,7 +160,7 @@ DashboardPage::DashboardPage(AppContext* ctx, QWidget* parent)
     auto cols = addThreeColumns(260, 260);
 
     // ===================================================================== left: activity log sidebar
-    auto* logPanel = new Panel("ACTIVITY LOG", "SESSION " + QString::number(ctx->log.sessionNumber()).rightJustified(2, '0'));
+    auto* logPanel = new Panel("ACTIVITY LOG", std::string("SESSION ") + QString::number(ctx->log.sessionNumber()).rightJustified(2, '0'));
     logPanel->body()->setSpacing(8);
     logPanel->body()->setContentsMargins(0, 0, 0, 0);
 
@@ -464,7 +464,7 @@ void DashboardPage::refresh() {
     refreshLog();
 
     const QString when = m_ctx->lastSavedTime();
-    m_lastSaved->setText((when == "restored" ? QString("Session restored") : "Last saved " + when) + " · " + m_ctx->sessionFile);
+    m_lastSaved->setText((when == "restored" ? QString("Session restored") : std::string("Last saved ") + when) + std::string(" · ") + m_ctx->sessionFile);
 }
 
 void DashboardPage::deleteSelectedRun() {

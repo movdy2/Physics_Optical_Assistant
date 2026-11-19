@@ -44,7 +44,7 @@ ModelReport paused(const std::string& title, std::vector<FieldIssue> issues, std
                    const std::string& guardBody, const ReportContext& ctx) {
     ModelReport report;
     report.report = ReportSupport::pausedReport("E_INPUT_RANGE", std::move(issues), std::move(lines),
-                                                {"Calculation paused / " + title, guardBody, true}, ctx);
+                                                {std::string("Calculation paused / ") + title, guardBody, true}, ctx);
     return report;
 }
 
@@ -63,7 +63,7 @@ ModelReport newtonRings(const NewtonInput& in, const ReportContext& ctx) {
     const std::string guardText = "Require λ, R, n > 0 and integer m ≥ 0. This relation assumes normal incidence, contact at the center and r ≪ R.";
     if (!issues.empty())
         return paused(issues.front().label + " out of range", issues,
-                      {"λ = " + num(in.lambdaNm) + " nm   R = " + num(in.radiusM) + " m", "n = " + num(in.n) + "   m = " + num(in.order), "ACTION: " + issues.front().message},
+                      {std::string("λ = ") + num(in.lambdaNm) + std::string(" nm   R = ") + num(in.radiusM) + " m", std::string("n = ") + num(in.n) + std::string("   m = ") + num(in.order), std::string("ACTION: ") + issues.front().message},
                       guardText + "\n\nDiagram, chart and retained results show the last valid run.", ctx);
 
     const int m = static_cast<int>(std::lround(in.order));
@@ -78,15 +78,15 @@ ModelReport newtonRings(const NewtonInput& in, const ReportContext& ctx) {
     const bool rExceedsR = r > in.radiusM;
     if (rExceedsR) {
         issues.push_back({FieldIds::radiusOfCurvature, "Ring radius r exceeds R: small-angle approximation breaks down.", "R"});
-        const std::string guardText2 = "The computed ring radius r = " + fx(r * 1e3) + " mm exceeds R = " + num(in.radiusM) + " m. The relation t ≈ r²/(2R) is only valid for r ≪ R. Reduce m, λ, or increase R.";
+        const std::string guardText2 = std::string("The computed ring radius r = ") + fx(r * 1e3) + std::string(" mm exceeds R = ") + num(in.radiusM) + " m. The relation t ≈ r²/(2R) is only valid for r ≪ R. Reduce m, λ, or increase R.";
         return paused("Ring radius exceeds lens curvature", issues,
-                      {"λ = " + num(in.lambdaNm) + " nm   R = " + num(in.radiusM) + " m", "n = " + num(in.n) + "   m = " + num(in.order), "r = " + fx(r * 1e3) + " mm > R = " + num(in.radiusM) + " m", "ACTION: Reduce m, increase R, or choose a smaller λ."},
+                      {std::string("λ = ") + num(in.lambdaNm) + std::string(" nm   R = ") + num(in.radiusM) + " m", std::string("n = ") + num(in.n) + std::string("   m = ") + num(in.order), std::string("r = ") + fx(r * 1e3) + std::string(" mm > R = ") + num(in.radiusM) + " m", "ACTION: Reduce m, increase R, or choose a smaller λ."},
                       guardText2 + "\n\nDiagram, chart and retained results show the last valid run.", ctx);
     }
 
     const double t = order * lam / (2 * in.n);                      // film thickness at ring m
     const std::string ms = sub(m);
-    const std::string orderExpr = in.transmitted ? "(" + std::to_string(m) + " + ½)" : std::to_string(m);
+    const std::string orderExpr = in.transmitted ? std::string("(") + std::to_string(m) + " + ½)" : std::to_string(m);
 
     // --- Uncertainty propagation: σ(r)/r = ½(σ(λ)/λ + σ(R)/R + σ(n)/n) ---
     const bool uncertain = anyUncertainty({in.sigmaLambdaNm, in.sigmaRadiusM, in.sigmaN});
@@ -104,29 +104,29 @@ ModelReport newtonRings(const NewtonInput& in, const ReportContext& ctx) {
     LcdRegister a;
     a.title = in.transmitted ? "TRANSMITTED DARK RING" : "REFLECTED DARK RING";
     a.lines = {std::string("rₘ² = ") + (in.transmitted ? "(m + ½)λR / n" : "mλR / n"),
-               " = " + orderExpr + " × " + num(in.lambdaNm) + "×10⁻⁹ × " + num(in.radiusM) + " / " + num(in.n),
-               " = " + NF::scientific(r2, 4) + " m²", "r" + ms + " = √(" + NF::scientificCompact(r2).substr(0, 0) + NF::general(r2 * 1e6, 5) + "×10⁻⁶) m"};
-    a.resultLabel = "RADIUS · r" + ms;
+               std::string(" = ") + orderExpr + std::string(" × ") + num(in.lambdaNm) + std::string("×10⁻⁹ × ") + num(in.radiusM) + std::string(" / ") + num(in.n),
+               std::string(" = ") + NF::scientific(r2, 4) + " m²", std::string("r") + ms + std::string(" = √(") + NF::scientificCompact(r2).substr(0, 0) + NF::general(r2 * 1e6, 5) + "×10⁻⁶) m"};
+    a.resultLabel = std::string("RADIUS · r") + ms;
     a.resultValue = fx(r * 1e3) + " mm";
     if (uncertain && sigmaR > 0.0) {
-        a.resultValue += " ± " + fx(sigmaR * 1e3) + " mm";
-        a.extraLines.push_back("σ(r" + ms + ") = " + fx(sigmaR * 1e3) + " mm (1σ)");
+        a.resultValue += std::string(" ± ") + fx(sigmaR * 1e3) + " mm";
+        a.extraLines.push_back(std::string("σ(r") + ms + std::string(") = ") + fx(sigmaR * 1e3) + " mm (1σ)");
     }
     LcdRegister b;
     b.title = "DIAMETER / FILM THICKNESS";
-    b.lines = {"D" + ms + " = 2r" + ms,
-               "t" + ms + " = " + (in.transmitted ? std::string("(m+½)λ/(2n)") : std::string("mλ/(2n)")) + " = " + NF::general(t * 1e9, 6) + " nm",
+    b.lines = {std::string("D") + ms + std::string(" = 2r") + ms,
+               std::string("t") + ms + " = " + (in.transmitted ? std::string("(m+½)λ/(2n)") : std::string("mλ/(2n)")) + std::string(" = ") + NF::general(t * 1e9, 6) + " nm",
                in.transmitted ? "m = 0 → bright center, first dark at ½ order" : "m = 0 → r₀ = 0 (dark)"};
-    b.resultLabel = "DIAMETER · D" + ms;
+    b.resultLabel = std::string("DIAMETER · D") + ms;
     b.resultValue = fx(2 * r * 1e3) + " mm";
     rep.registers = {a, b};
     rep.notices = {interpretation(in.transmitted
                        ? "On transmission both surfaces reverse the phase, so the contact point is bright and the dark rings sit at half orders: squared radii still grow linearly, but with an offset of ½λR/n."
                        : "One reflection phase reversal makes the contact point dark. Squared radius, not radius, grows linearly with dark-ring order."),
                    guard(guardText)};
-    rep.headline = "r" + ms + " = " + fx(r * 1e3) + " mm";
-    if (uncertain && sigmaR > 0.0) rep.headline += " ± " + fx(sigmaR * 1e3) + " mm";
-    rep.retained = retained({"λ = " + NF::fixed(in.lambdaNm, 1) + " nm · R = " + NF::fixed(in.radiusM, 4) + " m", "n = " + NF::fixed(in.n, 4) + " · m = " + std::to_string(m)}, "RETAINED RADIUS · r" + ms, a.resultValue);
+    rep.headline = std::string("r") + ms + std::string(" = ") + fx(r * 1e3) + " mm";
+    if (uncertain && sigmaR > 0.0) rep.headline += std::string(" ± ") + fx(sigmaR * 1e3) + " mm";
+    rep.retained = retained({std::string("λ = ") + NF::fixed(in.lambdaNm, 1) + std::string(" nm · R = ") + NF::fixed(in.radiusM, 4) + " m", std::string("n = ") + NF::fixed(in.n, 4) + std::string(" · m = ") + std::to_string(m)}, std::string("RETAINED RADIUS · r") + ms, a.resultValue);
     rep.parameters = {{"λ", num(in.lambdaNm) + " nm"}, {"R", num(in.radiusM) + " m"}, {"m", std::to_string(m)}, {"n", num(in.n)},
                       {"mode", in.transmitted ? "transmitted" : "reflected"}};
     if (uncertain) {
@@ -143,7 +143,7 @@ ModelReport newtonRings(const NewtonInput& in, const ReportContext& ctx) {
     c.xTicks = static_cast<int>(c.xMax); c.yTicks = 2; c.xDecimals = 0; c.yDecimals = 1;
     c.curve = {{0, 0}, {c.xMax, slope * c.xMax}};
     c.marker = {{double(m), slope * order}};                            // transmitted: half-order ring
-    c.legend = "Slope = λR/n = " + fx(slope) + " mm²/order   ● m = " + std::to_string(m);
+    c.legend = std::string("Slope = λR/n = ") + fx(slope) + std::string(" mm²/order   ● m = ") + std::to_string(m);
     return out;
 }
 
@@ -159,7 +159,7 @@ ModelReport michelson(const MichelsonInput& in, const ReportContext& ctx) {
     if (in.plateIndex < 1) issues.push_back({FieldIds::refractiveIndex, "Plate index must be ≥ 1.", "n_plate"});
     const std::string guardText = "Require λ > 0 and n ≥ 1. The simulated movable mirror stage travels ±2 µm; equal-amplitude beams give full visibility, while unequal beams reduce fringe contrast. Coherence length 0 = infinite.";
     if (!issues.empty())
-        return paused(issues.front().label + " out of range", issues, {"λ = " + num(in.lambdaNm) + " nm", "n = " + num(in.n), "ACTION: " + issues.front().message},
+        return paused(issues.front().label + " out of range", issues, {std::string("λ = ") + num(in.lambdaNm) + " nm", std::string("n = ") + num(in.n), std::string("ACTION: ") + issues.front().message},
                       guardText + "\n\nDiagram, chart and retained results show the last valid run.", ctx);
 
     // Total OPD: mirror travel contribution (2nΔx) plus glass-plate contribution (2(n_plate−1)t, round trip)
@@ -187,23 +187,23 @@ ModelReport michelson(const MichelsonInput& in, const ReportContext& ctx) {
         const double count = 2 * in.n * (2 * sweepUm * 1e3) / in.lambdaNm;
         LcdRegister a;
         a.title = "FRINGE SPACING";
-        a.lines = {"Δx = λ / (2n) per fringe", " = " + num(in.lambdaNm) + " nm / (2 × " + fx(in.n) + ")",
-                   " = " + fx(spacingNm) + " nm of mirror travel", "2n/λ = " + fx(2 * in.n / (in.lambdaNm * 1e-3)) + " fringes per µm"};
+        a.lines = {"Δx = λ / (2n) per fringe", std::string(" = ") + num(in.lambdaNm) + std::string(" nm / (2 × ") + fx(in.n) + ")",
+                   std::string(" = ") + fx(spacingNm) + " nm of mirror travel", std::string("2n/λ = ") + fx(2 * in.n / (in.lambdaNm * 1e-3)) + " fringes per µm"};
         a.resultLabel = "MIRROR MOTION PER FRINGE";
         a.resultValue = fx(spacingNm) + " nm";
         LcdRegister b;
         b.title = "COUNT ACROSS A ±2 µm SWEEP";
-        b.lines = {"N = 2nΔx / λ", " = 2 × " + fx(in.n) + " × " + NF::fixed(2 * sweepUm * 1e3, 1) + " nm / " + num(in.lambdaNm) + " nm",
-                   "V = " + NF::fixed(vBase, 2) + (vBase >= 1 ? "  (equal beams)" : "  (unequal beams)"),
+        b.lines = {"N = 2nΔx / λ", std::string(" = 2 × ") + fx(in.n) + std::string(" × ") + NF::fixed(2 * sweepUm * 1e3, 1) + std::string(" nm / ") + num(in.lambdaNm) + " nm",
+                   std::string("V = ") + NF::fixed(vBase, 2) + (vBase >= 1 ? "  (equal beams)" : "  (unequal beams)"),
                    "I/Imax = (1 + V cos 2πN)/(1 + V)"};
         b.resultLabel = "FRINGES IN ±2 µm";
         b.resultValue = fx(count) + " fringes";
         rep.registers = {a, b};
-        rep.notices = {interpretation("Every λ/(2n) = " + fx(spacingNm) + " nm of mirror travel adds one round-trip wavelength, so one more fringe crosses the detector. Unequal beams change only the contrast V = " + NF::fixed(vBase, 2) + ", never the spacing."),
+        rep.notices = {interpretation(std::string("Every λ/(2n) = ") + fx(spacingNm) + std::string(" nm of mirror travel adds one round-trip wavelength, so one more fringe crosses the detector. Unequal beams change only the contrast V = ") + NF::fixed(vBase, 2) + ", never the spacing."),
                        guard(guardText)};
         rep.headline = fx(count) + " fringes in ±2 µm";
-        rep.retained = retained({"λ = " + NF::fixed(in.lambdaNm, 1) + " nm · n = " + fx(in.n),
-                                 "sweep Δx = ±" + NF::fixed(sweepUm, 1) + " µm · V = " + NF::fixed(vBase, 2)},
+        rep.retained = retained({std::string("λ = ") + NF::fixed(in.lambdaNm, 1) + std::string(" nm · n = ") + fx(in.n),
+                                 std::string("sweep Δx = ±") + NF::fixed(sweepUm, 1) + std::string(" µm · V = ") + NF::fixed(vBase, 2)},
                                 "RETAINED FRINGE SPACING", a.resultValue);
         rep.parameters = {{"λ", num(in.lambdaNm) + " nm"}, {"Δx", num(in.displacementUm) + " µm"}, {"n", num(in.n)},
                           {"V", num(vBase)}, {"mount", in.piezo ? "piezo scan" : "micrometer"}, {"mode", "fringes"}};
@@ -221,7 +221,7 @@ ModelReport michelson(const MichelsonInput& in, const ReportContext& ctx) {
         const double opdM = 2 * in.n * marked * 1e3 + opdPlate;
         const double vm = (in.coherenceLengthUm > 0.0) ? vBase * std::exp(-std::fabs(opdM) / 1e3 / in.coherenceLengthUm) : vBase;
         c.marker = {{marked, (1 + vm * std::cos(2 * std::numbers::pi * opdM / in.lambdaNm)) / (1 + vm)}};
-        c.legend = "λ/(2n) = " + fx(spacingNm) + " nm per fringe   ● current Δx";
+        c.legend = std::string("λ/(2n) = ") + fx(spacingNm) + " nm per fringe   ● current Δx";
         return out;
     }
     // Item 12: explicit fringe count — integer number of full fringes crossed plus fractional part
@@ -229,27 +229,27 @@ ModelReport michelson(const MichelsonInput& in, const ReportContext& ctx) {
     const double fringeFraction = shift - std::copysign(static_cast<double>(fullFringes), shift);
     LcdRegister a;
     a.title = "ROUND-TRIP PATH CHANGE";
-    std::vector<std::string> aLines = {"ΔOPD = 2nΔx", " = 2 × " + fx(in.n) + " × " + NF::signedFixed(in.displacementUm) + " µm", " = " + NF::signedFixed(opd / 1e3) + " µm",
-               "ΔN = ΔOPD / λ", " = " + NF::general(opd, 6) + " nm / " + num(in.lambdaNm) + " nm"};
+    std::vector<std::string> aLines = {"ΔOPD = 2nΔx", std::string(" = 2 × ") + fx(in.n) + std::string(" × ") + NF::signedFixed(in.displacementUm) + " µm", std::string(" = ") + NF::signedFixed(opd / 1e3) + " µm",
+               "ΔN = ΔOPD / λ", std::string(" = ") + NF::general(opd, 6) + std::string(" nm / ") + num(in.lambdaNm) + " nm"};
     if (in.plateThicknessUm > 0.0)
-        aLines.push_back("ΔOPD_plate = 2(n_plate − 1)t = " + fx(opdPlate / 1e3) + " µm");
-    aLines.push_back("Full fringes crossed: " + std::to_string(fullFringes));
-    aLines.push_back("Fractional fringe: " + NF::general(fringeFraction, 4));
+        aLines.push_back(std::string("ΔOPD_plate = 2(n_plate − 1)t = ") + fx(opdPlate / 1e3) + " µm");
+    aLines.push_back(std::string("Full fringes crossed: ") + std::to_string(fullFringes));
+    aLines.push_back(std::string("Fractional fringe: ") + NF::general(fringeFraction, 4));
     a.lines = aLines;
     a.resultLabel = "FRINGE SHIFT · ΔN";
     a.resultValue = NF::signedFixed(shift);
     LcdRegister b;
     b.title = "PHASE-REFERENCED DETECTOR";
-    std::vector<std::string> bLines = {"Δφ = 2πΔN = " + NF::signedFixed(phase) + " rad", "I/Imax = (1 + V cos Δφ)/(1 + V)", "V = " + NF::fixed(v, 2) + (v >= 1 ? "  (equal beams)" : "  (unequal beams)")};
+    std::vector<std::string> bLines = {std::string("Δφ = 2πΔN = ") + NF::signedFixed(phase) + " rad", "I/Imax = (1 + V cos Δφ)/(1 + V)", std::string("V = ") + NF::fixed(v, 2) + (v >= 1 ? "  (equal beams)" : "  (unequal beams)")};
     if (in.coherenceLengthUm > 0.0)
-        bLines.push_back("V_eff = V · exp(−|ΔOPD|/Lc) = " + NF::fixed(v, 4) + "  (Lc = " + num(in.coherenceLengthUm) + " µm)");
+        bLines.push_back(std::string("V_eff = V · exp(−|ΔOPD|/Lc) = ") + NF::fixed(v, 4) + std::string("  (Lc = ") + num(in.coherenceLengthUm) + " µm)");
     b.lines = bLines;
     b.resultLabel = "NORMALIZED INTENSITY · I/Imax";
     b.resultValue = fx(intensity);
     rep.registers = {a, b};
-    rep.notices = {interpretation("Moving one mirror by λ/(2n) = " + NF::fixed(in.lambdaNm / (2 * in.n) / 1e3, 4) + " µm adds one full round-trip wavelength and shifts the pattern by one fringe."), guard(guardText)};
-    rep.headline = "ΔN = " + NF::signedFixed(shift) + " fringes (" + std::to_string(fullFringes) + " full · " + NF::general(std::fabs(fringeFraction), 3) + " fractional)";
-    rep.retained = retained({"λ = " + NF::fixed(in.lambdaNm, 1) + " nm · n = " + fx(in.n), "Δx = " + NF::signedFixed(in.displacementUm) + " µm"}, "RETAINED FRINGE SHIFT · ΔN", a.resultValue);
+    rep.notices = {interpretation(std::string("Moving one mirror by λ/(2n) = ") + NF::fixed(in.lambdaNm / (2 * in.n) / 1e3, 4) + " µm adds one full round-trip wavelength and shifts the pattern by one fringe."), guard(guardText)};
+    rep.headline = std::string("ΔN = ") + NF::signedFixed(shift) + std::string(" fringes (") + std::to_string(fullFringes) + std::string(" full · ") + NF::general(std::fabs(fringeFraction), 3) + " fractional)";
+    rep.retained = retained({std::string("λ = ") + NF::fixed(in.lambdaNm, 1) + std::string(" nm · n = ") + fx(in.n), std::string("Δx = ") + NF::signedFixed(in.displacementUm) + " µm"}, "RETAINED FRINGE SHIFT · ΔN", a.resultValue);
     rep.parameters = {{"λ", num(in.lambdaNm) + " nm"}, {"Δx", num(in.displacementUm) + " µm"}, {"n", num(in.n)}, {"V", num(v)},
                       {"mount", in.piezo ? "piezo scan" : "micrometer"}, {"mode", "displacement"}};
 
@@ -278,7 +278,7 @@ ModelReport thinFilm(const ThinFilmInput& in, const ReportContext& ctx) {
     const std::string guardText = "Require λ, n, n₂, t > 0 and |θ| < 90°. Assumes equal-amplitude interface reflections; phase reversal depends on n₀=1.0 vs n vs n₂ relations.";
     if (!issues.empty())
         return paused(issues.front().label + " out of range", issues,
-                      {"λ = " + num(in.lambdaNm) + " nm   n = " + num(in.n), "n₂ = " + num(in.n2) + "   t = " + num(in.thicknessNm) + " nm", "θ = " + num(in.thetaDeg) + "°   ACTION: " + issues.front().message},
+                      {std::string("λ = ") + num(in.lambdaNm) + std::string(" nm   n = ") + num(in.n), std::string("n₂ = ") + num(in.n2) + std::string("   t = ") + num(in.thicknessNm) + " nm", std::string("θ = ") + num(in.thetaDeg) + std::string("°   ACTION: ") + issues.front().message},
                       guardText + "\n\nDiagram, chart and retained results show the last valid run.", ctx);
 
     // Snell's law: sin(θₜ) = sin(θ₀)/n (n₀ = 1.0), OPD = 2nt·cos(θₜ)
@@ -303,27 +303,27 @@ ModelReport thinFilm(const ThinFilmInput& in, const ReportContext& ctx) {
         LcdRegister a;
         const std::string formula = oneReversal ? "R(λ) = sin²(2πnt/λ)" : "R(λ) = cos²(2πnt/λ)";
         a.title = "FILM COLOUR / λ SWEEP";
-        a.lines = {formula, "OPD = 2nt·cosθₜ = " + num(opd) + " nm", "visibility V = " + NF::fixed(vis, 3) + "  (1 = saturated, 0 = grey)"};
+        a.lines = {formula, std::string("OPD = 2nt·cosθₜ = ") + num(opd) + " nm", std::string("visibility V = ") + NF::fixed(vis, 3) + "  (1 = saturated, 0 = grey)"};
         for (const FilmColourSample& s : fc.lines)
-            a.lines.push_back(NF::fixed(s.wavelengthNm, 0) + " nm: " + NF::fixed(s.reflectance, 3));
+            a.lines.push_back(NF::fixed(s.wavelengthNm, 0) + std::string(" nm: ") + NF::fixed(s.reflectance, 3));
         a.resultLabel = "PERCEIVED COLOUR";
         a.resultValue = fc.hueNm > 0 ? NF::fixed(fc.hueNm, 0) + " nm dominant" : "neutral grey";
         LcdRegister b;
         b.title = "ORDER COUNT / THICKNESS";
         const double orders = 2 * in.n * in.thicknessNm * (1.0 / 400.0 - 1.0 / 700.0);
-        b.lines = {"orders across 400–700 nm:", "Δm = 2nt (1/400 − 1/700) = " + NF::fixed(orders, 3),
+        b.lines = {"orders across 400–700 nm:", std::string("Δm = 2nt (1/400 − 1/700) = ") + NF::fixed(orders, 3),
                    orders < 1.0 ? "one order: saturated colours" : orders < 3.0 ? "a few orders: pastel colours" : "many orders: grey film",
-                   "mean reflectance = " + NF::fixed(fc.meanReflectance, 3), "swatch " + fc.hex};
+                   std::string("mean reflectance = ") + NF::fixed(fc.meanReflectance, 3), std::string("swatch ") + fc.hex};
         b.resultLabel = "SWATCH";
         b.resultValue = fc.hex;
         rep.registers = {a, b};
-        rep.notices = {interpretation("A " + num(in.thicknessNm) + " nm film reflects " +
-                                      (fc.hueNm > 0 ? NF::fixed(fc.hueNm, 0) + " nm strongest, so it reads as " + fc.lines[4].name +
+        rep.notices = {interpretation(std::string("A ") + num(in.thicknessNm) + " nm film reflects " +
+                                      (fc.hueNm > 0 ? NF::fixed(fc.hueNm, 0) + std::string(" nm strongest, so it reads as ") + fc.lines[4].name +
                                                        ". Thicker films reflect many orders at once and the colours add up to grey — which is why soap films show colour bands only where they are thin."
                                                      : "many wavelengths at once with no clear winner: the film looks grey.")),
                        guard("The swatch is a CIE 1931 integration of R(λ) under a flat illuminant, with equal-amplitude reflections. Real soap films vary in thickness across the surface.")};
-        rep.headline = "film " + num(in.thicknessNm) + " nm · " + (fc.hueNm > 0 ? NF::fixed(fc.hueNm, 0) + " nm" : std::string("grey"));
-        rep.retained = retained({"t = " + NF::fixed(in.thicknessNm, 2) + " nm · n = " + fx(in.n) + " · n₂ = " + fx(in.n2), "λ range 400–700 nm"}, "RETAINED FILM COLOUR", fc.hex);
+        rep.headline = std::string("film ") + num(in.thicknessNm) + " nm · " + (fc.hueNm > 0 ? NF::fixed(fc.hueNm, 0) + " nm" : std::string("grey"));
+        rep.retained = retained({std::string("t = ") + NF::fixed(in.thicknessNm, 2) + std::string(" nm · n = ") + fx(in.n) + std::string(" · n₂ = ") + fx(in.n2), "λ range 400–700 nm"}, "RETAINED FILM COLOUR", fc.hex);
         rep.parameters = {{"t", num(in.thicknessNm) + " nm"}, {"n", num(in.n)}, {"n₂", num(in.n2)}, {"swatch", fc.hex}, {"mode", "colours"}};
 
         ChartData& c = out.chart;
@@ -334,7 +334,7 @@ ModelReport thinFilm(const ThinFilmInput& in, const ReportContext& ctx) {
             c.curve.push_back({w, thinFilmReflectance(in.thicknessNm, 1.0, in.n, in.n2, w, in.thetaDeg)});
         }
         c.marker = {{in.lambdaNm, thinFilmReflectance(in.thicknessNm, 1.0, in.n, in.n2, in.lambdaNm, in.thetaDeg)}};
-        c.legend = "R(λ) of the film   ● your λ = " + num(in.lambdaNm) + " nm";
+        c.legend = std::string("R(λ) of the film   ● your λ = ") + num(in.lambdaNm) + " nm";
         return out;
     }
 
@@ -348,8 +348,8 @@ ModelReport thinFilm(const ThinFilmInput& in, const ReportContext& ctx) {
         const std::string opdLine = "OPD = 2nt·cosθₜ";
         // T = 1 − R: if reflection has one reversal (R = sin²), transmission has no net reversal (T = cos²)
         const std::string tFormula = oneReversal ? "cos²(2πnt·cosθₜ/λ)" : "sin²(2πnt·cosθₜ/λ)";
-        a.lines = {opdLine, " = 2 × " + num(in.n) + " × " + num(in.thicknessNm) + " × cosθₜ", " = " + num(opd) + " nm",
-                   "I_t/I_t,max = " + tFormula};
+        a.lines = {opdLine, std::string(" = 2 × ") + num(in.n) + std::string(" × ") + num(in.thicknessNm) + " × cosθₜ", std::string(" = ") + num(opd) + " nm",
+                   std::string("I_t/I_t,max = ") + tFormula};
         a.resultLabel = "NORMALIZED TRANSMISSION";
         a.resultValue = fx(trans);
         LcdRegister b;
@@ -362,8 +362,8 @@ ModelReport thinFilm(const ThinFilmInput& in, const ReportContext& ctx) {
         rep.registers = {a, b};
         rep.notices = {interpretation("Transmission is the complement of reflection: I_t = 1 − I_r. Phase reversal depends on whether n₂ > n (substrate denser) or n₂ < n (substrate rarer)."),
                        guard(guardText)};
-        rep.headline = "I_t/I_t,max = " + fx(trans);
-        rep.retained = retained({"λ = " + NF::fixed(in.lambdaNm, 1) + " nm · n = " + fx(in.n) + " · n₂ = " + fx(in.n2), "t = " + NF::fixed(in.thicknessNm, 2) + " nm"},
+        rep.headline = std::string("I_t/I_t,max = ") + fx(trans);
+        rep.retained = retained({std::string("λ = ") + NF::fixed(in.lambdaNm, 1) + std::string(" nm · n = ") + fx(in.n) + std::string(" · n₂ = ") + fx(in.n2), std::string("t = ") + NF::fixed(in.thicknessNm, 2) + " nm"},
                                 "RETAINED TRANSMISSION", a.resultValue);
         rep.parameters = {{"λ", num(in.lambdaNm) + " nm"}, {"n", num(in.n)}, {"n₂", num(in.n2)}, {"t", num(in.thicknessNm) + " nm"}, {"mode", "transmission"}};
 
@@ -376,13 +376,13 @@ ModelReport thinFilm(const ThinFilmInput& in, const ReportContext& ctx) {
             c.curve.push_back({t, thinFilmReflectance(t, 1.0, in.n, in.n2, in.lambdaNm, in.thetaDeg)});
         }
         c.marker = {{in.thicknessNm, trans}};
-        c.legend = "I_t = 1 − R(λ)   ● t = " + num(in.thicknessNm) + " nm";
+        c.legend = std::string("I_t = 1 − R(λ)   ● t = ") + num(in.thicknessNm) + " nm";
         return out;
     }
     LcdRegister a;
     a.title = "OPTICAL PATH / PHASE";
-    a.lines = {"OPD = 2nt·cosθₜ", " = 2 × " + num(in.n) + " × " + num(in.thicknessNm) + " × cosθₜ", " = " + num(opd) + " nm",
-               std::string("Δψ = 4πnt·cosθₜ/λ ") + (oneReversal ? "− π" : "") + " = " + NF::fixed(std::fmod(4.0 * std::numbers::pi * opd / in.lambdaNm - (oneReversal ? std::numbers::pi : 0.0) + 1e-12, 2 * std::numbers::pi), 4) + " rad",
+    a.lines = {"OPD = 2nt·cosθₜ", std::string(" = 2 × ") + num(in.n) + std::string(" × ") + num(in.thicknessNm) + " × cosθₜ", std::string(" = ") + num(opd) + " nm",
+               std::string("Δψ = 4πnt·cosθₜ/λ ") + (oneReversal ? "− π" : "") + std::string(" = ") + NF::fixed(std::fmod(4.0 * std::numbers::pi * opd / in.lambdaNm - (oneReversal ? std::numbers::pi : 0.0) + 1e-12, 2 * std::numbers::pi), 4) + " rad",
                std::string("I_r/I_r,max = ") + (oneReversal ? "sin²(2πnt·cosθₜ/λ)" : "cos²(2πnt·cosθₜ/λ)")};
     a.resultLabel = "NORMALIZED REFLECTION";
     a.resultValue = fx(refl);
@@ -396,8 +396,8 @@ ModelReport thinFilm(const ThinFilmInput& in, const ReportContext& ctx) {
     rep.registers = {a, b};
     rep.notices = {interpretation(oneReversal ? "One net phase reversal: thickness λ/(4n) gives the first bright reflection; λ/(2n) returns to dark."
                                                 : "Two net phase reversals: thickness λ/(4n) gives the first dark reflection; λ/(2n) returns to bright."), guard(guardText)};
-    rep.headline = "I_r/I_r,max = " + fx(refl);
-    rep.retained = retained({"λ = " + NF::fixed(in.lambdaNm, 1) + " nm · n = " + fx(in.n) + " · n₂ = " + fx(in.n2), "t = " + NF::fixed(in.thicknessNm, 2) + " nm"}, "RETAINED REFLECTION", a.resultValue);
+    rep.headline = std::string("I_r/I_r,max = ") + fx(refl);
+    rep.retained = retained({std::string("λ = ") + NF::fixed(in.lambdaNm, 1) + std::string(" nm · n = ") + fx(in.n) + std::string(" · n₂ = ") + fx(in.n2), std::string("t = ") + NF::fixed(in.thicknessNm, 2) + " nm"}, "RETAINED REFLECTION", a.resultValue);
     rep.parameters = {{"λ", num(in.lambdaNm) + " nm"}, {"n", num(in.n)}, {"n₂", num(in.n2)}, {"t", num(in.thicknessNm) + " nm"}, {"mode", "reflection"}};
 
     ChartData& c = out.chart;
@@ -409,7 +409,7 @@ ModelReport thinFilm(const ThinFilmInput& in, const ReportContext& ctx) {
         c.curve.push_back({t, thinFilmReflectance(t, 1.0, in.n, in.n2, in.lambdaNm, in.thetaDeg)});
     }
     c.marker = {{in.thicknessNm, refl}};
-    c.legend = std::string("I_r = ") + (oneReversal ? "sin²(2πnt·cosθₜ/λ)" : "cos²(2πnt·cosθₜ/λ)") + "   ● t = " + num(in.thicknessNm) + " nm";
+    c.legend = std::string("I_r = ") + (oneReversal ? "sin²(2πnt·cosθₜ/λ)" : "cos²(2πnt·cosθₜ/λ)") + std::string("   ● t = ") + num(in.thicknessNm) + " nm";
     return out;
 }
 // ================================================================================ diffraction grating
@@ -451,7 +451,7 @@ ModelReport grating(const GratingInput& in, const ReportContext& ctx) {
         }
     }
     if (!issues.empty())
-        return paused(issues.front().label + " out of range", issues, {"N = " + num(in.linesPerCm) + " lines/cm   λ = " + num(in.lambdaNm) + " nm", "m = " + num(in.order) + "   M = " + num(in.slits), "ACTION: " + issues.front().message},
+        return paused(issues.front().label + " out of range", issues, {std::string("N = ") + num(in.linesPerCm) + std::string(" lines/cm   λ = ") + num(in.lambdaNm) + " nm", std::string("m = ") + num(in.order) + std::string("   M = ") + num(in.slits), std::string("ACTION: ") + issues.front().message},
                       guardText + "\n\nDiagram, chart and retained results show the last valid run.", ctx);
 
     const int m = static_cast<int>(std::lround(in.order));
@@ -466,11 +466,11 @@ ModelReport grating(const GratingInput& in, const ReportContext& ctx) {
         // Second tab: the order table — every propagating order with the angle it lands at.
         const int capacity = static_cast<int>(std::floor(d / lam + 1e-9));
         auto angleOf = [&](int k) { return std::asin(std::clamp(k * lam / d - std::sin(in.incidenceDeg * kDeg), -1.0, 1.0)) / kDeg; };
-        std::vector<std::string> table{"m = 0 at " + NF::fixed(angleOf(0), 2) + "°"};
+        std::vector<std::string> table{std::string("m = 0 at ") + NF::fixed(angleOf(0), 2) + "°"};
         for (int k = 1; k <= std::min(capacity, 3); ++k)
-            table.push_back("±" + std::to_string(k) + " at ±" + NF::fixed(angleOf(k), 2) + "°");
-        table.push_back(capacity > 3 ? "… up to ±" + std::to_string(capacity) + " at ±" + NF::fixed(angleOf(capacity), 2) + "°"
-                                     : "no real angle beyond ±" + std::to_string(std::max(0, capacity)));
+            table.push_back(std::string("±") + std::to_string(k) + std::string(" at ±") + NF::fixed(angleOf(k), 2) + "°");
+        table.push_back(capacity > 3 ? std::string("… up to ±") + std::to_string(capacity) + std::string(" at ±") + NF::fixed(angleOf(capacity), 2) + "°"
+                                     : std::string("no real angle beyond ±") + std::to_string(std::max(0, capacity)));
         LcdRegister a;
         a.title = "ORDER TABLE";
         a.lines = table;
@@ -478,17 +478,17 @@ ModelReport grating(const GratingInput& in, const ReportContext& ctx) {
         a.resultValue = std::to_string(orders.size()) + " orders";
         LcdRegister b;
         b.title = "ANGULAR SEPARATION";
-        b.lines = {"Δθ(±1) = 2θ₁ = " + NF::fixed(2 * angleOf(1), 2) + "°",
-                   "θ₂ − θ₁ = " + NF::fixed(angleOf(2) - angleOf(1), 2) + "°",
-                   "the angular step widens with |m|", "d/λ = " + fx(d / lam)};
+        b.lines = {std::string("Δθ(±1) = 2θ₁ = ") + NF::fixed(2 * angleOf(1), 2) + "°",
+                   std::string("θ₂ − θ₁ = ") + NF::fixed(angleOf(2) - angleOf(1), 2) + "°",
+                   "the angular step widens with |m|", std::string("d/λ = ") + fx(d / lam)};
         b.resultLabel = "ORDER CAPACITY · d/λ";
         b.resultValue = fx(d / lam);
         rep.registers = {a, b};
-        rep.notices = {interpretation("Every order sits where d sin θₘ = mλ: the step in sin θ is the constant λ/d, so the angles widen as |m| grows — θ₂ − θ₁ = " + NF::fixed(angleOf(2) - angleOf(1), 2) + "° against θ₁ = " + NF::fixed(angleOf(1), 2) + "°. d/λ = " + fx(d / lam) + " fixes how many orders can propagate at all."),
+        rep.notices = {interpretation(std::string("Every order sits where d sin θₘ = mλ: the step in sin θ is the constant λ/d, so the angles widen as |m| grows — θ₂ − θ₁ = ") + NF::fixed(angleOf(2) - angleOf(1), 2) + std::string("° against θ₁ = ") + NF::fixed(angleOf(1), 2) + std::string("°. d/λ = ") + fx(d / lam) + " fixes how many orders can propagate at all."),
                        guard(guardText)};
-        rep.headline = std::to_string(orders.size()) + " orders inside ±" + NF::fixed(capacity > 0 ? angleOf(capacity) : 0.0, 2) + "°";
-        rep.retained = retained({"N = " + num(in.linesPerCm) + " lines/cm · λ = " + NF::fixed(in.lambdaNm, 1) + " nm",
-                                 "M = " + num(in.slits) + " · θᵢ = " + num(in.incidenceDeg) + "°"}, "RETAINED ORDER COUNT", a.resultValue);
+        rep.headline = std::to_string(orders.size()) + std::string(" orders inside ±") + NF::fixed(capacity > 0 ? angleOf(capacity) : 0.0, 2) + "°";
+        rep.retained = retained({std::string("N = ") + num(in.linesPerCm) + std::string(" lines/cm · λ = ") + NF::fixed(in.lambdaNm, 1) + " nm",
+                                 std::string("M = ") + num(in.slits) + std::string(" · θᵢ = ") + num(in.incidenceDeg) + "°"}, "RETAINED ORDER COUNT", a.resultValue);
         rep.parameters = {{"N", num(in.linesPerCm) + " lines/cm"}, {"λ", num(in.lambdaNm) + " nm"}, {"m", std::to_string(m)},
                           {"M", num(in.slits)}, {"θᵢ", num(in.incidenceDeg) + " °"}, {"mode", "orders"}};
 
@@ -505,18 +505,18 @@ ModelReport grating(const GratingInput& in, const ReportContext& ctx) {
     }
     LcdRegister a;
     a.title = "DENSITY + SPACING / SI";
-    a.lines = {"d = 0.01 / N", " = 0.01 / " + num(in.linesPerCm) + " m", " = " + NF::scientific(d, 4) + " m",
+    a.lines = {"d = 0.01 / N", std::string(" = 0.01 / ") + num(in.linesPerCm) + " m", std::string(" = ") + NF::scientific(d, 4) + " m",
                in.incidenceDeg == 0 ? "d sin θₘ = mλ" : "d (sin θₘ + sin θᵢ) = mλ",
-               "sin θ" + sub(std::abs(m)) + " = " + num(std::fabs(m) * in.lambdaNm) + " nm / " + num(d * 1e9) + " nm"};
+               std::string("sin θ") + sub(std::abs(m)) + std::string(" = ") + num(std::fabs(m) * in.lambdaNm) + std::string(" nm / ") + num(d * 1e9) + " nm"};
     if (in.lambda2Nm > 0.0)
-        a.lines.push_back("λ₂ = " + num(in.lambda2Nm) + " nm · sin θ₂ = " + num(std::fabs(m) * in.lambda2Nm) + " nm / " + num(d * 1e9) + " nm");
+        a.lines.push_back(std::string("λ₂ = ") + num(in.lambda2Nm) + std::string(" nm · sin θ₂ = ") + num(std::fabs(m) * in.lambda2Nm) + std::string(" nm / ") + num(d * 1e9) + " nm");
     a.resultLabel = std::string("ORDER ") + (m > 0 ? "+" : "") + std::to_string(m) + " ANGLE";
     a.resultValue = (m == 0 ? fx(0.0) : NF::signedFixed(angle)) + "°";
     LcdRegister b;
     b.title = "PROPAGATING ORDERS";
     std::string list;
     for (std::size_t i = 0; i < orders.size(); ++i) list += (i ? ", " : "") + std::to_string(orders[i]);
-    b.lines = {"|m| ≤ floor(d/λ) = " + std::to_string(static_cast<int>(std::floor(d / lam + 1e-9))), "m = " + list};
+    b.lines = {std::string("|m| ≤ floor(d/λ) = ") + std::to_string(static_cast<int>(std::floor(d / lam + 1e-9))), std::string("m = ") + list};
     b.resultLabel = "TOTAL ALLOWED PEAKS";
     b.resultValue = std::to_string(orders.size()) + " orders";
     rep.registers = {a, b};
@@ -524,11 +524,11 @@ ModelReport grating(const GratingInput& in, const ReportContext& ctx) {
     const double si = std::sin(in.incidenceDeg * kDeg);
     for (int k = 1; k <= static_cast<int>(std::floor(d / lam + 1e-9)); ++k) {
         const double sk = std::clamp(k * lam / d - si, -1.0, 1.0);
-        angles += (k > 1 ? ", " : "") + std::string(k == 1 ? "±" : "±") + std::to_string(k) + " at ±" + NF::fixed(std::asin(sk) / kDeg, 2) + "°";
+        angles += (k > 1 ? ", " : "") + std::string(k == 1 ? "±" : "±") + std::to_string(k) + std::string(" at ±") + NF::fixed(std::asin(sk) / kDeg, 2) + "°";
     }
-    rep.notices = {interpretation("The zero order is undeviated. Order angles: " + angles + "; the next order has no real angle."), guard(guardText)};
-    rep.headline = "θ" + std::string(m > 0 ? "₊" : "") + sub(std::abs(m)) + " = " + a.resultValue;
-    rep.retained = retained({"N = " + num(in.linesPerCm) + " lines/cm · λ = " + NF::fixed(in.lambdaNm, 1) + " nm", "m = " + std::to_string(m) + " · M = " + num(in.slits)}, "RETAINED ORDER ANGLE", a.resultValue);
+    rep.notices = {interpretation(std::string("The zero order is undeviated. Order angles: ") + angles + "; the next order has no real angle."), guard(guardText)};
+    rep.headline = std::string("θ") + std::string(m > 0 ? "₊" : "") + sub(std::abs(m)) + std::string(" = ") + a.resultValue;
+    rep.retained = retained({std::string("N = ") + num(in.linesPerCm) + std::string(" lines/cm · λ = ") + NF::fixed(in.lambdaNm, 1) + " nm", std::string("m = ") + std::to_string(m) + std::string(" · M = ") + num(in.slits)}, "RETAINED ORDER ANGLE", a.resultValue);
     rep.parameters = {{"N", num(in.linesPerCm) + " lines/cm"}, {"λ", num(in.lambdaNm) + " nm"}, {"m", std::to_string(m)}, {"M", num(in.slits)},
                       {"θᵢ", num(in.incidenceDeg) + " °"}, {"mode", "transmission"}};
 
@@ -540,7 +540,7 @@ ModelReport grating(const GratingInput& in, const ReportContext& ctx) {
         c.curve.push_back({th, gratingIntensity(th, in.linesPerCm, in.lambdaNm, in.slits, in.incidenceDeg)});
     }
     c.marker = {{angle, 1.0}};
-    c.legend = "M = " + num(in.slits) + " slits · no envelope   ● order " + std::string(m > 0 ? "+" : "") + std::to_string(m) + " @ " + num(in.lambdaNm) + " nm";
+    c.legend = std::string("M = ") + num(in.slits) + std::string(" slits · no envelope   ● order ") + std::string(m > 0 ? "+" : "") + std::to_string(m) + std::string(" @ ") + num(in.lambdaNm) + " nm";
     if (in.lambda2Nm > 0.0) {
         const double lam2 = in.lambda2Nm * 1e-9;
         const double sinTheta2 = m * lam2 / d - std::sin(in.incidenceDeg * kDeg);
@@ -554,15 +554,15 @@ ModelReport grating(const GratingInput& in, const ReportContext& ctx) {
             angle2 = std::asin(sinTheta2) / kDeg;
             c.marker.push_back({angle2, 1.0});
         }
-        c.legend2 = "M = " + num(in.slits) + " slits · ● order " + std::string(m > 0 ? "+" : "") + std::to_string(m) + " @ " + num(in.lambda2Nm) + " nm" +
+        c.legend2 = std::string("M = ") + num(in.slits) + std::string(" slits · ● order ") + std::string(m > 0 ? "+" : "") + std::to_string(m) + std::string(" @ ") + num(in.lambda2Nm) + " nm" +
                     (secondPropagates ? "" : "  (λ₂ order does not propagate)");
         // Overlap flag
         if (secondPropagates) {
             const double sep = std::fabs(angle - angle2);
             const double width = 1.0 / (in.slits * std::abs(d / lam));   // approximate peak width
             if (sep < 2 * width) {
-                rep.notices.push_back(interpretation("Overlap warning: order m = " + std::to_string(m) +
-                    " for λ₁ = " + num(in.lambdaNm) + " nm and λ₂ = " + num(in.lambda2Nm) + " nm are separated by only " +
+                rep.notices.push_back(interpretation(std::string("Overlap warning: order m = ") + std::to_string(m) +
+                    std::string(" for λ₁ = ") + num(in.lambdaNm) + std::string(" nm and λ₂ = ") + num(in.lambda2Nm) + " nm are separated by only " +
                     NF::fixed(sep, 2) + "° — peaks may not be resolved."));
             }
         }
@@ -584,7 +584,7 @@ ModelReport singleSlit(const SingleSlitInput& in, const ReportContext& ctx) {
     if (issues.empty() && in.lambdaNm * 1e-9 / (in.widthMm * 1e-3) > 1.0) issues.push_back({FieldIds::slitWidth, "No first minimum: λ/a > 1.", "a"});
     const std::string guardText = "At β = 0 use the limit I/I₀ = 1, not 0/0. A real first minimum needs λ/a ≤ 1.";
     if (!issues.empty())
-        return paused(issues.front().label + " out of range", issues, {"a = " + NF::fixed(in.widthMm, 4) + " mm   λ = " + num(in.lambdaNm) + " nm", "L = " + num(in.screenM) + " m", "ACTION: " + issues.front().message},
+        return paused(issues.front().label + " out of range", issues, {std::string("a = ") + NF::fixed(in.widthMm, 4) + std::string(" mm   λ = ") + num(in.lambdaNm) + " nm", std::string("L = ") + num(in.screenM) + " m", std::string("ACTION: ") + issues.front().message},
                       guardText + "\n\nDiagram, chart and retained results show the last valid run.", ctx);
 
     const double a = in.widthMm * 1e-3, lam = in.lambdaNm * 1e-9;
@@ -604,20 +604,20 @@ ModelReport singleSlit(const SingleSlitInput& in, const ReportContext& ctx) {
         LcdRegister r1;
         r1.title = "MINIMA ON THE SCREEN";
         r1.lines = {"yₘ = L tan θₘ,  sin θₘ = mλ/a",
-                    "y₁ = ±" + fx(y1 * 1e3) + " mm", "y₂ = ±" + fx(y2 * 1e3) + " mm", "y₃ = ±" + fx(y3 * 1e3) + " mm"};
+                    std::string("y₁ = ±") + fx(y1 * 1e3) + " mm", std::string("y₂ = ±") + fx(y2 * 1e3) + " mm", std::string("y₃ = ±") + fx(y3 * 1e3) + " mm"};
         r1.resultLabel = "SCREEN POSITION · y₁";
         r1.resultValue = fx(y1 * 1e3) + " mm";
         LcdRegister r2;
         r2.title = "CENTRAL LOBE / SIDE LOBE";
-        r2.lines = {"w = 2L tan θ₁ = " + fx(w * 1e3) + " mm", "w = 2 y₁", "the first side maximum sits at 1.43 θ₁"};
+        r2.lines = {std::string("w = 2L tan θ₁ = ") + fx(w * 1e3) + " mm", "w = 2 y₁", "the first side maximum sits at 1.43 θ₁"};
         r2.resultLabel = "FIRST SIDE-MAXIMUM POSITION";
         r2.resultValue = fx(1.43 * y1 * 1e3) + " mm";
         rep.registers = {r1, r2};
-        rep.notices = {interpretation("Dark fringes are almost evenly spaced on the screen: y₁ = " + fx(y1 * 1e3) + " mm, y₂ − y₁ = " + fx((y2 - y1) * 1e3) + " mm. The central lobe is twice as wide as a side lobe, and the side maxima sit at 1.43 θ₁, 2.46 θ₁, …"),
+        rep.notices = {interpretation(std::string("Dark fringes are almost evenly spaced on the screen: y₁ = ") + fx(y1 * 1e3) + std::string(" mm, y₂ − y₁ = ") + fx((y2 - y1) * 1e3) + " mm. The central lobe is twice as wide as a side lobe, and the side maxima sit at 1.43 θ₁, 2.46 θ₁, …"),
                        guard(guardText)};
-        rep.headline = "y₁ = ±" + fx(y1 * 1e3) + " mm";
-        rep.retained = retained({"a = " + NF::fixed(in.widthMm, 4) + " mm · λ = " + NF::fixed(in.lambdaNm, 1) + " nm",
-                                 "L = " + NF::fixed(in.screenM, 4) + " m"}, "RETAINED FIRST MINIMUM POSITION", r1.resultValue);
+        rep.headline = std::string("y₁ = ±") + fx(y1 * 1e3) + " mm";
+        rep.retained = retained({std::string("a = ") + NF::fixed(in.widthMm, 4) + std::string(" mm · λ = ") + NF::fixed(in.lambdaNm, 1) + " nm",
+                                 std::string("L = ") + NF::fixed(in.screenM, 4) + " m"}, "RETAINED FIRST MINIMUM POSITION", r1.resultValue);
         rep.parameters = {{"a", num(in.widthMm) + " mm"}, {"λ", num(in.lambdaNm) + " nm"}, {"L", num(in.screenM) + " m"}, {"mode", "geometry"}};
 
         ChartData& c = out.chart;
@@ -630,20 +630,20 @@ ModelReport singleSlit(const SingleSlitInput& in, const ReportContext& ctx) {
     }
     LcdRegister r1;
     r1.title = "FIRST MINIMUM / DEG";
-    r1.lines = {"a sin θ₁ = λ", "sin θ₁ = " + NF::scientificCompact(lam) + " / " + NF::scientificCompact(a), "θ₁ = asin(" + NF::general(s1, 6) + ")"};
+    r1.lines = {"a sin θ₁ = λ", std::string("sin θ₁ = ") + NF::scientificCompact(lam) + std::string(" / ") + NF::scientificCompact(a), std::string("θ₁ = asin(") + NF::general(s1, 6) + ")"};
     r1.resultLabel = "FIRST DARK ANGLE · θ₁";
     r1.resultValue = fx(theta) + "°";
     LcdRegister r2;
     r2.title = "CENTRAL MAXIMUM";
     r2.lines = {std::string("w = ") + (in.exactGeometry ? "2L tan θ₁" : "≈ 2L λ/a"),
-                " = 2 × " + num(in.screenM) + " × " + (in.exactGeometry ? "tan(" + fx(theta) + "°)" : "λ/a"),
-                " = " + NF::fixed(w, 9) + " m"};
+                std::string(" = 2 × ") + num(in.screenM) + " × " + (in.exactGeometry ? std::string("tan(") + fx(theta) + "°)" : "λ/a"),
+                std::string(" = ") + NF::fixed(w, 9) + " m"};
     r2.resultLabel = "FULL WIDTH ON SCREEN";
     r2.resultValue = fx(w * 1e3) + " mm";
     rep.registers = {r1, r2};
-    rep.notices = {interpretation("The central lobe spans the first minima at ±" + fx(w * 1e3 / 2) + " mm. Side lobes diminish; the first side maximum is only about 4.7% of I₀."), guard(guardText)};
-    rep.headline = "θ₁ = " + fx(theta) + "°";
-    rep.retained = retained({"a = " + NF::fixed(in.widthMm, 4) + " mm · λ = " + NF::fixed(in.lambdaNm, 1) + " nm", "L = " + NF::fixed(in.screenM, 4) + " m"}, "RETAINED FIRST DARK ANGLE", r1.resultValue);
+    rep.notices = {interpretation(std::string("The central lobe spans the first minima at ±") + fx(w * 1e3 / 2) + " mm. Side lobes diminish; the first side maximum is only about 4.7% of I₀."), guard(guardText)};
+    rep.headline = std::string("θ₁ = ") + fx(theta) + "°";
+    rep.retained = retained({std::string("a = ") + NF::fixed(in.widthMm, 4) + std::string(" mm · λ = ") + NF::fixed(in.lambdaNm, 1) + " nm", std::string("L = ") + NF::fixed(in.screenM, 4) + " m"}, "RETAINED FIRST DARK ANGLE", r1.resultValue);
     rep.parameters = {{"a", num(in.widthMm) + " mm"}, {"λ", num(in.lambdaNm) + " nm"}, {"L", num(in.screenM) + " m"}, {"mode", "intensity"}};
 
     ChartData& c = out.chart;
@@ -668,7 +668,7 @@ ModelReport polarization(const PolarizationInput& in, const ReportContext& ctx) 
     if (in.n2 <= 0) issues.push_back({FieldIds::refractiveIndex2, "Enter n₂ > 0.", "n₂"});
     const std::string guardText = "Require Iᵢₙ ≥ 0 and n₁, n₂ > 0. Brewster assumes transparent, nonmagnetic media.";
     if (!issues.empty())
-        return paused(issues.front().label + " out of range", issues, {"Iᵢₙ = " + num(in.incidentIntensity) + " W/m²   θ = " + num(in.angleDeg) + "°", "n₁ = " + num(in.n1) + "   n₂ = " + num(in.n2), "ACTION: " + issues.front().message},
+        return paused(issues.front().label + " out of range", issues, {std::string("Iᵢₙ = ") + num(in.incidentIntensity) + std::string(" W/m²   θ = ") + num(in.angleDeg) + "°", std::string("n₁ = ") + num(in.n1) + std::string("   n₂ = ") + num(in.n2), std::string("ACTION: ") + issues.front().message},
                       guardText + "\n\nDiagram, chart and retained results show the last valid run.", ctx);
 
     const double i0 = in.unpolarized ? in.incidentIntensity / 2 : in.incidentIntensity;
@@ -696,26 +696,26 @@ ModelReport polarization(const PolarizationInput& in, const ReportContext& ctx) 
         fresnel(thB, rsB, rpB);
         const double r0 = std::pow((in.n1 - in.n2) / (in.n1 + in.n2), 2);
         LcdRegister a;
-        a.title = std::string("BREWSTER / ") + medium(in.n1) + " → " + medium(in.n2);
-        a.lines = {"tan θB = n₂ / n₁ = " + NF::fixed(in.n2, 4) + " / " + NF::fixed(in.n1, 4),
-                   "θB = atan(" + NF::fixed(in.n2 / in.n1, 6) + ") = " + fx(brewster) + "°",
-                   "θr = 90° − θB = " + fx(thR / kDeg) + "°",
+        a.title = std::string("BREWSTER / ") + medium(in.n1) + std::string(" → ") + medium(in.n2);
+        a.lines = {std::string("tan θB = n₂ / n₁ = ") + NF::fixed(in.n2, 4) + std::string(" / ") + NF::fixed(in.n1, 4),
+                   std::string("θB = atan(") + NF::fixed(in.n2 / in.n1, 6) + std::string(") = ") + fx(brewster) + "°",
+                   std::string("θr = 90° − θB = ") + fx(thR / kDeg) + "°",
                    "reflected and refracted rays are perpendicular"};
         a.resultLabel = "INCIDENCE FROM NORMAL";
         a.resultValue = fx(brewster) + "°";
         LcdRegister b;
         b.title = "FRESNEL AT θB";
-        b.lines = {"R_p = " + fx(rpB) + "   (p-polarized, no reflection)",
-                   "R_s = " + fx(rsB) + "   (s-polarized)",
-                   "R_unpolarized = (R_s + R_p)/2 = " + fx((rsB + rpB) / 2),
-                   "at normal incidence R = " + fx(r0)};
+        b.lines = {std::string("R_p = ") + fx(rpB) + "   (p-polarized, no reflection)",
+                   std::string("R_s = ") + fx(rsB) + "   (s-polarized)",
+                   std::string("R_unpolarized = (R_s) + fx((rsB + rpB) / 2),
+                   std::string("at normal incidence R = ") + fx(r0)};
         b.resultLabel = "s-POLARIZED REFLECTANCE · Rs";
         b.resultValue = fx(rsB);
         rep.registers = {a, b};
-        rep.notices = {interpretation("At θB the reflected beam is purely s-polarized: R_p falls to " + fx(rpB) + " while R_s stays at " + fx(rsB) + ", so " + NF::general((rsB + rpB) / 2 * 100, 3) + "% of an unpolarized beam is reflected. The refracted ray leaves at 90° − θB = " + fx(thR / kDeg) + "°."),
+        rep.notices = {interpretation(std::string("At θB the reflected beam is purely s-polarized: R_p falls to ") + fx(rpB) + std::string(" while R_s stays at ") + fx(rsB) + std::string(", so ") + NF::general((rsB + rpB) / 2 * 100, 3) + std::string("% of an unpolarized beam is reflected. The refracted ray leaves at 90° − θB = ") + fx(thR / kDeg) + "°."),
                        guard(guardText)};
-        rep.headline = "θB = " + fx(brewster) + "° · R_p = " + fx(rpB);
-        rep.retained = retained({"n₁ = " + num(in.n1) + " · n₂ = " + num(in.n2), "Iᵢₙ = " + NF::fixed(in.incidentIntensity, 2) + " W/m²"},
+        rep.headline = std::string("θB = ") + fx(brewster) + std::string("° · R_p = ") + fx(rpB);
+        rep.retained = retained({std::string("n₁ = ") + num(in.n1) + std::string(" · n₂ = ") + num(in.n2), std::string("Iᵢₙ = ") + NF::fixed(in.incidentIntensity, 2) + " W/m²"},
                                 "RETAINED BREWSTER ANGLE", a.resultValue);
         rep.parameters = {{"n₁", num(in.n1)}, {"n₂", num(in.n2)}, {"Iᵢₙ", num(in.incidentIntensity) + " W/m²"}, {"mode", "brewster"}};
 
@@ -729,25 +729,25 @@ ModelReport polarization(const PolarizationInput& in, const ReportContext& ctx) 
             c.curve2.push_back({k * 0.5, rs});
         }
         c.marker = {{brewster, rpB}};
-        c.legend = "R_p(θ) reaches 0 at θB = " + fx(brewster) + "°   ● p-pol";
+        c.legend = std::string("R_p(θ) reaches 0 at θB = ") + fx(brewster) + "°   ● p-pol";
         c.legend2 = "R_s(θ) stays non-zero   ● s-pol";
         return out;
     }
     LcdRegister a;
     a.title = "MALUS / DEG";
-    a.lines = {in.unpolarized ? "I₀ = Iᵢₙ / 2 = " + num(i0) + " W/m²" : "I₀ = Iᵢₙ = " + num(i0) + " W/m²", "I = I₀ cos²θ", "  = " + num(i0) + " × cos²(" + num(in.angleDeg) + "°)", "  = " + num(i0) + " × " + fx(c2)};
+    a.lines = {in.unpolarized ? std::string("I₀ = Iᵢₙ / 2 = ") + num(i0) + " W/m²" : std::string("I₀ = Iᵢₙ = ") + num(i0) + " W/m²", "I = I₀ cos²θ", std::string("  = ") + num(i0) + std::string(" × cos²(") + num(in.angleDeg) + "°)", std::string("  = ") + num(i0) + std::string(" × ") + fx(c2)};
     a.resultLabel = "ANALYZER OUTPUT";
     a.resultValue = fx(out2) + " W/m²";
     LcdRegister b;
-    b.title = std::string("BREWSTER / ") + medium(in.n1) + " → " + medium(in.n2);
-    b.lines = {"tan θB = n₂ / n₁", "θB = atan(" + NF::fixed(in.n2, 1) + " / " + NF::fixed(in.n1, 1) + ")"};
+    b.title = std::string("BREWSTER / ") + medium(in.n1) + std::string(" → ") + medium(in.n2);
+    b.lines = {"tan θB = n₂ / n₁", std::string("θB = atan(") + NF::fixed(in.n2, 1) + std::string(" / ") + NF::fixed(in.n1, 1) + ")"};
     b.resultLabel = "INCIDENCE FROM NORMAL";
     b.resultValue = fx(brewster) + "°";
     rep.registers = {a, b};
     const double passed = c2 * 100, ofOriginal = in.incidentIntensity > 0 ? out2 / in.incidentIntensity * 100 : 0;
-    rep.notices = {interpretation("The analyzer passes " + NF::general(passed, 4) + "% of I₀, or " + NF::general(ofOriginal, 4) + "% of the original beam. At θB the reflected beam is purely s-polarized for an ideal dielectric."), guard(guardText)};
-    rep.headline = "I = " + fx(out2) + " W/m²";
-    rep.retained = retained({"Iᵢₙ = " + NF::fixed(in.incidentIntensity, 2) + " W/m² · θ = " + NF::fixed(in.angleDeg, 2) + "°"}, "RETAINED ANALYZER OUTPUT", a.resultValue);
+    rep.notices = {interpretation(std::string("The analyzer passes ") + NF::general(passed, 4) + std::string("% of I₀, or ") + NF::general(ofOriginal, 4) + "% of the original beam. At θB the reflected beam is purely s-polarized for an ideal dielectric."), guard(guardText)};
+    rep.headline = std::string("I = ") + fx(out2) + " W/m²";
+    rep.retained = retained({std::string("Iᵢₙ = ") + NF::fixed(in.incidentIntensity, 2) + std::string(" W/m² · θ = ") + NF::fixed(in.angleDeg, 2) + "°"}, "RETAINED ANALYZER OUTPUT", a.resultValue);
     rep.parameters = {{"Iᵢₙ", num(in.incidentIntensity) + " W/m²"}, {"θ", num(in.angleDeg) + " °"}, {"n₁", num(in.n1)}, {"n₂", num(in.n2)},
                       {"Beam", in.unpolarized ? "Unpolarized" : "Polarized"}, {"mode", "malus"}};
 
@@ -756,7 +756,7 @@ ModelReport polarization(const PolarizationInput& in, const ReportContext& ctx) 
     c.xMin = 0; c.xMax = 90; c.yMin = 0; c.yMax = std::max(1.0, i0); c.xTicks = 3; c.yTicks = 2; c.xDecimals = 0; c.yDecimals = 0;
     for (int k = 0; k <= 180; ++k) c.curve.push_back({k * 0.5, i0 * std::pow(std::cos(k * 0.5 * kDeg), 2)});
     c.marker = {{in.angleDeg, out2}};
-    c.legend = "Malus: I = I₀ cos²θ   ● θ = " + num(in.angleDeg) + "°";
+    c.legend = std::string("Malus: I = I₀ cos²θ   ● θ = ") + num(in.angleDeg) + "°";
     return out;
 }
 
@@ -788,8 +788,8 @@ ModelReport doubleSlitEnvelope(const SingleSlitInput& in, const ReportContext& c
     const std::string guardText = "Two identical slits of finite width a, separation d > a, equal amplitudes and L large. Missing fringes appear where d/a is an integer.";
     if (!issues.empty())
         return paused(issues.front().label + " out of range", issues,
-                      {"a = " + num(in.widthMm) + " mm   λ = " + num(in.lambdaNm) + " nm", "d = " + num(in.separationMm) + " mm   L = " + num(in.screenM) + " m",
-                       "ACTION: " + issues.front().message},
+                      {std::string("a = ") + num(in.widthMm) + std::string(" mm   λ = ") + num(in.lambdaNm) + " nm", std::string("d = ") + num(in.separationMm) + std::string(" mm   L = ") + num(in.screenM) + " m",
+                       std::string("ACTION: ") + issues.front().message},
                       guardText + "\n\nDiagram, chart and retained results show the last valid run.", ctx);
 
     const double a = in.widthMm * 1e-3, d = in.separationMm * 1e-3, lam = in.lambdaNm * 1e-9;
@@ -804,23 +804,23 @@ ModelReport doubleSlitEnvelope(const SingleSlitInput& in, const ReportContext& c
     LcdRegister r1;
     r1.title = "TWO SLITS OF WIDTH a / DEG";
     r1.lines = {"I = I₀ cos²(πd sinθ/λ) · (sinβ/β)²", "β = π a sin θ / λ",
-                "first slit minimum θ = " + fx(theta1) + "°", "fringe spacing Δθ = " + fx(lam / d / kDeg) + "°"};
+                std::string("first slit minimum θ = ") + fx(theta1) + "°", std::string("fringe spacing Δθ = ") + fx(lam / d / kDeg) + "°"};
     r1.resultLabel = "ENVELOPE HALF-WIDTH · θ₁";
     r1.resultValue = fx(theta1) + "°";
     LcdRegister r2;
     r2.title = "MISSING ORDERS / d ÷ a";
-    r2.lines = {"d/a = " + fx(ratio), "fringe m sits at sin θ = mλ/d", "slit minimum at sin θ = λ/a",
-                missing ? "m = " + std::to_string(static_cast<int>(std::lround(ratio))) + " falls on the first slit minimum"
+    r2.lines = {std::string("d/a = ") + fx(ratio), "fringe m sits at sin θ = mλ/d", "slit minimum at sin θ = λ/a",
+                missing ? std::string("m = ") + std::to_string(static_cast<int>(std::lround(ratio))) + " falls on the first slit minimum"
                         : "no fringe coincides with the first slit minimum"};
     r2.resultLabel = "FRINGES INSIDE THE ENVELOPE";
     r2.resultValue = std::to_string(std::max(1, static_cast<int>(2 * std::floor(ratio)) - 1)) + " bright";
     rep.registers = {r1, r2};
     rep.notices = {interpretation("The slit width sets the envelope and the separation sets the fine fringes: " +
                                   std::to_string(static_cast<int>(std::lround(width / fringe))) + " fringes fit inside the central envelope" +
-                                  (missing ? ", and the fringe at m = " + std::to_string(static_cast<int>(std::lround(ratio))) + " is missing because it lands on the first slit minimum." : ".")),
+                                  (missing ? std::string(", and the fringe at m = ") + std::to_string(static_cast<int>(std::lround(ratio))) + " is missing because it lands on the first slit minimum." : ".")),
                    guard(guardText)};
-    rep.headline = "θ_env = " + fx(theta1) + "°";
-    rep.retained = retained({"a = " + NF::fixed(in.widthMm, 4) + " mm · d = " + NF::fixed(in.separationMm, 4) + " mm", "λ = " + NF::fixed(in.lambdaNm, 1) + " nm · L = " + NF::fixed(in.screenM, 4) + " m"},
+    rep.headline = std::string("θ_env = ") + fx(theta1) + "°";
+    rep.retained = retained({std::string("a = ") + NF::fixed(in.widthMm, 4) + std::string(" mm · d = ") + NF::fixed(in.separationMm, 4) + " mm", std::string("λ = ") + NF::fixed(in.lambdaNm, 1) + std::string(" nm · L = ") + NF::fixed(in.screenM, 4) + " m"},
                             "RETAINED ENVELOPE WIDTH", fx(theta1) + "°");
     rep.parameters = {{"a", num(in.widthMm) + " mm"}, {"d", num(in.separationMm) + " mm"}, {"λ", num(in.lambdaNm) + " nm"},
                       {"L", num(in.screenM) + " m"}, {"mode", "envelope"}};
@@ -852,8 +852,8 @@ ModelReport gratingResolution(const GratingResolutionInput& in, const ReportCont
     }
     if (!issues.empty())
         return paused(issues.front().label + " out of range", issues,
-                      {"N = " + num(in.linesPerCm) + " lines/cm   λ = " + num(in.lambdaNm) + " nm", "m = " + num(in.order) + "   M = " + num(in.slits),
-                       "ACTION: " + issues.front().message},
+                      {std::string("N = ") + num(in.linesPerCm) + std::string(" lines/cm   λ = ") + num(in.lambdaNm) + " nm", std::string("m = ") + num(in.order) + std::string("   M = ") + num(in.slits),
+                       std::string("ACTION: ") + issues.front().message},
                       guardText + "\n\nDiagram, chart and retained results show the last valid run.", ctx);
 
     const int m = static_cast<int>(std::lround(in.order));
@@ -868,23 +868,23 @@ ModelReport gratingResolution(const GratingResolutionInput& in, const ReportCont
     Report& rep = out.report;
     LcdRegister r1;
     r1.title = "RESOLVING POWER / R = mN";
-    r1.lines = {"R = |m| × N_used", "  = " + std::to_string(std::abs(m)) + " × " + num(in.slits), "  = " + NF::general(R, 6),
-                "δλ = λ / R", "δλ = " + num(in.lambdaNm) + " nm / " + NF::general(R, 6)};
+    r1.lines = {"R = |m| × N_used", std::string("  = ") + std::to_string(std::abs(m)) + std::string(" × ") + num(in.slits), std::string("  = ") + NF::general(R, 6),
+                "δλ = λ / R", std::string("δλ = ") + num(in.lambdaNm) + std::string(" nm / ") + NF::general(R, 6)};
     r1.resultLabel = "RAYLEIGH LIMIT · δλ";
     r1.resultValue = NF::general(dLambda, 3) + " nm";
     LcdRegister r2;
     r2.title = "FREE SPECTRAL RANGE / m";
-    r2.lines = {"FSR = λ / m", "FSR = " + num(fsr) + " nm", "λ + FSR would overlap in order m",
-                "illuminated width N·d = " + NF::fixed(width * 1e3, 3) + " mm", "order " + std::to_string(m) + " angle = " + fx(angle) + "°"};
+    r2.lines = {"FSR = λ / m", std::string("FSR = ") + num(fsr) + " nm", "λ + FSR would overlap in order m",
+                std::string("illuminated width N·d = ") + NF::fixed(width * 1e3, 3) + " mm", std::string("order ") + std::to_string(m) + std::string(" angle = ") + fx(angle) + "°"};
     r2.resultLabel = "ORDER-OVERLAP LIMIT";
     r2.resultValue = num(fsr) + " nm";
     rep.registers = {r1, r2};
-    rep.notices = {interpretation("With " + num(in.slits) + " illuminated lines the grating separates two wavelengths " + NF::general(dLambda, 3) +
-                                  " nm apart in order " + std::to_string(m) + " — doubling the illuminated width halves that gap. The same order repeats every " +
+    rep.notices = {interpretation(std::string("With ") + num(in.slits) + std::string(" illuminated lines the grating separates two wavelengths ") + NF::general(dLambda, 3) +
+                                  std::string(" nm apart in order ") + std::to_string(m) + " — doubling the illuminated width halves that gap. The same order repeats every " +
                                   NF::general(fsr, 4) + " nm, so a spectrum is unambiguous only inside one free spectral range."),
                    guard(guardText)};
-    rep.headline = "δλ = " + NF::general(dLambda, 3) + " nm";
-    rep.retained = retained({"N = " + num(in.linesPerCm) + " lines/cm · m = " + std::to_string(m), "M = " + num(in.slits) + " lines · λ = " + NF::fixed(in.lambdaNm, 2) + " nm"},
+    rep.headline = std::string("δλ = ") + NF::general(dLambda, 3) + " nm";
+    rep.retained = retained({std::string("N = ") + num(in.linesPerCm) + std::string(" lines/cm · m = ") + std::to_string(m), std::string("M = ") + num(in.slits) + std::string(" lines · λ = ") + NF::fixed(in.lambdaNm, 2) + " nm"},
                             "RETAINED RESOLUTION", NF::general(dLambda, 3) + " nm");
     rep.parameters = {{"N", num(in.linesPerCm) + " lines/cm"}, {"λ", num(in.lambdaNm) + " nm"}, {"m", std::to_string(m)},
                       {"M", num(in.slits)}, {"R", NF::general(R, 6)}, {"δλ", NF::general(dLambda, 3) + " nm"}, {"mode", "resolution"}};
@@ -906,7 +906,7 @@ ModelReport gratingResolution(const GratingResolutionInput& in, const ReportCont
         const double w = c.xMin + (c.xMax - c.xMin) * k / 600.0;
         c.marker.push_back({w, 0.5 * (profile(w - 0.5 * dLambda) + profile(w + 0.5 * dLambda))});
     }
-    c.legend = "single line ▬ and a pair δλ apart ● · δλ = " + NF::general(dLambda, 3) + " nm";
+    c.legend = std::string("single line ▬ and a pair δλ apart ● · δλ = ") + NF::general(dLambda, 3) + " nm";
     return out;
 }
 
@@ -968,7 +968,7 @@ FilmColour thinFilmColour(double thicknessNm, double n, double n2) {
     const auto describe = [](double w) {
         if (w <= 0) return std::string("Neutral grey");
         const int band = w < 430 ? 0 : w < 480 ? 1 : w < 510 ? 2 : w < 560 ? 3 : w < 590 ? 4 : w < 620 ? 5 : 6;
-        return std::string(names[band]) + " " + std::to_string(static_cast<int>(std::lround(w / 10.0) * 10)) + " nm";
+        return std::string(names[band]) + std::string(" ") + std::to_string(static_cast<int>(std::lround(w / 10.0) * 10)) + " nm";
     };
     // A washed-out film (many orders) is a pale, desaturated grey; a thin film keeps its saturated hue.
     const double keep = std::clamp(0.20 + 0.80 * vis, 0.0, 1.0);

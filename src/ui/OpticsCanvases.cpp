@@ -102,9 +102,9 @@ QString describeImage(const PC::ImageResult& img) {
         const QString kind = LanguageManager::instance().text(img.real ? "REAL" : "VIRTUAL");
         const QString orientation = LanguageManager::instance().text(img.upright ? "UPRIGHT" : "INVERTED");
         const QString size = LanguageManager::instance().text(QString::fromStdString(ER::sizeDescription(m)));
-        return kind + " · " + orientation + " · " + size;
+        return kind + std::string(" · ") + orientation + std::string(" · ") + size;
     }
-    return QString(img.real ? "Real" : "Virtual") + " · " + (img.upright ? "upright" : "inverted") + " · " +
+    return QString(img.real ? "Real" : "Virtual") + std::string(" · ") + (img.upright ? "upright" : "inverted") + " · " +
            (m > 1.0001 ? "enlarged" : (m < 0.9999 ? "diminished" : "same size"));
 }
 
@@ -136,8 +136,8 @@ void RefractionCanvas::paintDiagram(QPainter& p, const QRectF& a) {
         p.drawLine(QPointF(20, O.y()), QPointF(a.right() - 20, O.y()));                  // interface
         p.setPen(QPen(t.dim, 1, Qt::DashLine));
         p.drawLine(QPointF(O.x(), O.y() - L - 8), QPointF(O.x(), O.y() + L + 8));        // normal
-        text(p, QPointF(20, O.y() - 12), m_m1 + " · n₁ " + num(m_in.n1), t.text, 9);
-        text(p, QPointF(20, O.y() + 14), m_m2 + " · n₂ " + num(m_in.n2), t.text, 9);
+        text(p, QPointF(20, O.y() - 12), m_m1 + std::string(" · n₁ ") + num(m_in.n1), t.text, 9);
+        text(p, QPointF(20, O.y() + 14), m_m2 + std::string(" · n₂ ") + num(m_in.n2), t.text, 9);
 
         const QPointF inc(-std::sin(t1), -std::cos(t1)), refl(std::sin(t1), -std::cos(t1));
         ray(p, O + inc * L, O, t.amber, 1.8);
@@ -178,8 +178,8 @@ void TirCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     const double t1 = m_in.theta1 * kDeg;
 
     text(p, QPointF(14, a.top() + 18), res.totalInternalReflection ? "TOTAL INTERNAL REFLECTION" : "REFRACTION AND REFLECTION", t.amber, 10);
-    text(p, QPointF(18, a.top() + 44), QString::fromStdString(m_in.name1) + " · n₁ = " + num(m_in.n1), t.muted, 10);
-    text(p, QPointF(18, O.y() + 30), QString::fromStdString(m_in.name2) + " · n₂ = " + num(m_in.n2), t.muted, 10);
+    text(p, QPointF(18, a.top() + 44), QString::fromStdString(m_in.name1) + std::string(" · n₁ = ") + num(m_in.n1), t.muted, 10);
+    text(p, QPointF(18, O.y() + 30), QString::fromStdString(m_in.name2) + std::string(" · n₂ = ") + num(m_in.n2), t.muted, 10);
 
     p.setPen(QPen(t.dim, 1, Qt::DashLine));                                         // normal
     p.drawLine(QPointF(O.x(), a.top() + 28), QPointF(O.x(), a.bottom() - 40));
@@ -207,7 +207,7 @@ void TirCanvas::paintDiagram(QPainter& p, const QRectF& a) {
         text(p, O + rd * L * 0.8 + QPointF(8, 8), "Refracted ray", t.amber, 10);
     }
     if (crit)
-        text(p, QPointF(18, a.bottom() - 46), "θ₁ " + QString(m_in.theta1 > *crit ? ">" : "≤") + " θc = " + num(*crit), t.amber, 10);
+        text(p, QPointF(18, a.bottom() - 46), std::string("θ₁ ") + QString(m_in.theta1 > *crit ? ">" : "≤") + std::string(" θc = ") + num(*crit), t.amber, 10);
     else
         text(p, QPointF(18, a.bottom() - 46), "n₁ ≤ n₂: no critical angle", t.amber, 10);
     const double ly = a.bottom() - 16;
@@ -299,10 +299,10 @@ void LensCanvas::paintDiagram(QPainter& p, const QRectF& a) {
         p.drawLine(QPointF(T.x(), axisY), T);
         head(p, T, QPointF(0, T.y() < axisY ? -1 : 1), t.text, 8);
         text(p, QPointF(T.x(), T.y() + (T.y() < axisY ? -12 : 16)), "Image", t.text, 10, Qt::AlignHCenter);
-        text(p, QPointF(T.x() + 8, a.top() + a.height() * 0.84), "dᵢ = " + QString::number(std::fabs(img.imageDistance), 'g', 6) + " cm", t.amber, 10);
-        text(p, QPointF(12, a.bottom() - 14), describeImage(img) + "     m = " + num(img.magnification), t.text, 10);
+        text(p, QPointF(T.x() + 8, a.top() + a.height() * 0.84), std::string("dᵢ = ") + QString::number(std::fabs(img.imageDistance), 'g', 6) + " cm", t.amber, 10);
+        text(p, QPointF(12, a.bottom() - 14), describeImage(img) + std::string("     m = ") + num(img.magnification), t.text, 10);
     }
-    text(p, QPointF(base.x() + 4, a.top() + a.height() * 0.84), "dₒ = " + QString::number(m_in.s, 'g', 6) + " cm", t.text, 10);
+    text(p, QPointF(base.x() + 4, a.top() + a.height() * 0.84), std::string("dₒ = ") + QString::number(m_in.s, 'g', 6) + " cm", t.text, 10);
 }
 
 // ============================================================================ spherical mirror
@@ -357,7 +357,7 @@ void MirrorCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     p.setPen(QPen(t.amber, 2));
     p.drawLine(base, tip);
     head(p, tip, QPointF(0, -1), t.amber, 8);
-    if (m_detailed) text(p, tip + QPointF(-4, -14), "Object " + QString(m_in.h > 0 ? "+" : "") + num(m_in.h, 2) + " cm", t.text, 10);
+    if (m_detailed) text(p, tip + QPointF(-4, -14), std::string("Object ") + QString(m_in.h > 0 ? "+" : "") + num(m_in.h, 2) + " cm", t.text, 10);
 
     if (!img.atInfinity) {
         const double ix = vx - di * sc;
@@ -393,12 +393,12 @@ void MirrorCanvas::paintDiagram(QPainter& p, const QRectF& a) {
                 p.drawLine(QPointF(x1, y - 5), QPointF(x1, y + 5));
                 text(p, QPointF((x0 + x1) / 2, y + 16), label, c, 10, Qt::AlignHCenter);
             };
-            dim(std::min(base.x(), vx), std::max(base.x(), vx), y1, "dₒ = " + QString(m_in.s > 0 ? "+" : "") + num(m_in.s, 2) + " cm", t.muted);
-            dim(std::min(ix, vx), std::max(ix, vx), y2, "dᵢ = " + num(di, 4) + " cm", t.sage);
+            dim(std::min(base.x(), vx), std::max(base.x(), vx), y1, std::string("dₒ = ") + QString(m_in.s > 0 ? "+" : "") + num(m_in.s, 2) + " cm", t.muted);
+            dim(std::min(ix, vx), std::max(ix, vx), y2, std::string("dᵢ = ") + num(di, 4) + " cm", t.sage);
         } else {
             text(p, QPointF(T.x(), T.y() + (T.y() < axisY ? -12 : 16)), "Image", t.text, 10, Qt::AlignHCenter);
-            text(p, QPointF(a.left() + 14, a.bottom() - 34), "dₒ = " + QString::number(m_in.s, 'g', 6) + " cm  ·  dᵢ = " +
-                 QString::number(std::fabs(di), 'g', 6) + " cm  ·  m = " + QString::number(img.magnification, 'g', 5), t.text, 10);
+            text(p, QPointF(a.left() + 14, a.bottom() - 34), std::string("dₒ = ") + QString::number(m_in.s, 'g', 6) + " cm  ·  dᵢ = " +
+                 QString::number(std::fabs(di), 'g', 6) + std::string(" cm  ·  m = ") + QString::number(img.magnification, 'g', 5), t.text, 10);
         }
     } else {
         text(p, QPointF(a.center().x(), a.top() + 60), "Image at infinity (object at F)", t.error, 10, Qt::AlignHCenter);
@@ -517,22 +517,22 @@ void PrismCanvas::paintDiagram(QPainter& p, const QRectF& a) {
         p.drawLine(P1, main.X);
         p.drawLine(main.X, main.P2);
         arcDirs(p, main.X, main.d0, main.d2, 24, t.text);
-        text(p, main.P2 + QPointF(26, 44), "δ = " + num(res.deviation) + "°", t.amber, 10);
+        text(p, main.P2 + QPointF(26, 44), std::string("δ = ") + num(res.deviation) + "°", t.amber, 10);
     }
     if (m_showBends) {
         arcDirs(p, P1, nL, -main.d0, 24, t.text);
-        text(p, P1 + QPointF(-6, -22), "i₁ = " + num(m_in.incidence) + "°", t.text, 9, Qt::AlignRight);
+        text(p, P1 + QPointF(-6, -22), std::string("i₁ = ") + num(m_in.incidence) + "°", t.text, 9, Qt::AlignRight);
         if (main.ok && !main.tir) {
             arcDirs(p, main.P2, nR, main.d2, 24, t.text);
-            text(p, main.P2 + QPointF(6, -22), "i₂ = " + num(res.i2) + "°", t.text, 9);
+            text(p, main.P2 + QPointF(6, -22), std::string("i₂ = ") + num(res.i2) + "°", t.text, 9);
             const bool sym = std::fabs(res.r1 - res.r2) < 0.005;
-            text(p, (P1 + main.P2) / 2 + QPointF(0, 18), sym ? "r₁ = r₂ = " + QString::number(res.r1, 'g', 6) + "°"
-                                                             : "r₁ = " + num(res.r1, 2) + "°  r₂ = " + num(res.r2, 2) + "°", t.text, 9, Qt::AlignHCenter);
+            text(p, (P1 + main.P2) / 2 + QPointF(0, 18), sym ? std::string("r₁ = r₂ = ") + QString::number(res.r1, 'g', 6) + "°"
+                                                             : std::string("r₁ = ") + num(res.r1, 2) + std::string("°  r₂ = ") + num(res.r2, 2) + "°", t.text, 9, Qt::AlignHCenter);
         }
     }
     arcDirs(p, apex, unit(left - apex), unit(right - apex), 26, t.text);
-    text(p, apex + QPointF(0, 44), "A = " + QString::number(m_in.apex, 'g', 5) + "°", t.text, 9, Qt::AlignHCenter);
-    text(p, QPointF(apex.x(), left.y() - 22), "n = " + num(m_in.nPrism / m_in.nMedium), t.text, 9, Qt::AlignHCenter);
+    text(p, apex + QPointF(0, 44), std::string("A = ") + QString::number(m_in.apex, 'g', 5) + "°", t.text, 9, Qt::AlignHCenter);
+    text(p, QPointF(apex.x(), left.y() - 22), std::string("n = ") + num(m_in.nPrism / m_in.nMedium), t.text, 9, Qt::AlignHCenter);
     text(p, QPointF(16, P1.y() + 70), spectrumMode ? "White-light dispersion" : "Incident ray",
          spectrumMode ? t.text : t.amber, 10);
 
@@ -604,8 +604,8 @@ void WaveCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     text(p, QPointF(sx - 10, ym - 8), QString("m = %1").arg(m_in.order), t.amber, 9, Qt::AlignRight);
     text(p, QPointF(sx - 10, cy + 12), "m = 0", t.amber, 9, Qt::AlignRight);
 
-    text(p, QPointF(a.left() + 14, cy + 105), "d = " + QString::number(m_in.separationMm, 'g', 4) + " mm", t.amber, 10);
-    text(p, QPointF((bx + sx) / 2, cy + 128), "L = " + QString::number(m_in.screenM, 'f', 3) + " m", t.text, 10, Qt::AlignHCenter);
+    text(p, QPointF(a.left() + 14, cy + 105), std::string("d = ") + QString::number(m_in.separationMm, 'g', 4) + " mm", t.amber, 10);
+    text(p, QPointF((bx + sx) / 2, cy + 128), std::string("L = ") + QString::number(m_in.screenM, 'f', 3) + " m", t.text, 10, Qt::AlignHCenter);
     text(p, QPointF(a.left() + 14, a.bottom() - 14), "Constructive: Δ = mλ     Destructive: Δ = (m + ½)λ", t.muted, 9);
 }
 
@@ -642,7 +642,7 @@ void NewtonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     const bool transmitted = m_in.transmitted;
     const double order = transmitted ? m + 0.5 : double(m);                  // transmitted dark rings sit at half orders
     const double lam = m_in.lambdaNm * 1e-9, r = std::sqrt(order * lam * m_in.radiusM / m_in.n);
-    text(p, QPointF(14, a.top() + 18), "PLANO-CONVEX LENS · R = " + num(m_in.radiusM, 4) + " m", t.amber, 10);
+    text(p, QPointF(14, a.top() + 18), std::string("PLANO-CONVEX LENS · R = ") + num(m_in.radiusM, 4) + " m", t.amber, 10);
 
     const double cx = a.center().x(), hw = a.width() / 2 - 34, y0 = a.top() + 52;
     const QRectF plate(a.left() + 30, a.top() + a.height() * 0.40, a.width() - 60, 14);
@@ -655,7 +655,7 @@ void NewtonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     p.setPen(QPen(t.sage, 1.5)); p.setBrush(glass); p.drawPath(lens);
     p.setBrush(Qt::NoBrush); p.drawRect(plate);
     text(p, QPointF(cx - hw + 18, y0 + 22), "Glass lens", t.muted, 10);
-    text(p, QPointF(cx - hw + 18, plate.top() - 6), "Air film · n = " + num(m_in.n, 4), t.muted, 10);
+    text(p, QPointF(cx - hw + 18, plate.top() - 6), std::string("Air film · n = ") + num(m_in.n, 4), t.muted, 10);
     text(p, QPointF(cx, plate.bottom() + 16), "Contact · t = 0", t.muted, 10, Qt::AlignHCenter);
     const double gx = cx + hw * 0.5, k = (plate.top() - yb) / (hw * hw);                  // gap at x: parabola of the curved face
     const double gap = k * (gx - cx) * (gx - cx);
@@ -676,9 +676,9 @@ void NewtonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     text(p, QPointF(14, a.top() + a.height() * 0.62), transmitted ? "TRANSMITTED FIELD" : "REFLECTED FIELD", t.amber, 10);
     const QString sub = m < 10 ? QString(QChar(0x2080 + m)) : QString("(m)");
     text(p, QPointF(14, a.top() + a.height() * 0.62 + 20), transmitted ? "Bright center · first dark at m = ½" : "Dark center: m = 0", t.muted, 10);
-    text(p, QPointF(14, a.top() + a.height() * 0.62 + 36), "Selected ring: m = " + QString::number(m), t.muted, 10);
-    text(p, QPointF(14, a.top() + a.height() * 0.62 + 52), "r" + sub + " = " + num(r * 1e3, 4) + " mm", t.muted, 10);
-    text(p, QPointF(14, a.top() + a.height() * 0.62 + 68), "D" + sub + " = " + num(2 * r * 1e3, 4) + " mm", t.muted, 10);
+    text(p, QPointF(14, a.top() + a.height() * 0.62 + 36), std::string("Selected ring: m = ") + QString::number(m), t.muted, 10);
+    text(p, QPointF(14, a.top() + a.height() * 0.62 + 52), std::string("r") + sub + std::string(" = ") + num(r * 1e3, 4) + " mm", t.muted, 10);
+    text(p, QPointF(14, a.top() + a.height() * 0.62 + 68), std::string("D") + sub + std::string(" = ") + num(2 * r * 1e3, 4) + " mm", t.muted, 10);
     text(p, QPointF(14, a.bottom() - 30), "Radius ≠ diameter.", t.muted, 10);
     text(p, QPointF(14, a.bottom() - 14), transmitted ? "Dark rings: 2nt = (m + ½)λ." : "Dark rings: 2nt = mλ.", t.muted, 10);
 }
@@ -770,9 +770,9 @@ void MichelsonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
         p.setBrush(cell);
         const QRectF chamber(m2x - 8.0, bs.y() - 19.0, 16.0, 38.0);
         p.drawRect(chamber);
-        text(p, QPointF(m2x + 6.0, chamber.center().y()), "Water cell · n = " + num(m_in.n, 4), t.blue, 9);
+        text(p, QPointF(m2x + 6.0, chamber.center().y()), std::string("Water cell · n = ") + num(m_in.n, 4), t.blue, 9);
     } else {
-        text(p, QPointF(m2x + 6.0, bs.y() - 26.0), "Air · n = " + num(m_in.n, 4), t.muted, 9);
+        text(p, QPointF(m2x + 6.0, bs.y() - 26.0), std::string("Air · n = ") + num(m_in.n, 4), t.muted, 9);
     }
 
     // Beam path tracing: draw each complete round-trip arm as a traced path with
@@ -788,7 +788,7 @@ void MichelsonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     ray(p, bsOut + QPointF(0, -14), m1Out, t.amber, 1.6);                       // BS → M1
     ray(p, m1Back, bsIn + QPointF(0, -14), t.amber, 1.3);                       // M1 → BS
     text(p, QPointF((bs.x() + m1.x()) / 2, bs.y() - 40),
-         "M1 arm · " + num(m1Len, 1) + " px", t.amber, 9, Qt::AlignHCenter);
+         std::string("M1 arm · ") + num(m1Len, 1) + " px", t.amber, 9, Qt::AlignHCenter);
 
     // --- M2 arm (side): BS → M2 → BS  — sage path
     const QPointF m2Out(m2x - 5, bs.y() - 4);              // BS → M2 departure
@@ -797,7 +797,7 @@ void MichelsonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     ray(p, bsOut + QPointF(14, 0), m2Out, t.sage, 1.6);                      // BS → M2
     ray(p, m2Back, bsIn + QPointF(0, 14), t.sage, 1.3);                      // M2 → BS
     text(p, QPointF((bs.x() + m2x) / 2, bs.y() - 40),
-         "M2 arm · " + num(m2Len, 1) + " px", t.sage, 9, Qt::AlignHCenter);
+         std::string("M2 arm · ") + num(m2Len, 1) + " px", t.sage, 9, Qt::AlignHCenter);
 
     // --- Recombined beam: BS → detector  — brightness follows I/Imax
     QColor detBeam = t.amber;
@@ -848,11 +848,11 @@ void MichelsonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     p.drawLine(QPointF(m2x - mirrorHalfW, bs.y()), QPointF(m2x + mirrorHalfW, bs.y()));
     text(p, QPointF(bs.x() - 30, m1.y()), "M1 · fixed", t.muted, 9, Qt::AlignRight);
     text(p, QPointF(m2x + 30, bs.y() - 5), "M2 · movable", t.amber, 9);
-    text(p, QPointF(m2x + 30, bs.y() + 10), "Δx = " + QString(dxUm > 0 ? "+" : "") + num(dxUm, 4) + " µm", t.muted, 9);
+    text(p, QPointF(m2x + 30, bs.y() + 10), std::string("Δx = ") + QString(dxUm > 0 ? "+" : "") + num(dxUm, 4) + " µm", t.muted, 9);
     text(p, source + QPointF(-8, -20), "Source", t.muted, 9);
     text(p, bs + QPointF(0, 28), "BS", t.muted, 9, Qt::AlignHCenter);
     text(p, QPointF(detector.x() + 12, detector.y() - 8), "Detector", t.muted, 9);
-    text(p, QPointF(detector.x() + 12, detector.y() + 7), "I/Imax = " + num(intensity, 4), t.amber, 9);
+    text(p, QPointF(detector.x() + 12, detector.y() + 7), std::string("I/Imax = ") + num(intensity, 4), t.amber, 9);
 
     // Live fringe counter: ΔN = ΔOPD / λ = 2nΔx / λ — how many fringes have shifted as M2 moves.
     const double shift = 2 * m_in.n * dxUm * 1e3 / m_in.lambdaNm;
@@ -886,10 +886,10 @@ void MichelsonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     text(p, QPointF(fringeCenter.x(), fringeCenter.y() - size / 2.0 - 10.0), "FRINGE VIEW", t.amber, 9, Qt::AlignHCenter);
 
     const double spacing = m_in.lambdaNm / (2 * m_in.n);
-    text(p, QPointF(a.left() + 14, a.bottom() - 14), "ΔOPD = 2nΔx = " + num(2 * m_in.n * dxUm, 4) + " µm", t.muted, 9);
-    text(p, QPointF(a.left() + 14, a.bottom() - 30), "λ/(2n) = " + num(spacing, 4) + " nm per fringe", t.muted, 9);
+    text(p, QPointF(a.left() + 14, a.bottom() - 14), std::string("ΔOPD = 2nΔx = ") + num(2 * m_in.n * dxUm, 4) + " µm", t.muted, 9);
+    text(p, QPointF(a.left() + 14, a.bottom() - 30), std::string("λ/(2n) = ") + num(spacing, 4) + " nm per fringe", t.muted, 9);
     text(p, QPointF(a.left() + 14, a.bottom() - 46), m_in.fringes
-             ? "Contrast V = " + num(vis, 2) + " · sweep ±2 µm"
+             ? std::string("Contrast V = ") + num(vis, 2) + " · sweep ±2 µm"
              : "Concentric fringes · schematic", t.muted, 9);
 
     // ---- Detector screen interference fringes ----
@@ -922,7 +922,7 @@ void MichelsonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     const int centerX = screenRect.left() + static_cast<int>(screenCenter);
     p.setPen(QPen(t.amber, 2));
     p.drawLine(QPointF(centerX, screenRect.top() - 4), QPointF(centerX, screenRect.top() + screenH + 4));
-    text(p, QPointF(centerX, screenRect.bottom() + 12), "I/Imax = " + num(intensity, 4), t.amber, 8, Qt::AlignHCenter);
+    text(p, QPointF(centerX, screenRect.bottom() + 12), std::string("I/Imax = ") + num(intensity, 4), t.amber, 8, Qt::AlignHCenter);
 
     // Beam path tracing legend: color-coded arms
     legendItem(p, QPointF(a.left() + 14, a.bottom() - 66), "M1 arm (top)", t.amber);
@@ -955,49 +955,49 @@ void ThinFilmCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     p.setBrush(sub); p.drawRect(QRectF(left, filmBot, right - left, a.bottom() - filmBot - 70));
     p.setPen(QPen(t.sage, 1.5)); p.drawLine(QPointF(left, filmTop), QPointF(right, filmTop)); p.drawLine(QPointF(left, filmBot), QPointF(right, filmBot));
     text(p, QPointF(left + 6, filmTop - 12), "Air · n₀ = 1.0000", t.muted, 10);
-    text(p, QPointF(left + 6, filmTop + thick / 2), "Film · n = " + num(m_in.n), t.text, 10);
-    text(p, QPointF(left + 6, filmBot + 16), "Substrate · n₂ = " + num(m_in.n2), t.muted, 10);
+    text(p, QPointF(left + 6, filmTop + thick / 2), std::string("Film · n = ") + num(m_in.n), t.text, 10);
+    text(p, QPointF(left + 6, filmBot + 16), std::string("Substrate · n₂ = ") + num(m_in.n2), t.muted, 10);
     const double x0 = a.center().x() - 20;
     const double dy = oblique ? 24.0 : 0.0;
     const double dx = oblique ? 40.0 : 60.0;
     ray(p, QPointF(x0 - dx, a.top() + 54 - dy), QPointF(x0, filmTop), t.amber, 1.8);                 // incident ray
     if (oblique) {
-        text(p, QPointF(x0 - dx - 40, a.top() + 44), "θ₀ = " + num(m_in.thetaDeg, 1) + "°", t.muted, 9);
+        text(p, QPointF(x0 - dx - 40, a.top() + 44), std::string("θ₀ = ") + num(m_in.thetaDeg, 1) + "°", t.muted, 9);
     }
     if (transmission) {
         ray(p, QPointF(x0, filmTop), QPointF(x0 + 20, filmBot), t.amber, 1.3);                  // T1 through the film
         ray(p, QPointF(x0 + 20, filmBot), QPointF(x0 + 34, a.bottom() - 80), t.amber, 1.8);     // T2 down through the substrate
-        text(p, QPointF(x0 + 38, a.bottom() - 80), "T · " + QString(oneReversal ? "one reversal" : "no net reversal"), t.amber, 10);
+        text(p, QPointF(x0 + 38, a.bottom() - 80), std::string("T · ") + QString(oneReversal ? "one reversal" : "no net reversal"), t.amber, 10);
         ray(p, QPointF(x0 + 20, filmBot), QPointF(x0 + 6, filmTop), t.dim, 1.1, -1, Qt::DashLine);   // weak internal bounce
     } else {
         ray(p, QPointF(x0, filmTop), QPointF(x0 + dx, a.top() + 54 + dy), t.text, 1.6);              // R1: reflected at top
-        text(p, QPointF(x0 + dx + 4, a.top() + 54 + dy), "R1 · " + QString(topRev ? "reversal" : "no reversal"), t.text, 10);
+        text(p, QPointF(x0 + dx + 4, a.top() + 54 + dy), std::string("R1 · ") + QString(topRev ? "reversal" : "no reversal"), t.text, 10);
         ray(p, QPointF(x0, filmTop), QPointF(x0 + 14, filmBot), t.amber, 1.3);
         ray(p, QPointF(x0 + 14, filmBot), QPointF(x0 + 28, filmTop), t.amber, 1.3);
         ray(p, QPointF(x0 + 28, filmTop), QPointF(x0 + dx + 28, a.top() + 92 + dy), t.amber, 1.6);        // R2
-        text(p, QPointF(x0 + dx + 32, a.top() + 92 + dy), "R2 · " + QString(botRev ? "reversal" : "no reversal"), t.amber, 10);
+        text(p, QPointF(x0 + dx + 32, a.top() + 92 + dy), std::string("R2 · ") + QString(botRev ? "reversal" : "no reversal"), t.amber, 10);
     }
     p.setPen(QPen(t.text, 1)); p.drawLine(QPointF(right - 24, filmTop), QPointF(right - 24, filmBot));
-    text(p, QPointF(right - 30, filmTop + thick / 2), "t = " + num(m_in.thicknessNm) + " nm", t.text, 10, Qt::AlignRight);
-    text(p, QPointF(14, a.bottom() - 46), "OPD = 2nt·cosθₜ = " + num(opd) + " nm", t.muted, 10);
+    text(p, QPointF(right - 30, filmTop + thick / 2), std::string("t = ") + num(m_in.thicknessNm) + " nm", t.text, 10, Qt::AlignRight);
+    text(p, QPointF(14, a.bottom() - 46), std::string("OPD = 2nt·cosθₜ = ") + num(opd) + " nm", t.muted, 10);
     if (transmission) {
         const double trans = 1.0 - (oneReversal ? std::pow(std::sin(std::numbers::pi * opd / m_in.lambdaNm), 2) :
                                                 std::pow(std::cos(std::numbers::pi * opd / m_in.lambdaNm), 2));
-        text(p, QPointF(14, a.bottom() - 30), "I_t/I_t,max = " + (oneReversal ? "sin²" : "cos²") + "(2πnt·cosθₜ/λ) = " + num(trans), t.muted, 10);
-        text(p, QPointF(14, a.bottom() - 14), "Bright when 2nt·cosθₜ = " + QString(oneReversal ? "(q + ½)λ" : "qλ"), t.muted, 10);
+        text(p, QPointF(14, a.bottom() - 30), std::string("I_t/I_t,max = ") + (oneReversal ? "sin²" : "cos²") + std::string("(2πnt·cosθₜ/λ) = ") + num(trans), t.muted, 10);
+        text(p, QPointF(14, a.bottom() - 14), std::string("Bright when 2nt·cosθₜ = ") + QString(oneReversal ? "(q + ½)λ" : "qλ"), t.muted, 10);
     } else {
-        text(p, QPointF(14, a.bottom() - 30), "Δψ = 4πnt·cosθₜ/λ " + QString(oneReversal ? "+ π" : "") + " (" + (oneReversal ? "sin²" : "cos²") + ")", t.muted, 10);
-        text(p, QPointF(14, a.bottom() - 14), "Bright when 2nt·cosθₜ = " + QString(oneReversal ? "(q + ½)λ" : "qλ"), t.muted, 10);
+        text(p, QPointF(14, a.bottom() - 30), std::string("Δψ = 4πnt·cosθₜ/λ ") + QString(oneReversal ? "+ π" : "") + std::string(" (") + (oneReversal ? "sin²" : "cos²") + ")", t.muted, 10);
+        text(p, QPointF(14, a.bottom() - 14), std::string("Bright when 2nt·cosθₜ = ") + QString(oneReversal ? "(q + ½)λ" : "qλ"), t.muted, 10);
     }
 }
 
 void GratingCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     const Theme& t = th();
     const double d = 0.01 / std::max(1e-9, m_in.linesPerCm), lam = m_in.lambdaNm * 1e-9;
-    text(p, QPointF(14, a.top() + 18), (std::fabs(m_in.incidenceDeg) < 0.5 ? "NORMAL INCIDENCE" : "INCIDENCE θᵢ = " + num(m_in.incidenceDeg, 1) + "°") +
-                                " · d = " + num(d * 1e6, 4) + " µm", t.amber, 10);
+    text(p, QPointF(14, a.top() + 18), (std::fabs(m_in.incidenceDeg) < 0.5 ? "NORMAL INCIDENCE" : std::string("INCIDENCE θᵢ = ") + num(m_in.incidenceDeg, 1) + "°") +
+                                std::string(" · d = ") + num(d * 1e6, 4) + " µm", t.amber, 10);
     if (m_in.orderList)                                                        // second tab: every peak is the subject
-        text(p, QPointF(a.right() - 14, a.top() + 18), "ORDERS VIEW · d/λ = " + num(d / lam, 4), t.amber, 10, Qt::AlignRight);
+        text(p, QPointF(a.right() - 14, a.top() + 18), std::string("ORDERS VIEW · d/λ = ") + num(d / lam, 4), t.amber, 10, Qt::AlignRight);
     const QPointF g(a.left() + a.width() * 0.30, a.top() + a.height() * 0.40);
     const double sx = a.right() - 60, len = sx - g.x();
     for (int k = -1; k <= 1; ++k) ray(p, QPointF(a.left() + 24, g.y() + k * 20), QPointF(g.x() - 6, g.y() + k * 20), t.sage, 1.4, -1);
@@ -1018,10 +1018,10 @@ void GratingCanvas::paintDiagram(QPainter& p, const QRectF& a) {
         text(p, end + QPointF(6, 0), (m > 0 ? "+" : "") + QString::number(m), selected ? t.amber : t.muted, 10);
     }
     // Ray angle visualizer: incidence angle and selected diffracted order angle
-    text(p, QPointF(a.left() + 24, g.y() - 80), "θᵢ = " + num(m_in.incidenceDeg, 1) + "°", t.muted, 10);
+    text(p, QPointF(a.left() + 24, g.y() - 80), std::string("θᵢ = ") + num(m_in.incidenceDeg, 1) + "°", t.muted, 10);
     if (selPropagates) {
         text(p, QPointF(g.x() + len * std::cos(thSel) * 0.92 + 10, g.y() - len * std::sin(thSel) * 0.92 - 14),
-             "θₘ = " + num(thSel * 180 / std::numbers::pi, 2) + "°", t.amber, 10);
+             std::string("θₘ = ") + num(thSel * 180 / std::numbers::pi, 2) + "°", t.amber, 10);
     } else {
         text(p, QPointF(g.x() + 40, g.y() - 50), "θₘ: no real angle", t.muted, 9);
     }
@@ -1039,7 +1039,7 @@ void GratingCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     }
     if (!orders.empty()) {
         const double lim = std::asin(std::clamp(orders.back() * lam / d, -1.0, 1.0)) * 180 / std::numbers::pi;
-        text(p, QPointF(a.center().x(), a.bottom() - 10), num(-lim, 2) + "° … 0° … +" + num(lim, 2) + "°", t.muted, 10, Qt::AlignHCenter);
+        text(p, QPointF(a.center().x(), a.bottom() - 10), num(-lim, 2) + std::string("° … 0° … +") + num(lim, 2) + "°", t.muted, 10, Qt::AlignHCenter);
     }
 }
 
@@ -1047,7 +1047,7 @@ void SingleSlitCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     const Theme& t = th();
     const double aa = m_in.widthMm * 1e-3, lam = m_in.lambdaNm * 1e-9;
     const double s1 = std::min(1.0, lam / aa), theta = std::asin(s1);
-    text(p, QPointF(14, a.top() + 18), "SINGLE SLIT · a = " + num(m_in.widthMm, 4) + " mm", t.amber, 10);
+    text(p, QPointF(14, a.top() + 18), std::string("SINGLE SLIT · a = ") + num(m_in.widthMm, 4) + " mm", t.amber, 10);
     const QPointF g(a.left() + a.width() * 0.26, a.top() + a.height() * 0.50);
     const double sx = a.right() - 110, gap = 18;
     for (int k = -2; k <= 2; ++k) ray(p, QPointF(a.left() + 20, g.y() + k * 14), QPointF(g.x() - 8, g.y() + k * 14), t.sage, 1.3, -1);
@@ -1081,18 +1081,18 @@ void SingleSlitCanvas::paintDiagram(QPainter& p, const QRectF& a) {
             p.drawLine(QPointF(sx - 5, g.y() + yl), QPointF(sx + 5, g.y() + yl));
         }
         text(p, QPointF(14, a.bottom() - 30),
-             "y₁ = ±" + num(m_in.screenM * std::tan(std::asin(std::min(1.0, lam / aa))) * 1e3, 4) + " mm · y₂ = ±"
+             std::string("y₁ = ±") + num(m_in.screenM * std::tan(std::asin(std::min(1.0, lam / aa))) * 1e3, 4) + " mm · y₂ = ±"
                  + num(m_in.screenM * std::tan(std::asin(std::min(1.0, 2 * lam / aa))) * 1e3, 4) + " mm", t.muted, 10);
         text(p, QPointF(14, a.bottom() - 14),
-             "y₃ = ±" + num(m_in.screenM * std::tan(std::asin(std::min(1.0, 3 * lam / aa))) * 1e3, 4)
-                 + " mm · w = " + num(m_in.exactGeometry ? 2 * m_in.screenM * std::tan(theta) * 1e3 :
+             std::string("y₃ = ±") + num(m_in.screenM * std::tan(std::asin(std::min(1.0, 3 * lam / aa))) * 1e3, 4)
+                 + std::string(" mm · w = ") + num(m_in.exactGeometry ? 2 * m_in.screenM * std::tan(theta) * 1e3 :
                     2 * m_in.screenM * (m_in.lambdaNm * 1e-9 / (m_in.widthMm * 1e-3)) * 1e3, 5)
                  + " mm (central lobe)", t.muted, 10);
     } else {
         const double wExact = 2 * m_in.screenM * std::tan(theta) * 1e3;
         const double wApprox = 2 * m_in.screenM * (m_in.lambdaNm * 1e-9 / (m_in.widthMm * 1e-3)) * 1e3;
         const double wDisp = m_in.exactGeometry ? wExact : wApprox;
-        text(p, QPointF(14, a.bottom() - 30), "w = " + (m_in.exactGeometry ? "2L tan θ₁" : "≈ 2L λ/a") + " = " + num(wDisp, 5) + " mm", t.muted, 10);
+        text(p, QPointF(14, a.bottom() - 30), std::string("w = ") + (m_in.exactGeometry ? "2L tan θ₁" : "≈ 2L λ/a") + std::string(" = ") + num(wDisp, 5) + " mm", t.muted, 10);
         text(p, QPointF(14, a.bottom() - 14), "Minima: a sin θ = mλ", t.muted, 10);
     }
 }
@@ -1114,19 +1114,19 @@ void PolarizationCanvas::paintDiagram(QPainter& p, const QRectF& a) {
         p.setPen(Qt::NoPen); p.setBrush(glass);
         p.drawRect(QRectF(a.left() + 20, y0, a.width() - 40, a.bottom() - y0 - 76));
         p.setPen(QPen(t.sage, 1.8)); p.drawLine(QPointF(a.left() + 20, y0), QPointF(a.right() - 20, y0));
-        text(p, QPointF(a.left() + 26, y0 - 8), "n₁ = " + num(m_in.n1, 4) + "  (air side)", t.muted, 10);
-        text(p, QPointF(a.left() + 26, y0 + 18), "n₂ = " + num(m_in.n2, 4) + "  (glass side)", t.muted, 10);
+        text(p, QPointF(a.left() + 26, y0 - 8), std::string("n₁ = ") + num(m_in.n1, 4) + "  (air side)", t.muted, 10);
+        text(p, QPointF(a.left() + 26, y0 + 18), std::string("n₂ = ") + num(m_in.n2, 4) + "  (glass side)", t.muted, 10);
         p.setPen(QPen(t.dim, 1, Qt::DashLine)); p.drawLine(o + QPointF(0, -L - 12), o + QPointF(0, L));
         ray(p, o + QPointF(-std::sin(thB) * L, -std::cos(thB) * L), o, t.amber, 1.8);            // incident at θB
         ray(p, o, o + QPointF(std::sin(thB) * L, -std::cos(thB) * L), t.amber, 1.6);             // reflected: s only
         ray(p, o, o + QPointF(std::cos(thB) * L, std::sin(thB) * L), t.amber, 1.4);              // refracted at 90° − θB
-        text(p, o + QPointF(-L * 0.70, -L * 0.30), "θB = " + num(deg, 4) + "°", t.text, 10, Qt::AlignRight);
+        text(p, o + QPointF(-L * 0.70, -L * 0.30), std::string("θB = ") + num(deg, 4) + "°", t.text, 10, Qt::AlignRight);
         text(p, o + QPointF(L * 0.26, -L * 0.62), "reflected · s only", t.amber, 9);
-        text(p, o + QPointF(L * 0.26, L * 0.55), "refracted · " + num(90 - deg, 4) + "°", t.muted, 9);
-        text(p, QPointF(14, a.bottom() - 58), "tan θB = n₂ / n₁ = " + num(m_in.n2 / m_in.n1, 5), t.muted, 10);
-        text(p, QPointF(14, a.bottom() - 42), "R_p = 0.0000   ·   R_s = " + num(rsB, 4), t.text, 10);
+        text(p, o + QPointF(L * 0.26, L * 0.55), std::string("refracted · ") + num(90 - deg, 4) + "°", t.muted, 9);
+        text(p, QPointF(14, a.bottom() - 58), std::string("tan θB = n₂ / n₁ = ") + num(m_in.n2 / m_in.n1, 5), t.muted, 10);
+        text(p, QPointF(14, a.bottom() - 42), std::string("R_p = 0.0000   ·   R_s = ") + num(rsB, 4), t.text, 10);
         text(p, QPointF(14, a.bottom() - 26), "reflected and refracted rays are perpendicular", t.muted, 10);
-        text(p, QPointF(14, a.bottom() - 10), "unpolarized beam: " + num((rsB / 2) * 100, 3) + "% reflected", t.muted, 10);
+        text(p, QPointF(14, a.bottom() - 10), std::string("unpolarized beam: ") + num((rsB / 2) * 100, 3) + "% reflected", t.muted, 10);
         return;
     }
     const double i0 = m_in.unpolarized ? m_in.incidentIntensity / 2 : m_in.incidentIntensity;
@@ -1144,8 +1144,8 @@ void PolarizationCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     const double ang = m_in.angleDeg * std::numbers::pi / 180;
     p.setPen(QPen(t.amber, 1.6)); p.drawEllipse(p2, 22, 38);
     p.drawLine(p2 + QPointF(-std::sin(ang) * 34, -std::cos(ang) * 34), p2 + QPointF(std::sin(ang) * 34, std::cos(ang) * 34));
-    text(p, QPointF(a.left() + 14, cy - 22), "Iᵢₙ = " + num(m_in.incidentIntensity, 4) + " W/m²", t.muted, 9);
-    text(p, QPointF(p1.x() + 34, cy - 22), "I₀ = " + num(i0, 4) + " W/m²" + (m_in.unpolarized ? "  (½ of unpolarized)" : ""), t.muted, 9);
+    text(p, QPointF(a.left() + 14, cy - 22), std::string("Iᵢₙ = ") + num(m_in.incidentIntensity, 4) + " W/m²", t.muted, 9);
+    text(p, QPointF(p1.x() + 34, cy - 22), std::string("I₀ = ") + num(i0, 4) + std::string(" W/m²") + (m_in.unpolarized ? "  (½ of unpolarized)" : ""), t.muted, 9);
     if (m_in.unpolarized) {
         // star / mixed arrows showing multiple polarization directions before P1
         p.setPen(QPen(t.muted, 1.2));
@@ -1156,10 +1156,10 @@ void PolarizationCanvas::paintDiagram(QPainter& p, const QRectF& a) {
         }
         text(p, QPointF(p1.x() - 52, cy - 34), "unpolarized", t.muted, 8);
     }
-    text(p, QPointF(a.right() - 10, cy - 22), "I = " + num(iOutDisp, 5) + " W/m²", t.amber, 9, Qt::AlignRight);
+    text(p, QPointF(a.right() - 10, cy - 22), std::string("I = ") + num(iOutDisp, 5) + " W/m²", t.amber, 9, Qt::AlignRight);
     text(p, p1 + QPointF(0, 54), "P₁ axis 0°", t.muted, 9, Qt::AlignHCenter);
-    text(p, p2 + QPointF(0, 54), "P₂ axis " + num(m_in.angleDeg, 4) + "°", t.muted, 9, Qt::AlignHCenter);
-    text(p, QPointF(a.center().x(), cy + 76), "θ = " + num(m_in.angleDeg, 4) + "° between transmission axes", t.text, 10, Qt::AlignHCenter);
+    text(p, p2 + QPointF(0, 54), std::string("P₂ axis ") + num(m_in.angleDeg, 4) + "°", t.muted, 9, Qt::AlignHCenter);
+    text(p, QPointF(a.center().x(), cy + 76), std::string("θ = ") + num(m_in.angleDeg, 4) + "° between transmission axes", t.text, 10, Qt::AlignHCenter);
 
     text(p, QPointF(14, half + 14), "B / BREWSTER · INTERFACE ANGLE", t.amber, 10);
     const double thB = std::atan(m_in.n2 / m_in.n1), o_y = half + (a.bottom() - half) * 0.58;
@@ -1172,9 +1172,9 @@ void PolarizationCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     ray(p, o, o + QPointF(std::cos(thB) * L, std::sin(thB) * L), t.amber, 1.3);                // refracted: 90° − θB from normal
     text(p, o + QPointF(18, -L * 0.62), num(thB * 180 / std::numbers::pi, 4) + "°", t.amber, 10);
     text(p, o + QPointF(24, L * 0.62), num(90 - thB * 180 / std::numbers::pi, 4) + "°", t.muted, 10);
-    text(p, QPointF(a.left() + a.width() * 0.46, o.y() + 22), "glass n₂ = " + num(m_in.n2, 4), t.muted, 10);
-    text(p, QPointF(14, half + 40), "tan θB = n₂/n₁ = " + num(m_in.n2 / m_in.n1, 5), t.muted, 10);
-    text(p, QPointF(14, half + 56), "θB = " + num(thB * 180 / std::numbers::pi, 6) + "°", t.muted, 10);
+    text(p, QPointF(a.left() + a.width() * 0.46, o.y() + 22), std::string("glass n₂ = ") + num(m_in.n2, 4), t.muted, 10);
+    text(p, QPointF(14, half + 40), std::string("tan θB = n₂/n₁ = ") + num(m_in.n2 / m_in.n1, 5), t.muted, 10);
+    text(p, QPointF(14, half + 56), std::string("θB = ") + num(thB * 180 / std::numbers::pi, 6) + "°", t.muted, 10);
     text(p, QPointF(14, half + 76), "Measured from normal,", t.muted, 10);
     text(p, QPointF(14, half + 92), "not between polarizer axes.", t.muted, 10);
 }
@@ -1300,9 +1300,9 @@ void ThickLensCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     // ---- the labels of the design
     text(p, QPointF(20, a.top() + 18), "THICK LENS · PRINCIPAL PLANES", t.amber, 10);
     text(p, QPointF(a.right() - 20, a.top() + 18), QString::fromStdString(r.element).toUpper(), t.amber, 10, Qt::AlignRight);
-    text(p, QPointF(20, a.bottom() - 34), "f = " + num(r.focalLength) + " cm   BFL = " + num(r.backFocal) + " cm", t.muted, 10);
-    text(p, QPointF(20, a.bottom() - 18), "t = " + num(in.thickness) + " cm   D = " + num(in.diameter) + " cm   " + QString::fromStdString(r.saClass), t.muted, 10);
-    text(p, QPointF(a.right() - 20, a.bottom() - 18), "marginal (h = " + num(h, 2) + " cm) vs paraxial focus", t.dim, 9, Qt::AlignRight);
+    text(p, QPointF(20, a.bottom() - 34), std::string("f = ") + num(r.focalLength) + std::string(" cm   BFL = ") + num(r.backFocal) + " cm", t.muted, 10);
+    text(p, QPointF(20, a.bottom() - 18), std::string("t = ") + num(in.thickness) + std::string(" cm   D = ") + num(in.diameter) + std::string(" cm   ") + QString::fromStdString(r.saClass), t.muted, 10);
+    text(p, QPointF(a.right() - 20, a.bottom() - 18), std::string("marginal (h = ") + num(h, 2) + " cm) vs paraxial focus", t.dim, 9, Qt::AlignRight);
 }
 
 } // namespace phy104

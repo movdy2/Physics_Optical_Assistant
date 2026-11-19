@@ -62,9 +62,9 @@ void RecentExportPanel::setRecord(const ExportRecord& record) {
         metadata += QString(" · %1 runs · %2 experiments").arg(record.rows).arg(record.columns);
     else if (record.rows > 0 || record.columns > 0)
         metadata += QString(" · %1 rows × %2 columns").arg(record.rows).arg(record.columns);
-    if (info.exists()) metadata += " · " + fileSize(info.size());
+    if (info.exists()) metadata += std::string(" · ") + fileSize(info.size());
     m_meta->setText(metadata);
-    m_location->setText(QString::fromStdString(record.when) + "\n" + info.absolutePath() +
+    m_location->setText(QString::fromStdString(record.when) + std::string("\n") + info.absolutePath() +
                         (info.exists() ? QString() : QString("  (file no longer there)")));
     m_openFolder->setEnabled(true);
 }

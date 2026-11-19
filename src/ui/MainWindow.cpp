@@ -259,7 +259,7 @@ void MainWindow::installShortcuts() {
         m_shortcutKeys << key.toString(QKeySequence::NativeText);
     };
     add(QKeySequence(QKeySequence::Save), [this] {                                           // Ctrl+S: write the .phy session
-        if (m_ctx->saveSession()) showMessage("Session saved · " + m_ctx->sessionFile);
+        if (m_ctx->saveSession()) showMessage(std::string("Session saved · ") + m_ctx->sessionFile);
     });
     add(QKeySequence(QKeySequence::Print), [this] { openReportPage(); });                     // Ctrl+P: the PDF report mode on Export
     add(QKeySequence(Qt::CTRL | Qt::Key_Return), [this] { triggerPrimaryAction(); });
@@ -314,8 +314,8 @@ void MainWindow::refreshActivityLog() {
     m_activityLog->clear();
     for (const ActivityEntry& entry : m_activityEntries) {
         QString text = LanguageManager::instance().text(entry.action);
-        if (!entry.detail.isEmpty()) text += " · " + LanguageManager::instance().text(entry.detail);
-        auto* item = new QListWidgetItem(entry.time + "  " + text);
+        if (!entry.detail.isEmpty()) text += std::string(" · ") + LanguageManager::instance().text(entry.detail);
+        auto* item = new QListWidgetItem(entry.time + std::string("  ") + text);
         item->setToolTip(item->text());
         m_activityLog->addItem(item);
     }

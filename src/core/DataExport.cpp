@@ -36,10 +36,10 @@ constexpr std::array<const char*, 11> kExperimentNames{
 
 std::string toCsv(const DataSeries& series) {
     std::string out;
-    if (!series.name.empty()) out += "# PHY104 series: " + series.name + "\n";
-    if (!series.description.empty()) out += "# Description: " + series.description + "\n";
-    if (!series.note.empty()) out += "# Note: " + series.note + "\n";
-    for (const auto& [name, value] : series.analysis) out += "# " + name + ": " + value + "\n";
+    if (!series.name.empty()) out += std::string("# PHY104 series: ") + series.name + "\n";
+    if (!series.description.empty()) out += std::string("# Description: ") + series.description + "\n";
+    if (!series.note.empty()) out += std::string("# Note: ") + series.note + "\n";
+    for (const auto& [name, value] : series.analysis) out += std::string("# ") + name + std::string(": ") + value + "\n";
     for (std::size_t i = 0; i < series.headers.size(); ++i) {
         if (i) out.push_back(',');
         out += csvField(series.headers[i]);
@@ -77,7 +77,7 @@ std::vector<SpreadsheetSheet> workbookSheets(const SessionLog& log, const DataSe
             for (const auto& reg : snap->registers) {
                 for (const auto& line : reg.lines) s.rows.push_back({SpreadsheetCell(snap->experiment), SpreadsheetCell(reg.title), SpreadsheetCell(line)});
                 if (!reg.resultValue.empty())
-                    s.rows.push_back({SpreadsheetCell(snap->experiment), SpreadsheetCell(reg.title), SpreadsheetCell(reg.resultLabel + " = " + reg.resultValue)});
+                    s.rows.push_back({SpreadsheetCell(snap->experiment), SpreadsheetCell(reg.title), SpreadsheetCell(reg.resultLabel + std::string(" = ") + reg.resultValue)});
             }
         }
         sheets.push_back(std::move(s));
@@ -124,11 +124,11 @@ std::string describeWorkbook(const SessionLog& log, const DataSeries& series, co
     const auto bytes = buildWorkbook(log, series, opt).size();
     char size[32];
     std::snprintf(size, sizeof size, "%.1f KB", static_cast<double>(bytes) / 1024.0);
-    return std::to_string(sheets.size()) + " sheets · " + std::to_string(series.rows.size()) + " measurements · " + size + " estimated";
+    return std::to_string(sheets.size()) + std::string(" sheets · ") + std::to_string(series.rows.size()) + std::string(" measurements · ") + size + " estimated";
 }
 
 std::string suggestedFileName(const DataSeries& series, const std::string& extension) {
-    return "PHY104_" + seriesPrefix(series) + extension;
+    return std::string("PHY104_") + seriesPrefix(series) + extension;
 }
 
 } // namespace phy104::DataExport

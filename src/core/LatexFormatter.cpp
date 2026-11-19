@@ -15,17 +15,17 @@ std::string number(double value) {
     if (e == std::string::npos) return text;
     const std::string mantissa = text.substr(0, e);
     const int exponent = std::atoi(text.c_str() + e + 1);       // handles "e-07" and "e+20"
-    return mantissa + "\\times10^{" + std::to_string(exponent) + "}";
+    return mantissa + std::string("\\times10^{") + std::to_string(exponent) + "}";
 }
 
 std::string unit(const std::string& u) {
     if (u.empty()) return "";
     if (u == "deg") return "^{\\circ}";
-    return "\\,\\text{" + u + "}";
+    return std::string("\\,\\text{") + u + "}";
 }
 
 std::string answer(const std::string& symbolLatex, double value, const std::string& unitText) {
-    return symbolLatex + "=" + number(value) + unit(unitText);
+    return symbolLatex + std::string("=") + number(value) + unit(unitText);
 }
 
 } // namespace phy104::LatexFormatter

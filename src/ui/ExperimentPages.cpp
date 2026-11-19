@@ -136,8 +136,8 @@ void ExperimentPage::setPanels(Panel* d, Panel* c, Panel* r, const QString& dm, 
 void ExperimentPage::refreshMetas(bool paused) {
     const QString run = lastRunLabel();
     const QString number = run.section(' ', 1);
-    if (m_diagramPanel) m_diagramPanel->setMeta(paused ? "LAST VALID" + (number.isEmpty() ? QString() : " · " + number) : m_diagramMeta);
-    if (m_chartPanel) m_chartPanel->setMeta(paused ? "STALE" + (run.isEmpty() ? QString() : " · " + run) : m_chartMeta);
+    if (m_diagramPanel) m_diagramPanel->setMeta(paused ? "LAST VALID" + (number.isEmpty() ? QString() : std::string(" · ") + number) : m_diagramMeta);
+    if (m_chartPanel) m_chartPanel->setMeta(paused ? "STALE" + (run.isEmpty() ? QString() : std::string(" · ") + run) : m_chartMeta);
     if (m_resultsPanel) m_resultsPanel->setMeta(paused ? "PAUSED" : m_ctx->nextRunLabel());
 }
 
@@ -225,8 +225,8 @@ void ExperimentPage::applyIssues(const Report& r) {
         QString unit = firstWithValue->field->unit();
         if (unit == "integer" || unit == "order" || unit == "slits") unit.clear();            // labels, not units
         const double v = firstWithValue->lastValid;
-        m_restore->setText("Restore " + restoreLabel + " = " + (firstWithValue->field->showsPlus() && v > 0 ? "+" : "") +
-                           QString::number(v, 'f', firstWithValue->field->decimals()) + (unit.isEmpty() ? "" : " " + unit));
+        m_restore->setText(std::string("Restore ") + restoreLabel + " = " + (firstWithValue->field->showsPlus() && v > 0 ? "+" : "") +
+                           QString::number(v, 'f', firstWithValue->field->decimals()) + (unit.isEmpty() ? "" : std::string(" ") + unit));
     }
     m_hint->setText(paused ? (firstWithValue ? "Restore the last-valid value, then calculate again." : "Edit the highlighted field to continue.") : m_hintText);
 
@@ -245,14 +245,14 @@ void ExperimentPage::applyIssues(const Report& r) {
 
 void ExperimentPage::sendToNotes() {
     if (!m_haveLast) { emit m_ctx->message("Nothing to send yet: calculate first"); return; }
-    QString md = "### " + m_experiment + " · " + q(m_last.headline) + "\n";
-    for (const auto& [name, value] : m_last.parameters) md += "- " + q(name) + " = " + q(value) + "\n";
+    QString md = std::string("### ") + m_experiment + std::string(" · ") + q(m_last.headline) + "\n";
+    for (const auto& [name, value] : m_last.parameters) md += std::string("- ") + q(name) + std::string(" = ") + q(value) + "\n";
     for (const LcdRegister& r : m_last.registers) {
-        md += "- **" + q(r.title) + "**: ";
+        md += std::string("- **") + q(r.title) + "**: ";
         QStringList parts;
         for (const auto& l : r.lines) parts << q(l).trimmed();
         md += parts.join("; ");
-        if (!r.resultValue.empty()) md += "; " + q(r.resultLabel) + " = " + q(r.resultValue);
+        if (!r.resultValue.empty()) md += std::string("; ") + q(r.resultLabel) + std::string(" = ") + q(r.resultValue);
         md += "\n";
     }
     m_ctx->appendNotes(md);
@@ -418,7 +418,7 @@ void RefractionPage::apply(bool record) {
         QList<ChartRegion> reg;
         QList<ChartPoint> pts;
         if (crit) {
-            v.prepend({*crit, "θc = " + QString::number(*crit, 'f', 4) + "°", t.sage, true});
+            v.prepend({*crit, std::string("θc = ") + QString::number(*crit, 'f', 4) + "°", t.sage, true});
             reg << ChartRegion{*crit, 90, t.amber, "TIR / no real θ₂"};
             ChartPoint criticalPoint{*crit, 90, "", t.sage, false};
             criticalPoint.xUncertainty = critError.valid ? critError.standardUncertainty : 0.0;
@@ -434,7 +434,7 @@ void RefractionPage::apply(bool record) {
         m_chart->setAxes(0, 90, 3, 0, "θ₁ / degrees", 0, 90, 2, 0, "θ₂ / degrees");
         m_chart->setSeries({curve, samples});
         m_chart->setAnnotations(v, {}, reg, pts);
-        m_chart->setLegend({"Samples · error bars = 1σ"}, "θ₂ = asin(" + QString::number(in.n1 / in.n2, 'g', 5) + " sin θ₁), 0 ≤ θ₁ ≤ θc only");
+        m_chart->setLegend({"Samples · error bars = 1σ"}, std::string("θ₂ = asin(") + QString::number(in.n1 / in.n2, 'g', 5) + " sin θ₁), 0 ≤ θ₁ ≤ θc only");
     } else {
         const DataSeries sweep = ER::refractionSweep(in);
         ChartSeries samples, fitLine;
@@ -772,7 +772,7 @@ void LensesPage::apply(bool record) {
         ChartPoint currentPoint{in.s, cur, QString("Current: (%1, %2) cm").arg(signedText(in.s, 0), QString::number(cur, 'g', 4)), t.sage, true};
         currentPoint.xUncertainty = in.sigmaS;
         currentPoint.yUncertainty = imageError.valid ? imageError.standardUncertainty : 0.0;
-        m_chart->setAnnotations({{in.s, "", t.dim, false}}, {{in.f, "f = " + QString::number(in.f, 'g', 5) + " cm", t.dim}}, {}, {currentPoint});
+        m_chart->setAnnotations({{in.s, "", t.dim, false}}, {{in.f, std::string("f = ") + QString::number(in.f, 'g', 5) + " cm", t.dim}}, {}, {currentPoint});
         const QString fText = QString::number(in.f, 'g', 5);
         m_chart->setLegend({}, QString("▬ dᵢ = %1dₒ/(dₒ %2 %3)   ● Current · error bars = 1σ").arg(fText, in.f < 0 ? "+" : "−").arg(QString::number(af, 'g', 5)));
     }
