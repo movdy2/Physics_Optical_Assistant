@@ -676,7 +676,7 @@ Report prism(const PrismInput& in, const ReportContext& ctx) {
     r.lines.push_back(std::string("02  r₂ = A − r₁ = ") + fx(in.apex) + std::string("° − ") + fx(p.r1) + std::string("° = ") + fx(p.r2) + "°");
     r.lines.push_back("03  i₂ = asin(n sin r₂)");
     r.lines.push_back(std::string("    = asin(") + fx(n) + std::string(" × sin ") + fx(p.r2) + std::string("°) = ") + fx(p.i2) + "°");
-    r.lines.push_back(std::string("04  δ = i₁) + fx(in.incidence) + std::string("°) + fx(p.i2) + std::string("° − ") + fx(in.apex) + std::string("° = ") + fx(p.deviation) + "°");
+    r.lines.push_back(std::string("04  δ = i₁) = ") + fx(in.incidence) + std::string("° + ") + fx(p.i2) + std::string("° − ") + fx(in.apex) + std::string("° = ") + fx(p.deviation) + "°");
     r.resultLabel = symmetric ? "MINIMUM DEVIATION · δmin" : "DEVIATION · δ";
     r.resultValue = fx(p.deviation) + "°";
     if (uncertain && deviationEstimate.valid) {
@@ -693,7 +693,7 @@ Report prism(const PrismInput& in, const ReportContext& ctx) {
 
     if (dmin) {
         const auto nBack = PC::indexFromMinimumDeviation(*dmin, in.apex);
-        rep.footnote = std::string("n = sin[(A) + fx(nBack.value_or(n));
+        rep.footnote = std::string("n = sin[(A) = ") + fx(nBack.value_or(n)) + std::string("°)");
     }
     rep.headline = std::string(symmetric ? "δmin" : "δ") + std::string(" = ") + fx(p.deviation) + "°";
     if (uncertain && deviationEstimate.valid) rep.headline += std::string(" ± ") + num(deviationEstimate.standardUncertainty) + "°";
