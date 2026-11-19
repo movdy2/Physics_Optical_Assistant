@@ -1,5 +1,5 @@
 {
-  "version": "3.0.0",
+  "version": "3.0.9",
   "name": "PHY104 Optical Assistant",
   "description": "Offline optics lab and study companion for PHY104",
   "build": {

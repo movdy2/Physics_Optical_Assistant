@@ -1,5 +1,11 @@
 # Changelog — PHY104 Optical Assistant
 
+## [v3.0.9] — 2026-11-13
+
+- Version bumped to 3.0.9 (CMakeLists.txt, version.json).
+- Michelson Interferometry improvements: fringe count register (full + fractional), coherence-length decay V_eff = V·exp(−|ΔOPD|/Lc), mirror tilt control (0–10 mrad), glass plate OPD ΔOPD_plate = 2(n_plate−1)t, detector screen fringe visualization, phase difference readout (rad + degrees).
+- Regression tests added for fringe count register, V<1 contrast, coherence decay, plate OPD, and NaN/Infinity guard.
+
 ## [v3.0.0] — 2026-11-13
 
 ### Michelson interferometer
@@ -78,5 +84,6 @@ Earlier releases are documented in `docs/CHANGES.md` (v1.0 through v2.9) and sum
 ## [v1.0] — first unified release
 - Unified Export page and academic PDF report; ExpressionEvaluator, EquationSolver, SolverEngine; Qt UI; five experiments; notes; theme.
 
+[v3.0.9]: https://github.com/movdy2/phy104-sim/releases/tag/v3.0.9
 [v3.0.0]: https://github.com/movdy2/phy104-sim/releases/tag/v3.0.0
 [v2.9]: https://github.com/movdy2/phy104-sim/releases/tag/v2.9.0
