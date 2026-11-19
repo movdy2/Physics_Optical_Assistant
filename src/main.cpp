@@ -30,7 +30,7 @@ static void takeScreenshots(QApplication& app, phy104::App& application, const Q
     QDir().mkpath(folder);
     window.resize(1280, 800);
     window.show();
-    auto grab = [&](const QString& name) { app.processEvents(); app.processEvents(); window.grab().save(folder + "/" + name + ".png"); };
+    auto grab = [&](const QString& name) { app.processEvents(); app.processEvents(); window.grab().save(folder + std::string("/") + name + ".png"); };
     window.setCurrentPage(0);
     ThemeManager::instance().apply(app, true);
     const UiLanguage originalLanguage = LanguageManager::instance().language();
@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
                                   QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/optics_lab.phy"});
         if (!application.dataWarnings.isEmpty())                // show data mistakes instead of hiding them
             QMessageBox::warning(nullptr, "PHY104 Optical Assistant",
-                                 "Problems found in the data files:\n- " + application.dataWarnings.join("\n- "));
+                                 std::string("Problems found in the data files:\n- ") + application.dataWarnings.join("\n- "));
 
         phy104::MainWindow& window = application.window();
         QObject::connect(&window, &phy104::MainWindow::themeToggled,

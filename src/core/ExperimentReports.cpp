@@ -163,7 +163,7 @@ Report refraction(const RefractionInput& in, const ReportContext& ctx) {
         r.title = "TIR COMPARISON";
         if (crit) {
             r.lines = {"θc = asin(n₂ / n₁)", std::string("θc = ") + fx(*crit) + "°",
-                       std::string("θ₁ = ") + num(thetaB) + "° " + (thetaB > *crit ? ">" : "<") + " θc",
+                       std::string("θ₁ = ") + num(thetaB) + std::string("° ") + (thetaB > *crit ? ">" : "<") + " θc",
                        std::string("sin θ₂ = ") + fx(sinB) + (sinB > 1.0 ? " > 1" : ""),
                        sinB > 1.0 ? "STATUS: TOTAL REFLECTION" : "STATUS: PARTIAL REFRACTION"};
         } else {
@@ -228,7 +228,7 @@ Report tirReport(const RefractionInput& in, const ReportContext&) {
     if (crit) {
         r1.lines.push_back(std::string("02 θc = asin(") + NF::fixed(in.n2, 1) + std::string(" / ") + NF::fixed(in.n1, 1) + ")");
         r1.lines.push_back(std::string("03 θc = ") + fx(*crit) + "°");
-        r1.lines.push_back(std::string("04 θ₁ = ") + fx(th) + "° " + (th > *crit ? ">" : "<") + " θc");
+        r1.lines.push_back(std::string("04 θ₁ = ") + fx(th) + std::string("° ") + (th > *crit ? ">" : "<") + " θc");
         r1.lines.push_back(std::string("05 ") + num(in.n1) + std::string(" sin(") + num(th) + std::string("°) = ") + fx(sin2));
         r1.lines.push_back(tir ? std::string("06 ") + fx(sin2) + " > 1 → no real θ₂" : std::string("06 ") + fx(sin2) + " ≤ 1 → real θ₂ exists");
     } else {
@@ -775,10 +775,10 @@ Report doubleSlit(const SlitInput& in, const ReportContext& ctx) {
             else lines.push_back(std::string("m = ") + std::to_string(in.order));
         }
         const std::string cond = issues.front().message.substr(6, issues.front().message.size() - 6 - 1);     // "d > 0 mm" without "Enter " and "."
-        lines.push_back("ACTION: ENTER " + (issues.front().field == FieldIds::slitSeparation ? std::string("d > 0") : cond));
+        lines.push_back(std::string("ACTION: ENTER ") + (issues.front().field == FieldIds::slitSeparation ? std::string("d > 0") : cond));
         const std::string label = issues.front().label;
         return ReportSupport::pausedReport("E_INPUT_RANGE", issues, lines,
-                            {"Calculation paused / " + (issues.front().field == FieldIds::slitSeparation ? std::string("d must be > 0") : label + " out of range"),
+                            {std::string("Calculation paused / ") + (issues.front().field == FieldIds::slitSeparation ? std::string("d must be > 0") : label + " out of range"),
                              (issues.front().field == FieldIds::slitSeparation ? "Enter a positive slit separation." : "Enter a valid value.") +
                              std::string(" No new result has been calculated.\n\nDiagram, chart and retained results show %RUN%, not the current inputs. "
                                          "Restore ") + label + " or edit the highlighted field to continue."}, ctx);

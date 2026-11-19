@@ -143,17 +143,17 @@ std::vector<StudyNote> JsonStudyNotesRepository::loadAll() const {
     const QJsonObject root = JsonLoader::loadObject(m_path);
     const QJsonValue notesValue = root.value("notes");
     if (!notesValue.isArray())
-        throw std::runtime_error("Missing or invalid notes array in " + m_path.toStdString());
+        throw std::runtime_error(std::string("Missing or invalid notes array in ") + m_path.toStdString());
 
     std::vector<StudyNote> notes;
     const QJsonArray array = notesValue.toArray();
     notes.reserve(static_cast<std::size_t>(array.size()));
     for (const QJsonValue& item : array) {
         if (!item.isObject())
-            throw std::runtime_error("Invalid study note in " + m_path.toStdString() + ": expected an object");
+            throw std::runtime_error(std::string("Invalid study note in ") + m_path.toStdString() + ": expected an object");
         const QJsonObject object = item.toObject();
         if (!object.value("content").isArray() || !object.value("equations").isArray())
-            throw std::runtime_error("Invalid study note in " + m_path.toStdString() + ": content and equations must be arrays");
+            throw std::runtime_error(std::string("Invalid study note in ") + m_path.toStdString() + ": content and equations must be arrays");
 
         StudyNote note;
         note.id = str(object, "id");
@@ -183,7 +183,7 @@ bool loadStudyHubNotes(const QString& path, QMap<QString, StudyHubNote>& notes, 
     QJsonParseError parseError;
     const QJsonDocument doc = QJsonDocument::fromJson(file.readAll(), &parseError);
     if (parseError.error != QJsonParseError::NoError) {
-        if (error) *error = "Could not parse Study Hub notes JSON: " + parseError.errorString();
+        if (error) *error = std::string("Could not parse Study Hub notes JSON: ") + parseError.errorString();
         return false;
     }
     if (!doc.isObject()) {
@@ -202,7 +202,7 @@ bool loadStudyHubNotes(const QString& path, QMap<QString, StudyHubNote>& notes, 
     }
     const double versionNumber = versionValue.isUndefined() ? 1.0 : versionValue.toDouble();
     if (versionNumber != 1.0 && versionNumber != 2.0) {
-        if (error) *error = "Unsupported Study Hub notes version: " + QString::number(versionNumber);
+        if (error) *error = std::string("Unsupported Study Hub notes version: ") + QString::number(versionNumber);
         return false;
     }
     const int version = static_cast<int>(versionNumber);
@@ -269,7 +269,7 @@ bool saveStudyHubNotes(const QString& path, const QMap<QString, StudyHubNote>& n
 
 std::string JsonReferenceRepository::unitDiscipline() const {
     const QJsonObject o = JsonLoader::loadObject(m_path).value("unitDiscipline").toObject();
-    return str(o, "title", false) + "\n" + str(o, "text", false);
+    return str(o, "title", false) + std::string("\n") + str(o, "text", false);
 }
 
 namespace {
