@@ -507,6 +507,34 @@ LensesPage::LensesPage(AppContext* ctx, QWidget* parent)
     f->addWidget(labeled("Object distance · dₒ", m_s));
     f->addWidget(labeled("Object height · hₒ", m_h));
     f->addWidget(uncertaintyInputs({{"σ(f)", m_sigmaF}, {"σ(dₒ)", m_sigmaS}, {"σ(hₒ)", m_sigmaH}}));
+    // ---- Preset scenarios (Item 19) ----
+    auto* presetLabel = new QLabel("Presets:");
+    presetLabel->setObjectName("fieldLabel");
+    f->addWidget(presetLabel);
+    auto* presetRow = new QHBoxLayout;
+    presetRow->setSpacing(4);
+    auto makePreset = [&](const QString& label, double fVal, double sVal, double hVal) {
+        auto* b = new QPushButton(label);
+        b->setObjectName("presetBtn");
+        b->setCursor(Qt::PointingHandCursor);
+        b->setMinimumHeight(30);
+        connect(b, &QPushButton::clicked, this, [this, fVal, sVal, hVal] {
+            m_syncing = true;
+            m_f->setValue(fVal, 2);
+            m_s->setValue(sVal, 2);
+            m_h->setValue(hVal, 2);
+            m_syncing = false;
+            apply(false);
+        });
+        presetRow->addWidget(b);
+        return b;
+    };
+    m_presetBeyond2f = makePreset("dₒ > 2f", 10.0, 30.0, 3.0);
+    m_presetAt2f = makePreset("dₒ = 2f", 10.0, 20.0, 3.0);
+    m_presetBetweenF2f = makePreset("f < dₒ < 2f", 10.0, 15.0, 3.0);
+    m_presetAtF = makePreset("dₒ = f (no image)", 10.0, 10.0, 3.0);
+    m_presetInsideF = makePreset("dₒ < f", 10.0, 5.0, 3.0);
+    f->addLayout(presetRow);
     buildButtons(f, "Real-is-positive. Distances measured from the optical element.");
 
     // centre: lens mode = lens + mirror comparison, mirror mode = one detailed mirror + chart
@@ -518,6 +546,35 @@ LensesPage::LensesPage(AppContext* ctx, QWidget* parent)
     m_lens = new LensCanvas;
     m_lensPanel = new Panel("Thin lens / principal rays", "SCALE: cm");
     m_lensPanel->body()->setContentsMargins(0, 0, 0, 0);
+    // ---- Principal-ray toggles for lens canvas (Item 18) ----
+    auto* lensRayBar = new QWidget;
+    auto* lensRayLayout = new QHBoxLayout(lensRayBar);
+    lensRayLayout->setContentsMargins(8, 4, 8, 4);
+    lensRayLayout->setSpacing(8);
+    auto makeRayToggle = [&](QCheckBox*& cb, const QString& label, bool checked, LensCanvas* canvas, void (LensCanvas::*setter)(bool)) {
+        cb = new QCheckBox(label);
+        cb->setChecked(checked);
+        cb->setObjectName("rayToggle");
+        connect(cb, &QCheckBox::toggled, canvas, [setter, canvas](bool on) { (canvas->*setter)(on); });
+        return cb;
+    };
+    m_rayParallel = new QCheckBox("Parallel ray");
+    m_rayParallel->setChecked(true);
+    m_rayParallel->setObjectName("rayToggle");
+    m_rayFocal = new QCheckBox("Focal ray");
+    m_rayFocal->setChecked(true);
+    m_rayFocal->setObjectName("rayToggle");
+    m_rayCenter = new QCheckBox("Center ray");
+    m_rayCenter->setChecked(true);
+    m_rayCenter->setObjectName("rayToggle");
+    connect(m_rayParallel, &QCheckBox::toggled, m_lens, [this](bool on) { m_lens->setShowParallelRay(on); });
+    connect(m_rayFocal, &QCheckBox::toggled, m_lens, [this](bool on) { m_lens->setShowFocalRay(on); });
+    connect(m_rayCenter, &QCheckBox::toggled, m_lens, [this](bool on) { m_lens->setShowCenterRay(on); });
+    lensRayLayout->addWidget(m_rayParallel);
+    lensRayLayout->addWidget(m_rayFocal);
+    lensRayLayout->addWidget(m_rayCenter);
+    lensRayLayout->addStretch();
+    m_lensPanel->body()->addWidget(lensRayBar);
     m_lensPanel->body()->addWidget(m_lens);
     m_mirrorSmall = new MirrorCanvas;
     m_mirrorSmallPanel = new Panel("Spherical mirror / concave", "");
@@ -532,8 +589,23 @@ LensesPage::LensesPage(AppContext* ctx, QWidget* parent)
     mp->setSpacing(12);
     m_mirrorBig = new MirrorCanvas;
     m_mirrorBig->setDetailed(true);
-    m_mirrorBigPanel = new Panel("Convex spherical mirror / principal rays", "SCALE: cm");
-    m_mirrorBigPanel->body()->setContentsMargins(0, 0, 0, 0);
+    // ---- Principal-ray toggles for mirror canvas (Item 18) ----
+    auto* mirrorRayBar = new QWidget;
+    auto* mirrorRayLayout = new QHBoxLayout(mirrorRayBar);
+    mirrorRayLayout->setContentsMargins(8, 4, 8, 4);
+    mirrorRayLayout->setSpacing(8);
+    auto* mrayParallel = new QCheckBox("Parallel ray");
+    mrayParallel->setChecked(true);
+    mrayParallel->setObjectName("rayToggle");
+    auto* mrayCenter = new QCheckBox("Center ray");
+    mrayCenter->setChecked(true);
+    mrayCenter->setObjectName("rayToggle");
+    connect(mrayParallel, &QCheckBox::toggled, m_mirrorBig, [this](bool on) { m_mirrorBig->setShowParallelRay(on); });
+    connect(mrayCenter, &QCheckBox::toggled, m_mirrorBig, [this](bool on) { m_mirrorBig->setShowCenterRay(on); });
+    mirrorRayLayout->addWidget(mrayParallel);
+    mirrorRayLayout->addWidget(mrayCenter);
+    mirrorRayLayout->addStretch();
+    m_mirrorBigPanel->body()->addWidget(mirrorRayBar);
     m_mirrorBigPanel->body()->addWidget(m_mirrorBig);
     m_chart = new LineChart;
     m_chartPanel = new Panel("Image distance vs object distance", "");
