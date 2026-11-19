@@ -654,8 +654,8 @@ int main() {
         CHECK(near(std::stod(flo.report.registers[0].resultValue), 1.0, 1e-9));   // R(600) = sin²(π/2) = 1
         // --- thin film: angle of incidence shifts peaks to shorter λ
         ThinFilmInput ttheta; ttheta.thetaDeg = 30.0;
-        auto ft = WE::thinFilm(ttheta);
-        CHECK(ft.report.registers[0].resultValue != "1.0000");   // oblique incidence changes R
+        auto ft2 = WE::thinFilm(ttheta);
+        CHECK(ft2.report.registers[0].resultValue != "1.0000");   // oblique incidence changes R
         // --- thin film: zero-thickness guard
         ThinFilmInput zeroT; zeroT.thicknessNm = 0;
         auto fz = WE::thinFilm(zeroT);
