@@ -72,7 +72,8 @@ FilmColour thinFilmColour(double thicknessNm, double n, double n2);
 struct GratingInput   { double linesPerCm = 5000, lambdaNm = 600, lambda2Nm = 0.0, order = 1, slits = 20, incidenceDeg = 0; bool orderList = false; };
 /// `geometry` is the second tab: where the minima land on the screen instead of the intensity envelope.
 /// `envelope` is the third tab: this slit multiplied by a double-slit pattern (finite slit separation).
-struct SingleSlitInput{ double widthMm = 0.1, lambdaNm = 500, screenM = 1.0; bool geometry = false; bool envelope = false; double separationMm = 0.4; };
+/// `exactGeometry` selects exact w = 2L·tan(asin(λ/a)) vs small-angle w ≈ 2L·λ/a (item 13).
+struct SingleSlitInput{ double widthMm = 0.1, lambdaNm = 500, screenM = 1.0; bool geometry = false; bool envelope = false; double separationMm = 0.4; bool exactGeometry = true; };
 /// `slitWidthMm > 0` adds the single-slit envelope  sinc²(π a sin θ / λ)  to the N-slit interference pattern.
 struct GratingResolutionInput { double linesPerCm = 5000, lambdaNm = 600, order = 1, slits = 120; double slitWidthMm = 0.0; };
 /// `brewster` is the second tab: the interface at θB with the Fresnel reflectances instead of Malus' law.

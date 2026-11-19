@@ -4,6 +4,7 @@
 #include "Components.h"
 #include "OpticsCanvases.h"
 
+#include <QCheckBox>
 #include <QComboBox>
 #include <QHBoxLayout>
 #include <QSignalBlocker>
@@ -571,8 +572,14 @@ SingleSlitPage::SingleSlitPage(AppContext* ctx, QWidget* parent)
     m_presetGeometry = makePreset("Geometry tab", 0.1, 500.0, 1.0, 1);
     m_presetEnvelope = makePreset("Envelope tab", 0.1, 500.0, 1.0, 2);
     m_fieldLayout->addLayout(presetRow);
+    // Item 11: real-time updates are built into addField() (edited → apply(false))
     m_wave = addCombo("Incident wave", {"Plane · coherent"}, {0});
     m_scale = addCombo("Intensity scale", {"Normalized · I/I₀"}, {0});
+    m_exactGeom = addCombo("Geometry model", {"Exact · tan(asin(λ/a))", "Small-angle · ≈ 2Lλ/a"}, {1, 0});
+    m_showEnvelopeOnly = new QCheckBox("Show sinc² envelope only");
+    m_showEnvelopeOnly->setChecked(false);
+    m_fieldLayout->addWidget(m_showEnvelopeOnly);
+    connect(m_showEnvelopeOnly, &QCheckBox::toggled, this, [this](bool) { apply(false); });
     m_canvas = new SingleSlitCanvas;
     build("Slit / screen diffraction pattern", m_canvas, "Single-slit intensity vs angle", "Minima: a sin θ = mλ. Intensity: the envelope. Geometry: where each minimum lands. Envelope: two slits of width a — fringes inside the envelope, missing orders at d/a.");
     reset();
@@ -582,25 +589,35 @@ ModelReport SingleSlitPage::compute(const ReportContext& ctx) {
         SingleSlitInput in;
         in.widthMm = m_width->value(); in.lambdaNm = m_lambda->value(); in.screenM = m_screen->value();
         in.separationMm = m_separation->value(); in.envelope = true;
+        // Item 12: show sinc² envelope only when checkbox is checked
+        if (m_showEnvelopeOnly->isChecked()) {
+            // Override: show just the envelope (cos² term = 1)
+            in.separationMm = 0.0;  // will be caught by d > a check, so handle separately
+            return WE::singleSlit({m_width->value(), m_lambda->value(), m_screen->value(), false, false, 0.0, m_exactGeom->currentData().toInt() == 1}, ctx);
+        }
         return WE::doubleSlitEnvelope(in, ctx);
     }
-    return WE::singleSlit({m_width->value(), m_lambda->value(), m_screen->value(), m_tabs->current() == 1}, ctx);
+    return WE::singleSlit({m_width->value(), m_lambda->value(), m_screen->value(), m_tabs->current() == 1, false, m_separation->value(),
+                           m_exactGeom->currentData().toInt() == 1}, ctx);
 }
 void SingleSlitPage::updateCanvas() {
     const int tab = m_tabs->current();
     const bool geometry = tab == 1;
+    const bool exact = m_exactGeom->currentData().toInt() == 1;
     SingleSlitInput in;
     in.widthMm = m_width->value(); in.lambdaNm = m_lambda->value(); in.screenM = m_screen->value();
-    in.geometry = geometry; in.envelope = tab == 2; in.separationMm = m_separation->value();
+    in.geometry = geometry; in.envelope = tab == 2; in.separationMm = m_separation->value(); in.exactGeometry = exact;
     m_canvas->setInput(in);
     retitle(tab == 2 ? "Two slits / fringes inside the envelope" : geometry ? "Slit / where the minima land" : "Slit / screen diffraction pattern",
             tab == 2 ? "Fringes and the slit envelope" : geometry ? "Minimum position vs order" : "Single-slit intensity vs angle");
 }
-void SingleSlitPage::resetFields() { m_width->setValue(0.1, 4); m_lambda->setValue(500, 2); m_screen->setValue(1.0, 4); m_separation->setValue(0.4, 4); m_wave->setCurrentIndex(0); m_scale->setCurrentIndex(0); m_tabs->setCurrent(0); }
+void SingleSlitPage::resetFields() { m_width->setValue(0.1, 4); m_lambda->setValue(500, 2); m_screen->setValue(1.0, 4); m_separation->setValue(0.4, 4); m_wave->setCurrentIndex(0); m_scale->setCurrentIndex(0); m_exactGeom->setCurrentIndex(0); m_showEnvelopeOnly->setChecked(false); m_tabs->setCurrent(0); }
 QString SingleSlitPage::runDescription() const {
     const int tab = m_tabs->current();
-    return QString("a %1 mm · λ %2 nm · %3").arg(m_width->text(), m_lambda->text(),
-                                                 tab == 2 ? "envelope" : tab == 1 ? "geometry" : "intensity");
+    return QString("a %1 mm · λ %2 nm · %3 · %4 · env%5").arg(m_width->text(), m_lambda->text(),
+                                                 tab == 2 ? "envelope" : tab == 1 ? "geometry" : "intensity",
+                                                 m_exactGeom->currentText().section(' ·', 0, 0),
+                                                 m_showEnvelopeOnly->isChecked() ? "only" : "fringes");
 }
 
 // ============================================================================ Malus + Brewster

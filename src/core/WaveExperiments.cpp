@@ -555,7 +555,10 @@ ModelReport singleSlit(const SingleSlitInput& in, const ReportContext& ctx) {
     const double a = in.widthMm * 1e-3, lam = in.lambdaNm * 1e-9;
     const double s1 = lam / a;
     const double theta = std::asin(s1) / kDeg;
-    const double w = 2 * in.screenM * std::tan(theta * kDeg);
+    // Item 13: exact vs small-angle approximation for the central maximum width
+    const double w = in.exactGeometry
+        ? 2 * in.screenM * std::tan(theta * kDeg)          // exact: w = 2L·tan(asin(λ/a))
+        : 2 * in.screenM * (lam / a);                      // small-angle: w ≈ 2L·λ/a
 
     ModelReport out;
     Report& rep = out.report;
@@ -597,7 +600,9 @@ ModelReport singleSlit(const SingleSlitInput& in, const ReportContext& ctx) {
     r1.resultValue = fx(theta) + "°";
     LcdRegister r2;
     r2.title = "CENTRAL MAXIMUM";
-    r2.lines = {"w = 2L tan θ₁", " = 2 × " + num(in.screenM) + " × tan(" + fx(theta) + "°)", " = " + NF::fixed(w, 9) + " m"};
+    r2.lines = {"w = " + (in.exactGeometry ? "2L tan θ₁" : "≈ 2L λ/a"),
+                " = 2 × " + num(in.screenM) + " × " + (in.exactGeometry ? "tan(" + fx(theta) + "°)" : "λ/a"),
+                " = " + NF::fixed(w, 9) + " m"};
     r2.resultLabel = "FULL WIDTH ON SCREEN";
     r2.resultValue = fx(w * 1e3) + " mm";
     rep.registers = {r1, r2};

@@ -130,7 +130,8 @@ protected:
     QString runDescription() const override;
 private:
     UnitField *m_width, *m_lambda, *m_screen, *m_separation;
-    QComboBox *m_wave, *m_scale;
+    QComboBox *m_wave, *m_scale, *m_exactGeom;
+    QCheckBox *m_showEnvelopeOnly;
     QPushButton *m_presetStandard, *m_presetGeometry, *m_presetEnvelope;
     bool m_syncing = false;
     class SingleSlitCanvas* m_canvas;
