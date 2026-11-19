@@ -646,6 +646,10 @@
      {
       "legend": "I_min",
       "latex": "I_{min}"
+     },
+     {
+      "legend": "V",
+      "latex": "V"
      }
     ]
    ]
