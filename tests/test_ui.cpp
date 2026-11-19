@@ -187,8 +187,8 @@ int main(int argc, char** argv) {
             }
         }
         for (const auto& s : varSymbols) check(keyLegends.count(s) > 0, "variable on the keyboard: " + QString::fromStdString(s));
-        check(varSymbols.size() == 58 && keyLegends.size() == 58 && keys == 122,
-              "the compact scientific keyboard retains all 58 course variables (122 keys total)");
+        check(varSymbols.size() == 59 && keyLegends.size() == 59 && keys == 123,
+              "the compact scientific keyboard retains all 59 course variables (123 keys total)");
         check(compactRows && pageControls == 0, "editing controls are shared once instead of repeated on every page");
         const auto groups = JsonKeyboardRepository(data + "/keyboard.json").loadAll();
         std::set<std::string> groupNames;
