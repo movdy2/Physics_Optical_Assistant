@@ -100,11 +100,11 @@ private:
     QButtonGroup* m_group;
 };
 
-/// One Casio-style register: title + mode, numbered lines, big result, footer.
-class LcdRegisterView : public QFrame {
+/// One calculation register: title + mode, numbered lines, big result, footer.
+class RegisterView : public QFrame {
     Q_OBJECT
 public:
-    explicit LcdRegisterView(QWidget* parent = nullptr);
+    explicit RegisterView(QWidget* parent = nullptr);
     void setRegister(const LcdRegister& reg);
 protected:
     void changeEvent(QEvent* event) override;

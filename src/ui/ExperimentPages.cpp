@@ -257,7 +257,7 @@ void ExperimentPage::sendToNotes() {
     m_ctx->appendNotes(md);
 }
 
-void ExperimentPage::showRegisters(LcdRegisterView* a, LcdRegisterView* b, const Report& r) {
+void ExperimentPage::showRegisters(RegisterView* a, RegisterView* b, const Report& r) {
     if (!r.registers.empty()) a->setRegister(r.registers[0]);
     if (r.registers.size() > 1) { b->setRegister(r.registers[1]); b->show(); } else b->hide();
 }
@@ -308,9 +308,9 @@ RefractionPage::RefractionPage(AppContext* ctx, QWidget* parent)
     cols.center->addWidget(m_diagram, 3);
     cols.center->addWidget(m_chartPanel, 2);
 
-    m_results = new Panel("Results / Snell's law", ctx->nextRunLabel());
-    m_reg1 = new LcdRegisterView;
-    m_reg2 = new LcdRegisterView;
+    m_results = new Panel("Refraction & TIR calculation", ctx->nextRunLabel());
+    m_reg1 = new RegisterView;
+    m_reg2 = new RegisterView;
     m_results->body()->addWidget(m_reg1);
     m_results->body()->addWidget(m_reg2);
     m_notice = new NoticeCard;
@@ -545,14 +545,15 @@ LensesPage::LensesPage(AppContext* ctx, QWidget* parent)
     m_centerStack->addWidget(mirrorPage);
     cols.center->addWidget(m_centerStack, 1);
 
-    m_results = new Panel("Image calculation", ctx->nextRunLabel());
-    m_reg1 = new LcdRegisterView;
-    m_reg2 = new LcdRegisterView;
+    m_results = new Panel("Lenses & Mirrors calculation", ctx->nextRunLabel());
+    m_reg1 = new RegisterView;
+    m_reg2 = new RegisterView;
     m_results->body()->addWidget(m_reg1);
     m_results->body()->addWidget(m_reg2);
     m_notice = new NoticeCard;
     m_caption = new QLabel;
     m_caption->setObjectName("caption");
+    m_caption->setWordWrap(true);
     cols.right->addWidget(m_results);
     cols.right->addWidget(m_notice);
     cols.right->addWidget(m_caption);
@@ -771,11 +772,12 @@ PrismsPage::PrismsPage(AppContext* ctx, QWidget* parent)
     cols.center->addWidget(m_diagram, 3);
     cols.center->addWidget(m_chartPanel, 2);
 
-    m_results = new Panel("Deviation register", ctx->nextRunLabel());
-    m_reg = new LcdRegisterView;
+    m_results = new Panel("Prisms calculation", ctx->nextRunLabel());
+    m_reg = new RegisterView;
     m_noticeInline = new NoticeCard;
     m_footnote = new QLabel;
     m_footnote->setObjectName("mono");
+    m_footnote->setWordWrap(true);
     m_results->body()->addWidget(m_reg);
     m_results->body()->addWidget(m_noticeInline);
     m_results->body()->addWidget(m_footnote);
@@ -946,8 +948,8 @@ WavePage::WavePage(AppContext* ctx, QWidget* parent)
     cols.center->addWidget(m_chartPanel, 2);
 
     m_results = new Panel("Fringe calculation", ctx->nextRunLabel());
-    m_reg1 = new LcdRegisterView;
-    m_reg2 = new LcdRegisterView;
+    m_reg1 = new RegisterView;
+    m_reg2 = new RegisterView;
     m_results->body()->addWidget(m_reg1);
     m_results->body()->addWidget(m_reg2);
     m_notice = new NoticeCard;

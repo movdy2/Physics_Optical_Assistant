@@ -68,16 +68,18 @@ void ModelPage::build(const QString& diagramTitle, QWidget* canvas, const QStrin
     cols.center->addWidget(m_diagram, 3);
     cols.center->addWidget(m_chartPanel, 2);
 
-    m_reg1 = new LcdRegisterView;
-    m_reg2 = new LcdRegisterView;
+    m_results = new Panel(QString("Results · %1").arg(m_experiment), "");
+    m_reg1 = new RegisterView;
+    m_reg2 = new RegisterView;
     m_interpretation = new NoticeCard;
     m_guard = new NoticeCard;
-    cols.right->addWidget(m_reg1);
-    cols.right->addWidget(m_reg2);
-    cols.right->addWidget(m_interpretation);
-    cols.right->addWidget(m_guard);
+    m_results->body()->addWidget(m_reg1);
+    m_results->body()->addWidget(m_reg2);
+    m_results->body()->addWidget(m_interpretation);
+    m_results->body()->addWidget(m_guard);
+    cols.right->addWidget(m_results);
     cols.right->addStretch();
-    setPanels(m_diagram, m_chartPanel, nullptr, "", "");
+    setPanels(m_diagram, m_chartPanel, m_results, "", "");
 }
 
 void ModelPage::retitle(const QString& diagramTitle, const QString& chartTitle) {

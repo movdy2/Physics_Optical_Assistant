@@ -14,7 +14,6 @@ class QLineEdit;
 class QListWidget;
 class QPushButton;
 class QSplitter;
-class QTextBrowser;
 
 namespace phy104 {
 
@@ -22,8 +21,7 @@ class LatexWidget;
 
 /// Formula Solver page.
 ///  left : search box, chapter filter, recent formulas, paged list of formula cards
-///  right: LaTeX formula on an LCD, LCD input fields, status line, LCD answer + steps,
-///         plus a variable-help panel and copy-to-clipboard action.
+///  right: LaTeX formula, input fields, status line, big answer, copy-to-clipboard action.
 class SolverPage : public BasePage {
     Q_OBJECT
 public:
@@ -85,8 +83,6 @@ private:
     QLabel* m_status;
     QPushButton* m_copyBtn;
     LatexWidget* m_answer;
-    QTextBrowser* m_output;
-    QTextBrowser* m_varHelp;                                     // variable descriptions panel
     QString m_lastAnswerLatex;                                   // last answer LaTeX, for copy-to-clipboard
 };
 

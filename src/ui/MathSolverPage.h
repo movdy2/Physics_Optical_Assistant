@@ -6,7 +6,6 @@
 
 class QLabel;
 class QLineEdit;
-class QTextBrowser;
 class QPushButton;
 
 namespace phy104 {
@@ -25,10 +24,7 @@ private slots:
     void toggleAngleMode(bool degrees);
 
 private:
-    void showHistory();
-
     MathCalculator m_calc;
-    QTextBrowser* m_history = nullptr;
     QLineEdit* m_input = nullptr;
     QLabel* m_result = nullptr;
     QLabel* m_status = nullptr;
