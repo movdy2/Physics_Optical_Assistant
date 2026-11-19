@@ -241,10 +241,20 @@ jobs:
       - name: Configure and build
         shell: pwsh
         run: |
-          cmake -S . -B build -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR" -DCMAKE_BUILD_TYPE=Release -DPHY104_BUILD_TESTS=OFF
+          cmake -S . -B build -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR" -DCMAKE_BUILD_TYPE=Release -DPHY104_BUILD_TESTS=OFF 2>&1 | Tee-Object -FilePath cmake-config.log
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          cmake --build build --config Release --parallel
+          cmake --build build --config Release --parallel 2>&1 | Tee-Object -FilePath cmake-build.log
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs-windows
+          path: |
+            cmake-config.log
+            cmake-build.log
+          retention-days: 14
 
       - name: Smoke-test the native build
         shell: pwsh
