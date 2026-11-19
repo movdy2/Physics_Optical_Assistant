@@ -1780,7 +1780,7 @@ private slots:
         auto* keyboard = m_app->notes->findChild<ScientificKeyboard*>();
         auto* toggle = m_app->notes->findChild<QToolButton*>("notesKeyboard");
         QVERIFY(keyboard && toggle);
-        QCOMPARE(keyboard->findChildren<QPushButton*>("rkey").size(), 122);
+        QCOMPARE(keyboard->findChildren<QPushButton*>("rkey").size(), 125);
         QCOMPARE(keyboard->findChildren<QPushButton*>("rkeyCtl").size(), 5);
 
         click(toggle);

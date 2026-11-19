@@ -26,7 +26,7 @@
     },
     {
       "id": "n1",
-      "symbol": "n₁",
+      "symbol": "n\u2081",
       "name": "Refractive index 1 (core)",
       "unit": "",
       "description": "Index of the first medium or fibre core",
@@ -34,7 +34,7 @@
     },
     {
       "id": "n2",
-      "symbol": "n₂",
+      "symbol": "n\u2082",
       "name": "Refractive index 2 (cladding)",
       "unit": "",
       "description": "Index of the second medium or fibre cladding",
@@ -61,7 +61,7 @@
       "symbol": "c",
       "name": "Speed of light in vacuum",
       "unit": "m/s",
-      "description": "About 3×10⁸ m/s",
+      "description": "About 3\u00d710\u2078 m/s",
       "latex": "c"
     },
     {
@@ -82,7 +82,7 @@
     },
     {
       "id": "lambda",
-      "symbol": "λ",
+      "symbol": "\u03bb",
       "name": "Wavelength in the medium",
       "unit": "m",
       "description": "Distance between two successive crests",
@@ -90,7 +90,7 @@
     },
     {
       "id": "lambda0",
-      "symbol": "λ₀",
+      "symbol": "\u03bb\u2080",
       "name": "Vacuum wavelength",
       "unit": "m",
       "description": "Wavelength before the wave enters a medium",
@@ -98,7 +98,7 @@
     },
     {
       "id": "epsilon0",
-      "symbol": "ε₀",
+      "symbol": "\u03b5\u2080",
       "name": "Vacuum permittivity",
       "unit": "F/m",
       "description": "Electric constant",
@@ -106,7 +106,7 @@
     },
     {
       "id": "mu0",
-      "symbol": "μ₀",
+      "symbol": "\u03bc\u2080",
       "name": "Vacuum permeability",
       "unit": "H/m",
       "description": "Magnetic constant",
@@ -148,7 +148,7 @@
       "id": "S",
       "symbol": "S",
       "name": "Poynting vector magnitude",
-      "unit": "W/m²",
+      "unit": "W/m\u00b2",
       "description": "Power per unit area carried by the wave",
       "latex": "S"
     },
@@ -156,23 +156,23 @@
       "id": "I",
       "symbol": "I",
       "name": "Intensity",
-      "unit": "W/m²",
+      "unit": "W/m\u00b2",
       "description": "Power per unit area",
       "latex": "I"
     },
     {
       "id": "I0",
-      "symbol": "I₀",
+      "symbol": "I\u2080",
       "name": "Initial / maximum intensity",
-      "unit": "W/m²",
+      "unit": "W/m\u00b2",
       "description": "Intensity before the element or at the central maximum",
       "latex": "I_{0}"
     },
     {
       "id": "I1",
-      "symbol": "I₁",
+      "symbol": "I\u2081",
       "name": "Intensity after first polarizer",
-      "unit": "W/m²",
+      "unit": "W/m\u00b2",
       "description": "Intensity of light after passing the first polarizer",
       "latex": "I_{1}"
     },
@@ -180,13 +180,13 @@
       "id": "Imax",
       "symbol": "I_max",
       "name": "Maximum intensity",
-      "unit": "W/m²",
+      "unit": "W/m\u00b2",
       "description": "Intensity transmitted when the axes are aligned",
       "latex": "I_{max}"
     },
     {
       "id": "thetaa",
-      "symbol": "θ_a",
+      "symbol": "\u03b8_a",
       "name": "Angle in medium a",
       "unit": "deg",
       "description": "Angle of incidence measured from the normal",
@@ -194,7 +194,7 @@
     },
     {
       "id": "thetab",
-      "symbol": "θ_b",
+      "symbol": "\u03b8_b",
       "name": "Angle in medium b",
       "unit": "deg",
       "description": "Angle of refraction measured from the normal",
@@ -202,7 +202,7 @@
     },
     {
       "id": "thetap",
-      "symbol": "θ_p",
+      "symbol": "\u03b8_p",
       "name": "Brewster angle",
       "unit": "deg",
       "description": "Angle at which reflected light is fully polarized",
@@ -210,7 +210,7 @@
     },
     {
       "id": "thetac",
-      "symbol": "θ_c",
+      "symbol": "\u03b8_c",
       "name": "Critical angle",
       "unit": "deg",
       "description": "Smallest angle of incidence giving total internal reflection",
@@ -218,7 +218,7 @@
     },
     {
       "id": "theta",
-      "symbol": "θ",
+      "symbol": "\u03b8",
       "name": "Angle",
       "unit": "deg",
       "description": "Angle from the central axis to the point on the screen",
@@ -226,7 +226,7 @@
     },
     {
       "id": "thetaa1",
-      "symbol": "θ_a1",
+      "symbol": "\u03b8_a1",
       "name": "Angle of incidence at first face",
       "unit": "deg",
       "description": "Angle at the first prism face",
@@ -234,7 +234,7 @@
     },
     {
       "id": "thetaa2",
-      "symbol": "θ_a2",
+      "symbol": "\u03b8_a2",
       "name": "Angle at second face",
       "unit": "deg",
       "description": "Angle at the second prism face",
@@ -250,7 +250,7 @@
     },
     {
       "id": "delta",
-      "symbol": "δ",
+      "symbol": "\u03b4",
       "name": "Deviation angle",
       "unit": "deg",
       "description": "Angle between incoming and outgoing ray",
@@ -258,7 +258,7 @@
     },
     {
       "id": "deltamin",
-      "symbol": "δ_min",
+      "symbol": "\u03b4_min",
       "name": "Minimum deviation",
       "unit": "deg",
       "description": "Smallest deviation produced by the prism",
@@ -266,7 +266,7 @@
     },
     {
       "id": "deltad",
-      "symbol": "δ_d",
+      "symbol": "\u03b4_d",
       "name": "Angular dispersion",
       "unit": "deg",
       "description": "Difference in deviation between violet and red",
@@ -274,7 +274,7 @@
     },
     {
       "id": "deltaViolet",
-      "symbol": "δ_violet",
+      "symbol": "\u03b4_violet",
       "name": "Deviation of violet light",
       "unit": "deg",
       "description": "Deviation angle for violet",
@@ -282,7 +282,7 @@
     },
     {
       "id": "deltaRed",
-      "symbol": "δ_red",
+      "symbol": "\u03b4_red",
       "name": "Deviation of red light",
       "unit": "deg",
       "description": "Deviation angle for red",
@@ -290,7 +290,7 @@
     },
     {
       "id": "phi",
-      "symbol": "φ",
+      "symbol": "\u03c6",
       "name": "Phase difference",
       "unit": "rad",
       "description": "Phase difference between the two waves (degrees in Malus' law: polarizer angle)",
@@ -298,7 +298,7 @@
     },
     {
       "id": "beta",
-      "symbol": "β",
+      "symbol": "\u03b2",
       "name": "Single-slit phase",
       "unit": "rad",
       "description": "Phase parameter of single-slit diffraction",
@@ -314,7 +314,7 @@
     },
     {
       "id": "R1",
-      "symbol": "R₁",
+      "symbol": "R\u2081",
       "name": "Radius of first surface",
       "unit": "m",
       "description": "Radius of curvature of the first lens surface",
@@ -322,7 +322,7 @@
     },
     {
       "id": "R2",
-      "symbol": "R₂",
+      "symbol": "R\u2082",
       "name": "Radius of second surface",
       "unit": "m",
       "description": "Radius of curvature of the second lens surface",
@@ -362,7 +362,7 @@
     },
     {
       "id": "deltar",
-      "symbol": "Δr",
+      "symbol": "\u0394r",
       "name": "Path difference",
       "unit": "m",
       "description": "Difference in path length between the two rays",
@@ -386,7 +386,7 @@
     },
     {
       "id": "deltaY",
-      "symbol": "Δy",
+      "symbol": "\u0394y",
       "name": "Fringe spacing",
       "unit": "m",
       "description": "Distance between adjacent bright fringes",
@@ -442,7 +442,7 @@
     },
     {
       "id": "dopd",
-      "symbol": "ΔOPD",
+      "symbol": "\u0394OPD",
       "name": "Optical path difference",
       "unit": "m",
       "description": "Round-trip optical path difference introduced by moving one Michelson mirror",
@@ -450,7 +450,7 @@
     },
     {
       "id": "deltaN",
-      "symbol": "ΔN",
+      "symbol": "\u0394N",
       "name": "Fringe count / shift",
       "unit": "",
       "description": "Number of fringes shifted as the Michelson mirror moves",
@@ -460,9 +460,17 @@
       "id": "Imin",
       "symbol": "I_min",
       "name": "Minimum intensity",
-      "unit": "W/m²",
+      "unit": "W/m\u00b2",
       "description": "Minimum intensity of the recombined beams in an interferometer",
       "latex": "I_{min}"
+    },
+    {
+      "id": "V",
+      "symbol": "V",
+      "name": "Fringe visibility",
+      "unit": "",
+      "description": "Fringe visibility of an interference pattern (0 to 1)",
+      "latex": "V"
     }
   ]
 }
