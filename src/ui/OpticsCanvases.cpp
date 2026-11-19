@@ -1087,6 +1087,7 @@ void PolarizationCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     }
     const double i0 = m_in.unpolarized ? m_in.incidentIntensity / 2 : m_in.incidentIntensity;
     const double iOut = i0 * std::pow(std::cos(m_in.angleDeg * std::numbers::pi / 180), 2);
+    const double iOutDisp = iOut < 1e-12 ? 0.0 : iOut;   // clamp tiny residual at θ = 90°
     const double half = a.top() + a.height() * 0.50;
     text(p, QPointF(14, a.top() + 18), "A / MALUS · AXIS ROTATION", t.amber, 10);
     const double cy = a.top() + a.height() * 0.22;
@@ -1100,8 +1101,18 @@ void PolarizationCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     p.setPen(QPen(t.amber, 1.6)); p.drawEllipse(p2, 22, 38);
     p.drawLine(p2 + QPointF(-std::sin(ang) * 34, -std::cos(ang) * 34), p2 + QPointF(std::sin(ang) * 34, std::cos(ang) * 34));
     text(p, QPointF(a.left() + 14, cy - 22), "Iᵢₙ = " + num(m_in.incidentIntensity, 4) + " W/m²", t.muted, 9);
-    text(p, QPointF(p1.x() + 34, cy - 22), "I₀ = " + num(i0, 4) + " W/m²", t.muted, 9);
-    text(p, QPointF(a.right() - 10, cy - 22), "I = " + num(iOut, 5) + " W/m²", t.amber, 9, Qt::AlignRight);
+    text(p, QPointF(p1.x() + 34, cy - 22), "I₀ = " + num(i0, 4) + " W/m²" + (m_in.unpolarized ? "  (½ of unpolarized)" : ""), t.muted, 9);
+    if (m_in.unpolarized) {
+        // star / mixed arrows showing multiple polarization directions before P1
+        p.setPen(QPen(t.muted, 1.2));
+        for (double ka : {0.0, 0.8, 1.6, 2.4, 3.1}) {
+            const double ax = p1.x() - 42, ay = p1.y() - 14;
+            const double dx = std::cos(ka) * 10, dy = std::sin(ka) * 10;
+            p.drawLine(QPointF(ax, ay), QPointF(ax + dx, ay + dy));
+        }
+        text(p, QPointF(p1.x() - 52, cy - 34), "unpolarized", t.muted, 8);
+    }
+    text(p, QPointF(a.right() - 10, cy - 22), "I = " + num(iOutDisp, 5) + " W/m²", t.amber, 9, Qt::AlignRight);
     text(p, p1 + QPointF(0, 54), "P₁ axis 0°", t.muted, 9, Qt::AlignHCenter);
     text(p, p2 + QPointF(0, 54), "P₂ axis " + num(m_in.angleDeg, 4) + "°", t.muted, 9, Qt::AlignHCenter);
     text(p, QPointF(a.center().x(), cy + 76), "θ = " + num(m_in.angleDeg, 4) + "° between transmission axes", t.text, 10, Qt::AlignHCenter);

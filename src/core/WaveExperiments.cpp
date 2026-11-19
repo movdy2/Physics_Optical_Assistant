@@ -638,7 +638,7 @@ ModelReport polarization(const PolarizationInput& in, const ReportContext& ctx) 
 
     const double i0 = in.unpolarized ? in.incidentIntensity / 2 : in.incidentIntensity;
     const double c2 = std::pow(std::cos(in.angleDeg * kDeg), 2);
-    const double out2 = i0 * c2;
+    const double out2 = i0 * c2 < 1e-12 ? 0.0 : i0 * c2;   // clamp tiny floating-point residual at θ = 90°
     const double brewster = std::atan(in.n2 / in.n1) / kDeg;
     auto medium = [](double n) { return std::fabs(n - 1.0) < 1e-6 ? "AIR" : std::fabs(n - 1.5) < 1e-6 ? "GLASS" : std::fabs(n - 1.333) < 1e-3 ? "WATER" : "MEDIUM"; };
 
@@ -685,15 +685,17 @@ ModelReport polarization(const PolarizationInput& in, const ReportContext& ctx) 
         rep.parameters = {{"n₁", num(in.n1)}, {"n₂", num(in.n2)}, {"Iᵢₙ", num(in.incidentIntensity) + " W/m²"}, {"mode", "brewster"}};
 
         ChartData& c = out.chart;
-        c.xLabel = "θ (degrees)"; c.yLabel = "R_p";
+        c.xLabel = "θ (degrees)"; c.yLabel = "R";
         c.xMin = 0; c.xMax = 90; c.yMin = 0; c.yMax = 1; c.xTicks = 3; c.yTicks = 2; c.xDecimals = 0; c.yDecimals = 1;
         for (int k = 0; k <= 180; ++k) {
             double rs = 0, rp = 0;
             fresnel(k * 0.5 * kDeg, rs, rp);
             c.curve.push_back({k * 0.5, rp});
+            c.curve2.push_back({k * 0.5, rs});
         }
         c.marker = {{brewster, rpB}};
-        c.legend = "R_p(θ) reaches 0 at θB = " + fx(brewster) + "°   ● Brewster";
+        c.legend = "R_p(θ) reaches 0 at θB = " + fx(brewster) + "°   ● p-pol";
+        c.legend2 = "R_s(θ) stays non-zero   ● s-pol";
         return out;
     }
     LcdRegister a;

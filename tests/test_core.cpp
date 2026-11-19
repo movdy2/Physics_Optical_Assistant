@@ -680,6 +680,29 @@ int main() {
         CHECK(near(pbr.chart.marker[0].second, 0.0, 1e-12) && near(pbr.chart.marker[0].first, 56.3099, 1e-3));
         CHECK(near(pbr.chart.curve.front().second, 0.04, 1e-9) && near(pbr.chart.curve.back().second, 1.0, 1e-6));   // normal incidence → grazing
         CHECK(p.report.parameters.back().second == "malus");
+        // --- polarization edge cases: θ = 90° → I = 0 exactly (not floating-point residual)
+        PolarizationInput pol90; pol90.angleDeg = 90;
+        auto p90 = WE::polarization(pol90);
+        CHECK(p90.report.registers[0].resultValue == "0.0000 W/m²");
+        // --- unpolarized vs polarized at same settings
+        PolarizationInput polUnpol; polUnpol.unpolarized = true; polUnpol.incidentIntensity = 100; polUnpol.angleDeg = 60;
+        auto pu = WE::polarization(polUnpol);
+        CHECK(pu.report.registers[0].resultValue == "12.5000 W/m²");
+        PolarizationInput polPol; polPol.unpolarized = false; polPol.incidentIntensity = 100; polPol.angleDeg = 60;
+        auto pp = WE::polarization(polPol);
+        CHECK(pp.report.registers[0].resultValue == "25.0000 W/m²");
+        // --- Brewster angle for water: n₁=1.0, n₂=1.33 → θB ≈ 53.06°
+        PolarizationInput pbw; pbw.brewster = true; pbw.n1 = 1.0; pbw.n2 = 1.33;
+        auto pbwr = WE::polarization(pbw);
+        CHECK(near(std::stod(pbwr.report.registers[0].resultValue.substr(0, pbwr.report.registers[0].resultValue.size() - 1)), 53.06, 0.05));
+        // --- Brewster graph includes R_s curve (curve2)
+        CHECK(!pbr.chart.curve2.empty());
+        CHECK(near(pbr.chart.curve2.front().second, 0.04, 1e-9));  // R_s at normal incidence = ((n1-n2)/(n1+n2))² = 0.04
+        // --- negative n₁ or n₂ rejected
+        PolarizationInput badN; badN.n1 = 0; badN.n2 = 1.5;
+        CHECK(WE::polarization(badN).report.paused);
+        PolarizationInput badN2; badN2.n1 = 1.0; badN2.n2 = -1.0;
+        CHECK(WE::polarization(badN2).report.paused);
         // every screen: the paused report keeps the last valid result
         ReportContext ctx{&nr, "RUN 007"};
         NewtonInput zero; zero.radiusM = 0;
