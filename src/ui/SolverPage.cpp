@@ -349,7 +349,7 @@ void SolverPage::showFormula(const Formula& formula) {
         const auto ov = formula.unitOverrides.find(var.id);
         const std::string unit = ov != formula.unitOverrides.end() ? ov->second : var.unit;
         edit->setPlaceholderText(unit.empty() ? "number" : QString::fromStdString(unit));
-        edit->setToolTip(QString::fromStdString(var.name + (var.description.empty() ? "" : QString(" ") + var.description)));
+        edit->setToolTip(QString::fromStdString(var.name + (var.description.empty() ? "" : std::string(" ") + var.description)));
         edit->setMinimumWidth(220);
         connect(edit, &QLineEdit::returnPressed, this, &SolverPage::onSolve);
         m_edits[var.id] = edit;
@@ -363,7 +363,7 @@ void SolverPage::showFormula(const Formula& formula) {
             tag = " <span style='color:#fb4934;font-size:8pt;'>(required)</span>";
         QString unitChip;
         if (!unit.empty()) {
-            unitChip = " <span style='color:#d79921;font-size:8pt;'>["
+            unitChip = QString(" <span style='color:#d79921;font-size:8pt;'>[")
                        + QString::fromStdString(unit) + "]</span>";
         }
         auto* label = new QLabel(QString::fromStdString(var.display) + "  <span style='color:gray'>" +
