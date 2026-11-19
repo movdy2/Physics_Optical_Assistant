@@ -245,7 +245,7 @@ private:
     std::string expr() {
         std::string out = term().latex;
         for (;;) {
-            if (accept('+')) out += std::string(") + term().latex;
+            if (accept('+')) out += std::string(")") + term().latex;
             else if (accept('-')) out += std::string(" - ") + term().latex;
             else return out;
         }

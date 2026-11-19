@@ -707,7 +707,7 @@ ModelReport polarization(const PolarizationInput& in, const ReportContext& ctx) 
         b.title = "FRESNEL AT θB";
         b.lines = {std::string("R_p = ") + fx(rpB) + "   (p-polarized, no reflection)",
                    std::string("R_s = ") + fx(rsB) + "   (s-polarized)",
-                   std::string("R_unpolarized = (R_s) + fx((rsB + rpB) / 2),
+                   std::string("R_unpolarized = (R_s) = ") + fx((rsB + rpB) / 2),
                    std::string("at normal incidence R = ") + fx(r0)};
         b.resultLabel = "s-POLARIZED REFLECTANCE · Rs";
         b.resultValue = fx(rsB);
