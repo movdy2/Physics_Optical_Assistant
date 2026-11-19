@@ -16,20 +16,7 @@ set(PHY104_VERSION_MINOR 0)
 set(PHY104_VERSION_PATCH 0)
 
 # Git commit hash (empty if not a git repo or no commits)
-find_package(Git QUIET)
-if(GIT_FOUND)
-    execute_process(
-        COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        OUTPUT_VARIABLE PHY104_GIT_COMMIT
-        ERROR_VARIABLE _git_err
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        ERROR_QUIET
-    )
-endif()
-if(NOT PHY104_GIT_COMMIT)
-    set(PHY104_GIT_COMMIT "unknown")
-endif()
+set(PHY104_GIT_COMMIT "unknown")
 
 # Build date (UTC)
 string(TIMESTAMP PHY104_BUILD_DATE "%Y-%m-%d %H:%M:%S UTC")
