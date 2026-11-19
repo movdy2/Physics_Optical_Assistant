@@ -107,7 +107,7 @@ void DiagramsPage::showDiagram(int row) {
         auto* w = new LatexWidget;
         w->setLatex(tex);
         w->setPointSize(17);
-        w->setLcdStyle(true);                 // formulas on a Casio LCD
+        w->setLcdStyle(true);                 // formulas on a highlighted card
         layout->addWidget(w);
     }
     layout->addStretch();

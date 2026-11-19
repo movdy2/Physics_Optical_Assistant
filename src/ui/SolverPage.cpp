@@ -119,7 +119,7 @@ SolverPage::SolverPage(std::shared_ptr<FormulaEngine> engine, std::shared_ptr<Fo
     m_formulaChapter = new QLabel;
     m_formulaChapter->setObjectName("muted");
     m_formulaLatex = new LatexWidget;
-    m_formulaLatex->setLcdStyle(true);                             // formula on a Casio LCD
+    m_formulaLatex->setLcdStyle(true);                             // formula on a highlighted card
     m_formulaLatex->setPointSize(24);
 
     auto* hint = new QLabel("Fill in the known values and leave exactly <b>one</b> field empty. "
@@ -151,21 +151,6 @@ SolverPage::SolverPage(std::shared_ptr<FormulaEngine> engine, std::shared_ptr<Fo
     m_answer->setPointSize(26);
     m_answer->hide();
 
-    m_output = new QTextBrowser;
-    m_output->setObjectName("lcdScreen");
-    ThemeManager::polishLcdFont(m_output);
-    m_output->setMinimumHeight(140);
-
-    // Variable help panel: describes what each input means.
-    m_varHelp = new QTextBrowser;
-    m_varHelp->setObjectName("lcdScreen");
-    ThemeManager::polishLcdFont(m_varHelp);
-    m_varHelp->setMinimumHeight(100);
-    m_varHelp->setMaximumHeight(160);
-    m_varHelp->setOpenExternalLinks(false);
-    m_varHelp->setReadOnly(true);
-    m_varHelp->hide();
-
     right->addWidget(m_formulaName);
     right->addWidget(m_formulaChapter);
     right->addWidget(m_formulaLatex);
@@ -174,8 +159,6 @@ SolverPage::SolverPage(std::shared_ptr<FormulaEngine> engine, std::shared_ptr<Fo
     right->addLayout(buttons);
     right->addWidget(m_status);
     right->addWidget(m_answer);
-    right->addWidget(m_output, 1);
-    right->addWidget(m_varHelp);
 
     // ============================================================ root: resizable split
     m_splitter = new QSplitter(Qt::Horizontal);
@@ -361,9 +344,8 @@ void SolverPage::showFormula(const Formula& formula) {
     m_edits.clear();
     for (const auto& var : formula.variables) {
         auto* edit = new QLineEdit(QString::fromStdString(var.defaultValue));
-        edit->setObjectName("lcdInput");                          // Casio LCD style
+        edit->setObjectName("lcdInput");
         edit->setLayoutDirection(Qt::LeftToRight);                 // keep variables and scientific notation readable in Arabic UI
-        ThemeManager::polishLcdInput(edit);
         const auto ov = formula.unitOverrides.find(var.id);
         const std::string unit = ov != formula.unitOverrides.end() ? ov->second : var.unit;
         edit->setPlaceholderText(unit.empty() ? "number" : QString::fromStdString(unit));
@@ -392,37 +374,7 @@ void SolverPage::showFormula(const Formula& formula) {
     }
     setStatus("", "");
     m_answer->hide();
-    m_output->clear();
     m_copyBtn->setEnabled(false);
-    updateVariableHelp();
-}
-
-void SolverPage::updateVariableHelp() {
-    if (!m_current) { m_varHelp->hide(); return; }
-
-    QString html;
-    html += "<p style='margin:0 0 4px 0;'><b>" +
-            QString::fromStdString(m_current->name) + "</b> &mdash; " +
-            QString::fromStdString(m_manager->chapterTitle(m_current->chapter)) + "</p>";
-    if (!m_current->noSolutionHint.empty()) {
-        html += "<p style='margin:0 0 6px 0; color:#d79921; font-size:9pt;'>" +
-                QString::fromStdString(m_current->noSolutionHint) + "</p>";
-    }
-    html += "<ul style='margin:0; padding-left:16px; font-size:9pt;'>";
-    for (const auto& var : m_current->variables) {
-        html += "<li style='margin-bottom:2px;'><b>" + QString::fromStdString(var.display) +
-                "</b> (" + QString::fromStdString(var.name) + ")";
-        if (!var.unit.empty())
-            html += " &mdash; unit: <i>" + QString::fromStdString(var.unit) + "</i>";
-        if (!var.description.empty())
-            html += ": " + QString::fromStdString(var.description);
-        if (!var.defaultValue.empty())
-            html += " <span style='color:#8a94a6;'>(default: " + QString::fromStdString(var.defaultValue) + ")</span>";
-        html += "</li>";
-    }
-    html += "</ul>";
-    m_varHelp->setHtml(html);
-    m_varHelp->show();
 }
 
 void SolverPage::setStatus(const QString& kind, const QString& text) {
@@ -450,7 +402,6 @@ void SolverPage::onSolve() {
         } else {                                                  // input mistake: red
             setStatus("Error", "✖ " + message);
         }
-        m_output->setHtml("<p>" + message.toHtmlEscaped() + "</p>");
         return;
     }
 
@@ -461,13 +412,6 @@ void SolverPage::onSolve() {
 
     m_lastAnswerLatex = QString::fromStdString(r.answerLatex);
     m_copyBtn->setEnabled(true);
-
-    QString html;
-    for (const auto& step : r.steps) {
-        if (step.rfind("Answer:", 0) == 0) continue;              // the big LCD answer shows it
-        html += "<p>" + QString::fromStdString(step).toHtmlEscaped().replace("\n", "<br>") + "</p>";
-    }
-    m_output->setHtml(html);
 }
 
 void SolverPage::onClear() {

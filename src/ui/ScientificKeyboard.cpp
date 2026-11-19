@@ -62,10 +62,8 @@ ScientificKeyboard::ScientificKeyboard(std::vector<ScientificPage> pages, QWidge
     ll->setContentsMargins(8, 4, 8, 4);
     m_display = new QLabel;
     m_display->setObjectName("lcdKeyDisplay");
-    ThemeManager::polishLcdFont(m_display);
     m_caption = new QLabel;
     m_caption->setObjectName("lcdCaption");
-    ThemeManager::polishLcdFont(m_caption);
     ll->addWidget(m_display, 1);
     ll->addWidget(m_caption, 0, Qt::AlignRight | Qt::AlignVCenter);
     root->addWidget(lcd);
