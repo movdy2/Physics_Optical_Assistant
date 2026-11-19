@@ -860,15 +860,26 @@ void MichelsonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
          QString::fromStdString(std::string("ΔN = ") + (shift >= 0 ? "+" : "-") + NumberFormat::fixed(std::fabs(shift), 4) + " fringes"),
          shift >= 0 ? t.lime : t.amber, 10, Qt::AlignLeft, true);
     text(p, QPointF(detector.x() + 12, detector.y() + 38),
+         QString::fromStdString(std::string("Δφ = ") + NumberFormat::signedFixed(dphi) + " rad = " +
+                                NumberFormat::signedFixed(dphi * 180.0 / std::numbers::pi) + "°"),
+         t.amber, 9);
+    text(p, QPointF(detector.x() + 12, detector.y() + 52),
          QString::fromStdString(std::string("Fringes crossed from zero: ") + NumberFormat::fixed(std::fabs(shift), 4)),
          t.muted, 9);
 
     // Circular detector fringes are a schematic radial phase map. At r = 0 it uses the same
     // Δφ = 4πnΔx/λ and normalized intensity as the register above.
     const int size = static_cast<int>(std::min(108.0, a.height() * 0.27));
-    const QImage img = fringeImage(size, [dphi, size, vis](double px, double py) {
+    // Item 14: tilt converts circular (bullseye) fringes into straight fringes.
+    // tiltMrad adds a linear OPD gradient across the field of view; at zero tilt
+    // the pattern is circular, at large tilt the fringes straighten and crowd together.
+    const double tiltRad = m_in.tiltMrad * 1e-3;
+    const double tiltGrad = 2.0 * std::numbers::pi * tiltRad * size / m_in.lambdaNm * 1e3;
+    const QImage img = fringeImage(size, [dphi, size, vis, tiltRad, tiltGrad](double px, double py) {
         const double r2 = (px * px + py * py) / double((size / 2) * (size / 2));
-        return (1 + vis * std::cos(dphi + 18.0 * r2)) / (1 + vis);
+        // Linear tilt term across x plus circular quadratic term; tilt straightens fringes.
+        const double phase = dphi + 18.0 * r2 + tiltGrad * px / (size / 2.0);
+        return (1 + vis * std::cos(phase)) / (1 + vis);
     });
     const QPointF fringeCenter(a.right() - size / 2.0 - 16.0, a.bottom() - size / 2.0 - 22.0);
     p.drawImage(QPointF(fringeCenter.x() - size / 2.0, fringeCenter.y() - size / 2.0), img);
@@ -880,6 +891,39 @@ void MichelsonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     text(p, QPointF(a.left() + 14, a.bottom() - 46), m_in.fringes
              ? "Contrast V = " + num(vis, 2) + " · sweep ±2 µm"
              : "Concentric fringes · schematic", t.muted, 9);
+
+    // ---- Detector screen interference fringes ----
+    // A horizontal screen showing vertical bright/dark fringes. Fringe spacing across
+    // the screen is set by the M2 tilt (tilt = 0 → uniform intensity); contrast is set
+    // by visibility V (coherence-length decay reduces V). Center intensity matches I/Imax.
+    const int screenW = 120, screenH = 14;
+    const QRectF screenRect(detector.x() + 44, detector.y() + 12, screenW, screenH);
+    const double screenCenter = screenW / 2.0;
+
+    // Screen frame
+    p.setPen(QPen(t.muted, 1));
+    p.setBrush(Qt::NoBrush);
+    p.drawRect(screenRect);
+    text(p, QPointF(screenRect.left(), screenRect.top() - 6), "Detector screen · fringes", t.muted, 8);
+
+    // Fringe phase gradient across screen from mirror tilt:
+    //   ΔOPD(x) ≈ 2·θ·x  (round trip)  →  φ(x) = φ₀ + 4πθx/λ
+    // At 10 mrad tilt → ~8 fringes across the screen width.
+    const double tiltFringeCount = (std::fabs(tiltRad) / 0.01) * 8.0;
+    const double phaseGrad = tiltFringeCount * 2.0 * std::numbers::pi / screenW;
+    for (int i = 0; i < screenW; ++i) {
+        const double phase = dphi + phaseGrad * (i - screenCenter);
+        const double I = (1 + vis * std::cos(phase)) / (1 + vis);
+        p.setPen(mix(t.canvas, t.lime, I));
+        p.drawLine(screenRect.left() + i, screenRect.top(), screenRect.left() + i, screenRect.bottom());
+    }
+
+    // Center marker: intensity at screen center = I/Imax
+    const int centerX = screenRect.left() + static_cast<int>(screenCenter);
+    p.setPen(QPen(t.amber, 2));
+    p.drawLine(QPointF(centerX, screenRect.top() - 4), QPointF(centerX, screenRect.top() + screenH + 4));
+    text(p, QPointF(centerX, screenRect.bottom() + 12), "I/Imax = " + num(intensity, 4), t.amber, 8, Qt::AlignHCenter);
+
     // Beam path tracing legend: color-coded arms
     legendItem(p, QPointF(a.left() + 14, a.bottom() - 66), "M1 arm (top)", t.amber);
     legendItem(p, QPointF(a.left() + 120, a.bottom() - 66), "M2 arm (side)", t.sage);

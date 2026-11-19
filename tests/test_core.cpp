@@ -1028,6 +1028,42 @@ int main() {
         auto fm = WE::michelson(mf);
         double expectedCount = 2 * 1.0 * (4.0 * 1000.0) / 632.8;  // 4 µm sweep total
         CHECK(near(std::stod(fm.report.registers[1].resultValue), expectedCount, 0.01));
+
+        // ---- Item 12: explicit fringe count register (full fringes + fractional) ----
+        // Δx = 0.75 µm, λ = 632.8 nm, n = 1 → ΔN = 2×1×0.75×1000/632.8 = 2.3704 fringes
+        MichelsonInput mc; mc.lambdaNm = 632.8; mc.displacementUm = 0.75; mc.n = 1.0;
+        auto rc = WE::michelson(mc);
+        CHECK(near(std::stod(rc.report.registers[0].resultValue), 2.3704, 1e-3));
+        // fullFringes = floor(2.3704) = 2, fractional = 0.3704
+
+        // ---- Item 14: V < 1 reduces contrast; minima don't reach zero ----
+        MichelsonInput mv; mv.lambdaNm = 632.8; mv.displacementUm = 0.1582; mv.n = 1.0; mv.visibility = 0.5;
+        auto rv = WE::michelson(mv);
+        // At ΔN = 0.5, phase = π, I/Imax = (1 + 0.5·cos π)/(1+0.5) = 0.5/1.5 = 0.3333
+        CHECK(near(std::stod(rv.report.registers[1].resultValue), 0.3333, 1e-3));
+
+        // ---- Item 13: coherence length decay V_eff = V·exp(−|ΔOPD|/Lc) ----
+        // ΔOPD = 1500 nm = 1.5 µm, Lc = 1.0 µm → V_eff = exp(-1.5) ≈ 0.2231
+        // ΔN = 2.3704, phase ≈ 14.8938 rad → I/Imax = (1 + 0.2231·cos(14.8938))/(1+0.2231) ≈ 0.6923
+        MichelsonInput mcl; mcl.lambdaNm = 632.8; mcl.displacementUm = 0.75; mcl.n = 1.0;
+        mcl.coherenceLengthUm = 1.0;
+        auto rcl = WE::michelson(mcl);
+        CHECK(near(std::stod(rcl.report.registers[1].resultValue), 0.6923, 1e-2));
+        // V_eff text appears in register line 3
+        CHECK(rcl.report.registers[1].lines.size() >= 4 &&
+              rcl.report.registers[1].lines[3].find("V_eff =") != std::string::npos);
+
+        // ---- Item 15: glass plate OPD: ΔOPD_plate = 2(n_plate−1)t ----
+        // t = 10 µm, n_p = 1.5 → ΔOPD_plate = 2×0.5×10 = 10 µm → ΔN adds 10/0.6328 ≈ 15.80 fringes
+        MichelsonInput mp; mp.lambdaNm = 632.8; mp.displacementUm = 0.0; mp.n = 1.0;
+        mp.plateThicknessUm = 10.0; mp.plateIndex = 1.5;
+        auto rp = WE::michelson(mp);
+        CHECK(near(std::stod(rp.report.registers[0].resultValue), 15.8028, 1e-2));
+
+        // ---- No NaN / Infinity for zero displacement ----
+        MichelsonInput mz; mz.lambdaNm = 632.8; mz.displacementUm = 0.0; mz.n = 1.0;
+        auto rz = WE::michelson(mz);
+        CHECK(std::isfinite(std::stod(rz.report.registers[1].resultValue)));
     }
 
     if (g_failures == 0) std::cout << "All core tests passed\n";

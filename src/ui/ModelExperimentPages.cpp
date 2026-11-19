@@ -259,6 +259,21 @@ MichelsonPage::MichelsonPage(AppContext* ctx, QWidget* parent)
 
     m_reference = addCombo("M2 drive", {"Manual micrometer", "Piezo actuator"}, {0, 1});
     m_balance = addCombo("Beam balance", {"Equal beams · V = 1.00", "Unequal beams · V = 0.60"}, {1.0, 0.6});
+    // Item 13: coherence length / source linewidth
+    m_coherenceLength = addField(QString::fromLatin1(FieldIds::michelsonCoherenceLength), "Coherence length · Lc", "µm", 0.0, 2, false, true, 1);
+    // Item 14: mirror tilt
+    m_tiltSlider = new QSlider(Qt::Horizontal);
+    m_tiltSlider->setObjectName("michelsonTiltSlider");
+    m_tiltSlider->setRange(0, 1000);           // 0 to 10 mrad in 0.01 mrad steps
+    m_tiltSlider->setSingleStep(10);
+    m_tiltSlider->setPageStep(100);
+    m_tiltSlider->setValue(0);
+    m_tiltSlider->setAccessibleName("M2 mirror tilt in milliradians");
+    m_tiltSlider->setToolTip("Tilt M2 to change from straight fringes (tilt = 0) to circular bullseye fringes.");
+    m_fieldLayout->addWidget(labeled("Mirror tilt · mrad", m_tiltSlider));
+    // Item 15: glass plate in one arm
+    m_plateThickness = addField(QString::fromLatin1(FieldIds::michelsonPlateThickness), "Plate thickness · t", "µm", 0.0, 2, false, true, 1);
+    m_plateIndex = addField(QString::fromLatin1(FieldIds::michelsonPlateIndex), "Plate index · n_p", "", 1.5, 4, false, true, 0.01);
     // ---- Preset scenarios (Item 19) ----
     auto* presetLabel = new QLabel("Presets:");
     presetLabel->setObjectName("fieldLabel");
@@ -335,6 +350,12 @@ MichelsonPage::MichelsonPage(AppContext* ctx, QWidget* parent)
         apply(false);
     });
 
+    // Item 13-15 real-time connections for new parameters
+    connect(m_coherenceLength, &UnitField::edited, this, [this] { apply(false); });
+    connect(m_tiltSlider, &QSlider::valueChanged, this, [this] { apply(false); });
+    connect(m_plateThickness, &UnitField::edited, this, [this] { apply(false); });
+    connect(m_plateIndex, &UnitField::edited, this, [this] { apply(false); });
+
     build("Optical bench / detector fringes", m_canvas, "Detector intensity vs mirror displacement", "Drag movable M2 or use its slider. ΔOPD = 2nΔx; one fringe per λ/(2n) of mirror travel.");
     reset();
 }
@@ -343,7 +364,10 @@ ModelReport MichelsonPage::compute(const ReportContext& ctx) {
         ? m_nSlider->value() / 1000.0
         : m_medium->currentData().toDouble();
     return WE::michelson({m_lambda->value(), m_dx->value(), n, m_balance->currentData().toDouble(),
-                          m_tabs->current() == 1, m_reference->currentData().toDouble() > 0.5}, ctx);
+                          m_tabs->current() == 1, m_reference->currentData().toDouble() > 0.5,
+                          m_coherenceLength->value(),
+                          m_tiltSlider->value() / 1000.0,
+                          m_plateThickness->value(), m_plateIndex->value()}, ctx);
 }
 void MichelsonPage::setMirrorDisplacement(double displacementUm) {
     const double travel = std::clamp(displacementUm, -MichelsonCanvas::kMaxInteractiveTravelUm,
@@ -359,7 +383,9 @@ void MichelsonPage::updateCanvas() {
     const double n = m_medium->currentIndex() == m_medium->count() - 1
         ? m_nSlider->value() / 1000.0
         : m_medium->currentData().toDouble();
-    m_canvas->setInput({m_lambda->value(), m_dx->value(), n, m_balance->currentData().toDouble(), fringes, piezo});
+    m_canvas->setInput({m_lambda->value(), m_dx->value(), n, m_balance->currentData().toDouble(), fringes, piezo,
+                        m_coherenceLength->value(), m_tiltSlider->value() / 1000.0,
+                        m_plateThickness->value(), m_plateIndex->value()});
     retitle(fringes ? (piezo ? "Optical bench / piezo scan of M2" : "Optical bench / fringe pattern") : "Optical bench / detector fringes",
             fringes ? "Intensity across a ±2 µm M2 sweep" : "Detector intensity vs M2 displacement");
 }
@@ -381,6 +407,12 @@ void MichelsonPage::resetFields() {
     m_tabs->setCurrent(0);
     QSignalBlocker blockerDx(m_dxSlider);
     m_dxSlider->setValue(7500);
+    // Items 13-15: reset new parameters to defaults
+    QSignalBlocker blockerTilt(m_tiltSlider);
+    m_tiltSlider->setValue(0);
+    m_coherenceLength->setValue(0.0, 2);
+    m_plateThickness->setValue(0.0, 2);
+    m_plateIndex->setValue(1.5, 4);
 }
 QString MichelsonPage::runDescription() const {
     return QString("M2 Δx %1 µm · λ %2 nm · %3").arg(m_dx->text(), m_lambda->text(), m_tabs->current() == 1 ? "fringes" : "displacement");

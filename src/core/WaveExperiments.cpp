@@ -150,15 +150,28 @@ ModelReport michelson(const MichelsonInput& in, const ReportContext& ctx) {
     if (in.n < 1) issues.push_back({FieldIds::refractiveIndex, "Enter n ≥ 1.", "n"});
     if (in.displacementUm < -2.0 || in.displacementUm > 2.0)
         issues.push_back({FieldIds::mirrorDisplacement, "Keep the movable mirror stage within −2 to +2 µm.", "Δx"});
-    const std::string guardText = "Require λ > 0 and n ≥ 1. The simulated movable mirror stage travels ±2 µm; equal-amplitude beams give full visibility, while unequal beams reduce fringe contrast.";
+    if (in.coherenceLengthUm < 0) issues.push_back({FieldIds::wavelength, "Coherence length must be ≥ 0 (0 = infinite).", "Lc"});
+    if (in.plateThicknessUm < 0) issues.push_back({FieldIds::refractiveIndex, "Plate thickness must be ≥ 0.", "t"});
+    if (in.plateIndex < 1) issues.push_back({FieldIds::refractiveIndex, "Plate index must be ≥ 1.", "n_plate"});
+    const std::string guardText = "Require λ > 0 and n ≥ 1. The simulated movable mirror stage travels ±2 µm; equal-amplitude beams give full visibility, while unequal beams reduce fringe contrast. Coherence length 0 = infinite.";
     if (!issues.empty())
         return paused(issues.front().label + " out of range", issues, {"λ = " + num(in.lambdaNm) + " nm", "n = " + num(in.n), "ACTION: " + issues.front().message},
                       guardText + "\n\nDiagram, chart and retained results show the last valid run.", ctx);
 
-    const double opd = 2 * in.n * in.displacementUm * 1e3;          // nm
+    // Total OPD: mirror travel contribution (2nΔx) plus glass-plate contribution (2(n_plate−1)t, round trip)
+    const double opdMirror = 2 * in.n * in.displacementUm * 1e3;          // nm
+    const double opdPlate = 2 * (in.plateIndex - 1.0) * in.plateThicknessUm * 1e3;  // nm
+    const double opd = opdMirror + opdPlate;                               // nm
     const double shift = opd / in.lambdaNm;                         // fringes
     const double phase = 2 * std::numbers::pi * shift;
-    const double v = in.visibility;
+    const double vBase = in.visibility;
+
+    // Coherence-length decay: V = V_base · exp(−|ΔOPD| / Lc), with Lc in µm and ΔOPD converted to µm
+    double v = vBase;
+    if (in.coherenceLengthUm > 0.0) {
+        const double opdUm = std::fabs(opd) / 1e3;          // µm
+        v = vBase * std::exp(-opdUm / in.coherenceLengthUm);
+    }
     const double intensity = (1 + v * std::cos(phase)) / (1 + v);
 
     ModelReport out;
@@ -177,46 +190,61 @@ ModelReport michelson(const MichelsonInput& in, const ReportContext& ctx) {
         LcdRegister b;
         b.title = "COUNT ACROSS A ±2 µm SWEEP";
         b.lines = {"N = 2nΔx / λ", " = 2 × " + fx(in.n) + " × " + NF::fixed(2 * sweepUm * 1e3, 1) + " nm / " + num(in.lambdaNm) + " nm",
-                   "V = " + NF::fixed(v, 2) + (v >= 1 ? "  (equal beams)" : "  (unequal beams)"),
+                   "V = " + NF::fixed(vBase, 2) + (vBase >= 1 ? "  (equal beams)" : "  (unequal beams)"),
                    "I/Imax = (1 + V cos 2πN)/(1 + V)"};
         b.resultLabel = "FRINGES IN ±2 µm";
         b.resultValue = fx(count) + " fringes";
         rep.registers = {a, b};
-        rep.notices = {interpretation("Every λ/(2n) = " + fx(spacingNm) + " nm of mirror travel adds one round-trip wavelength, so one more fringe crosses the detector. Unequal beams change only the contrast V = " + NF::fixed(v, 2) + ", never the spacing."),
+        rep.notices = {interpretation("Every λ/(2n) = " + fx(spacingNm) + " nm of mirror travel adds one round-trip wavelength, so one more fringe crosses the detector. Unequal beams change only the contrast V = " + NF::fixed(vBase, 2) + ", never the spacing."),
                        guard(guardText)};
         rep.headline = fx(count) + " fringes in ±2 µm";
         rep.retained = retained({"λ = " + NF::fixed(in.lambdaNm, 1) + " nm · n = " + fx(in.n),
-                                 "sweep Δx = ±" + NF::fixed(sweepUm, 1) + " µm · V = " + NF::fixed(v, 2)},
+                                 "sweep Δx = ±" + NF::fixed(sweepUm, 1) + " µm · V = " + NF::fixed(vBase, 2)},
                                 "RETAINED FRINGE SPACING", a.resultValue);
         rep.parameters = {{"λ", num(in.lambdaNm) + " nm"}, {"Δx", num(in.displacementUm) + " µm"}, {"n", num(in.n)},
-                          {"V", num(v)}, {"mount", in.piezo ? "piezo scan" : "micrometer"}, {"mode", "fringes"}};
+                          {"V", num(vBase)}, {"mount", in.piezo ? "piezo scan" : "micrometer"}, {"mode", "fringes"}};
 
         ChartData& c = out.chart;
         c.xLabel = "Δx (µm)"; c.yLabel = "I / Imax";
         c.xMin = -sweepUm; c.xMax = sweepUm; c.yMin = 0; c.yMax = 1; c.xTicks = 4; c.yTicks = 2; c.xDecimals = 1; c.yDecimals = 1;
         for (int k = 0; k <= 600; ++k) {
             const double x = -sweepUm + 2 * sweepUm * k / 600.0;
-            c.curve.push_back({x, (1 + v * std::cos(2 * std::numbers::pi * (2 * in.n * x * 1e3) / in.lambdaNm)) / (1 + v)});
+            const double opdX = 2 * in.n * x * 1e3 + opdPlate;
+            const double vx = (in.coherenceLengthUm > 0.0) ? vBase * std::exp(-std::fabs(opdX) / 1e3 / in.coherenceLengthUm) : vBase;
+            c.curve.push_back({x, (1 + vx * std::cos(2 * std::numbers::pi * opdX / in.lambdaNm)) / (1 + vx)});
         }
         const double marked = std::clamp(in.displacementUm, -sweepUm, sweepUm);
-        c.marker = {{marked, (1 + v * std::cos(2 * std::numbers::pi * (2 * in.n * marked * 1e3) / in.lambdaNm)) / (1 + v)}};
+        const double opdM = 2 * in.n * marked * 1e3 + opdPlate;
+        const double vm = (in.coherenceLengthUm > 0.0) ? vBase * std::exp(-std::fabs(opdM) / 1e3 / in.coherenceLengthUm) : vBase;
+        c.marker = {{marked, (1 + vm * std::cos(2 * std::numbers::pi * opdM / in.lambdaNm)) / (1 + vm)}};
         c.legend = "λ/(2n) = " + fx(spacingNm) + " nm per fringe   ● current Δx";
         return out;
     }
+    // Item 12: explicit fringe count — integer number of full fringes crossed plus fractional part
+    const int fullFringes = static_cast<int>(std::floor(std::fabs(shift)));
+    const double fringeFraction = shift - std::copysign(static_cast<double>(fullFringes), shift);
     LcdRegister a;
     a.title = "ROUND-TRIP PATH CHANGE";
-    a.lines = {"ΔOPD = 2nΔx", " = 2 × " + fx(in.n) + " × " + NF::signedFixed(in.displacementUm) + " µm", " = " + NF::signedFixed(opd / 1e3) + " µm",
+    std::vector<std::string> aLines = {"ΔOPD = 2nΔx", " = 2 × " + fx(in.n) + " × " + NF::signedFixed(in.displacementUm) + " µm", " = " + NF::signedFixed(opd / 1e3) + " µm",
                "ΔN = ΔOPD / λ", " = " + NF::general(opd, 6) + " nm / " + num(in.lambdaNm) + " nm"};
+    if (in.plateThicknessUm > 0.0)
+        aLines.push_back("ΔOPD_plate = 2(n_plate − 1)t = " + fx(opdPlate / 1e3) + " µm");
+    aLines.push_back("Full fringes crossed: " + std::to_string(fullFringes));
+    aLines.push_back("Fractional fringe: " + NF::general(fringeFraction, 4));
+    a.lines = aLines;
     a.resultLabel = "FRINGE SHIFT · ΔN";
     a.resultValue = NF::signedFixed(shift);
     LcdRegister b;
     b.title = "PHASE-REFERENCED DETECTOR";
-    b.lines = {"Δφ = 2πΔN = " + NF::signedFixed(phase) + " rad", "I/Imax = (1 + V cos Δφ)/(1 + V)", "V = " + NF::fixed(v, 2) + (v >= 1 ? "  (equal beams)" : "  (unequal beams)")};
+    std::vector<std::string> bLines = {"Δφ = 2πΔN = " + NF::signedFixed(phase) + " rad", "I/Imax = (1 + V cos Δφ)/(1 + V)", "V = " + NF::fixed(v, 2) + (v >= 1 ? "  (equal beams)" : "  (unequal beams)")};
+    if (in.coherenceLengthUm > 0.0)
+        bLines.push_back("V_eff = V · exp(−|ΔOPD|/Lc) = " + NF::fixed(v, 4) + "  (Lc = " + num(in.coherenceLengthUm) + " µm)");
+    b.lines = bLines;
     b.resultLabel = "NORMALIZED INTENSITY · I/Imax";
     b.resultValue = fx(intensity);
     rep.registers = {a, b};
     rep.notices = {interpretation("Moving one mirror by λ/(2n) = " + NF::fixed(in.lambdaNm / (2 * in.n) / 1e3, 4) + " µm adds one full round-trip wavelength and shifts the pattern by one fringe."), guard(guardText)};
-    rep.headline = "ΔN = " + NF::signedFixed(shift) + " fringes";
+    rep.headline = "ΔN = " + NF::signedFixed(shift) + " fringes (" + std::to_string(fullFringes) + " full · " + NF::general(std::fabs(fringeFraction), 3) + " fractional)";
     rep.retained = retained({"λ = " + NF::fixed(in.lambdaNm, 1) + " nm · n = " + fx(in.n), "Δx = " + NF::signedFixed(in.displacementUm) + " µm"}, "RETAINED FRINGE SHIFT · ΔN", a.resultValue);
     rep.parameters = {{"λ", num(in.lambdaNm) + " nm"}, {"Δx", num(in.displacementUm) + " µm"}, {"n", num(in.n)}, {"V", num(v)},
                       {"mount", in.piezo ? "piezo scan" : "micrometer"}, {"mode", "displacement"}};
@@ -226,7 +254,9 @@ ModelReport michelson(const MichelsonInput& in, const ReportContext& ctx) {
     c.xMin = -2; c.xMax = 2; c.yMin = 0; c.yMax = 1; c.xTicks = 4; c.yTicks = 2; c.xDecimals = 1; c.yDecimals = 1;
     for (int k = 0; k <= 800; ++k) {
         const double x = -2 + k * 0.005;
-        c.curve.push_back({x, (1 + v * std::cos(2 * std::numbers::pi * (2 * in.n * x * 1e3) / in.lambdaNm)) / (1 + v)});
+        const double opdX = 2 * in.n * x * 1e3 + opdPlate;
+        const double vx = (in.coherenceLengthUm > 0.0) ? vBase * std::exp(-std::fabs(opdX) / 1e3 / in.coherenceLengthUm) : vBase;
+        c.curve.push_back({x, (1 + vx * std::cos(2 * std::numbers::pi * opdX / in.lambdaNm)) / (1 + vx)});
     }
     c.marker = {{in.displacementUm, intensity}};
     c.legend = "I/Imax = (1 + V cos 4πnΔx/λ)/(1 + V)   ● current Δx";
