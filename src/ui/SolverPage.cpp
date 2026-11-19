@@ -366,10 +366,11 @@ void SolverPage::showFormula(const Formula& formula) {
             unitChip = QString(" <span style='color:#d79921;font-size:8pt;'>[")
                        + QString::fromStdString(unit) + "]</span>";
         }
-        auto* label = new QLabel(QString::fromStdString(var.display) + "  <span style='color:gray'>" +
-                                 QString::fromStdString(var.name).toHtmlEscaped() + QString(">") + tag + unitChip);
+        QString labelText = QString::fromStdString(var.display) + "  <span style='color:gray'>";
+        labelText += QString::fromStdString(var.name).toHtmlEscaped() + QString(">") + tag + unitChip;
+        auto* label = new QLabel(labelText);
         label->setTextFormat(Qt::RichText);
-        label->setToolTip(QString::fromStdString(var.name + (var.description.empty() ? "" : QString(" ") + var.description)));
+        label->setToolTip(QString::fromStdString(var.name + (var.description.empty() ? "" : std::string(" ") + var.description)));
         m_form->addRow(label, edit);
     }
     setStatus("", "");
