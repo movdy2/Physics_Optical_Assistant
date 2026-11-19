@@ -138,7 +138,7 @@ ImageResult imageFormation(double s, double f) {
     const double absM = std::fabs(r.magnification);
     const char* size = absM > 1.0001 ? "enlarged" : (absM < 0.9999 ? "reduced" : "same size");
     r.description = std::string(r.real ? "Real" : "Virtual") + ", " +
-                    (r.upright ? "upright" : "inverted") + ", " + size;
+                    (r.upright ? "upright" : "inverted") + std::string(", ") + size;
     return r;
 }
 

@@ -275,10 +275,10 @@ void ExportPage::refreshPreview() {
     m_descNote->setText(QString::fromStdString(s.note));
     QStringList columns;
     for (const auto& h : s.headers) columns << QString::fromStdString(h);
-    m_descColumns->setText("COLUMNS\n" + columns.join(" · "));
+    m_descColumns->setText(std::string("COLUMNS\n") + columns.join(" · "));
 
     // ---- every row, full width
-    m_previewPanel->setTitle("Full preview / " + QString::fromStdString(s.id));
+    m_previewPanel->setTitle(std::string("Full preview / ") + QString::fromStdString(s.id));
     m_previewPanel->setMeta(QString("%1 ROWS × %2 COLUMNS").arg(s.rows.size()).arg(s.headers.size()));
     const int rows = static_cast<int>(s.rows.size());
     const int cols = static_cast<int>(s.headers.size());
@@ -301,9 +301,9 @@ void ExportPage::refreshPreview() {
     }
     QStringList analysis;
     for (const auto& [name, value] : s.analysis)
-        analysis << QString::fromStdString(name) + " = " + QString::fromStdString(value);
+        analysis << QString::fromStdString(name) + std::string(" = ") + QString::fromStdString(value);
     QString foot = QString("%1 rows × %2 columns · every row shown · full precision retained").arg(rows).arg(cols);
-    if (!analysis.isEmpty()) foot += "\nAnalysis / uncertainty metadata: " + analysis.join(" · ");
+    if (!analysis.isEmpty()) foot += std::string("\nAnalysis / uncertainty metadata: ") + analysis.join(" · ");
     m_previewFoot->setText(foot);
 
     // ---- file name + what the export will contain
@@ -376,29 +376,29 @@ void ExportPage::printTable() {
 
     // the same table as the preview, as simple HTML (no CSS tricks: Qt's rich text engine prints it as it is shown)
     const DataSeries& series = snap->series;
-    QString html = "<h2>" + QString::fromStdString(series.name).toHtmlEscaped() + "</h2><p>"
+    QString html = std::string("<h2>") + QString::fromStdString(series.name).toHtmlEscaped() + "</h2><p>"
                  + QString::fromStdString(series.description).toHtmlEscaped() + "</p>";
-    if (!series.note.empty()) html += "<p>" + QString::fromStdString(series.note).toHtmlEscaped() + "</p>";
+    if (!series.note.empty()) html += std::string("<p>") + QString::fromStdString(series.note).toHtmlEscaped() + "</p>";
     if (!series.analysis.empty()) {
         html += "<h3>Analysis and uncertainty</h3><table border='1' cellspacing='0' cellpadding='4'>";
         for (const auto& [name, value] : series.analysis)
-            html += "<tr><th>" + QString::fromStdString(name).toHtmlEscaped() + "</th><td>" +
+            html += std::string("<tr><th>") + QString::fromStdString(name).toHtmlEscaped() + "</th><td>" +
                     QString::fromStdString(value).toHtmlEscaped() + "</td></tr>";
         html += "</table>";
     }
     html += "<table border='1' cellspacing='0' cellpadding='4'><tr>";
-    for (const std::string& h : series.headers) html += "<th>" + QString::fromStdString(h).toHtmlEscaped() + "</th>";
+    for (const std::string& h : series.headers) html += std::string("<th>") + QString::fromStdString(h).toHtmlEscaped() + "</th>";
     html += "</tr>";
     for (const auto& row : snap->series.rows) {
         html += "<tr>";
-        for (double v : row) html += "<td>" + (std::isnan(v) ? QString("—") : QString::number(v, 'g', 6)) + "</td>";
+        for (double v : row) html += std::string("<td>") + (std::isnan(v) ? QString("—") : QString::number(v, 'g', 6)) + "</td>";
         html += "</tr>";
     }
     html += "</table>";
     QTextDocument doc;
     doc.setHtml(html);
     doc.print(&printer);
-    emit m_ctx->message("Printed " + QString::fromStdString(snap->series.name));
+    emit m_ctx->message(std::string("Printed ") + QString::fromStdString(snap->series.name));
 }
 
 void ExportPage::exportPrimary() { exportAs(m_format->current() == 0); }

@@ -60,7 +60,7 @@ int ConstantsPage::selectedIndex() const {
 void ConstantsPage::applyFilter(const QString& text) {
     for (int row = 0; row < int(m_constants.size()); ++row) {
         const auto& c = m_constants[std::size_t(row)];
-        const QString haystack = QString::fromStdString(c.symbol + " " + c.name + " " + c.description);
+        const QString haystack = QString::fromStdString(c.symbol + std::string(" ") + c.name + std::string(" ") + c.description);
         m_table->setRowHidden(row, !haystack.contains(text, Qt::CaseInsensitive));
     }
 }

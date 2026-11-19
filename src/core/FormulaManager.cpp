@@ -53,7 +53,7 @@ std::vector<const Formula*> FormulaManager::search(const std::string& query,
     std::vector<const Formula*> result;
     for (const auto& f : m_engine.formulas()) {
         if (!chapterId.empty() && f.chapter != chapterId) continue;
-        const std::string haystack = normalize(f.name) + " " + normalize(f.id);
+        const std::string haystack = normalize(f.name) + std::string(" ") + normalize(f.id);
         const bool all = std::all_of(words.begin(), words.end(), [&](const std::string& w) {
             return haystack.find(w) != std::string::npos;
         });

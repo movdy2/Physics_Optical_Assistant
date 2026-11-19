@@ -101,7 +101,7 @@ SolveResult SolverEngine::solve(const Formula& formula,
     // 1) split "lhs = rhs"
     const auto eq = formula.equation.find('=');
     if (eq == std::string::npos || formula.equation.find('=', eq + 1) != std::string::npos) {
-        result.error = "Formula '" + formula.id + "' must contain exactly one '='.";
+        result.error = std::string("Formula '") + formula.id + "' must contain exactly one '='.";
         return result;
     }
     const std::string lhs = trim(formula.equation.substr(0, eq));
@@ -137,7 +137,7 @@ SolveResult SolverEngine::solve(const Formula& formula,
         try {
             userValue = ExpressionEvaluator::evaluate(prepareInput(inputs.at(var.id), unit), m_constants);
         } catch (const std::exception& e) {
-            result.error = "Invalid value for " + var.display + ": " + e.what();
+            result.error = std::string("Invalid value for ") + var.display + std::string(": ") + e.what();
             return result;
         }
         internal[var.id] = (unit == "deg") ? userValue * kDegToRad : userValue;
@@ -145,7 +145,7 @@ SolveResult SolverEngine::solve(const Formula& formula,
 
         std::string text = formatNumber(userValue);
         if (unit == "deg") text += "°";
-        shown[var.id] = (userValue < 0) ? "(" + text + ")" : text;
+        shown[var.id] = (userValue < 0) ? std::string("(") + text + ")" : text;
         knownText << var.display << " = " << formatNumber(userValue);
         if (!unit.empty()) knownText << ' ' << unit;
         knownText << "\n";
@@ -209,19 +209,19 @@ SolveResult SolverEngine::solve(const Formula& formula,
     }
 
     // 6) steps
-    const std::string unitText = unknownUnit.empty() ? "" : " " + unknownUnit;
+    const std::string unitText = unknownUnit.empty() ? "" : std::string(" ") + unknownUnit;
     result.ok = true;
-    result.steps.push_back("Formula: " + formula.equation);
-    result.steps.push_back("Known values:\n" + knownText.str() +
+    result.steps.push_back(std::string("Formula: ") + formula.equation);
+    result.steps.push_back(std::string("Known values:\n") + knownText.str() +
                            (usesDegrees ? "(Angles are entered in degrees; the calculation converts them to radians.)" : ""));
     if (method == "direct") {
         const std::string expr = (lhs == unknown.id) ? rhs : lhs;
-        result.steps.push_back("Solve for " + unknown.display + ": " + unknown.id + " = " + expr);
-        result.steps.push_back("Substitute: " + unknown.id + " = " + substitute(expr, shown));
+        result.steps.push_back(std::string("Solve for ") + unknown.display + std::string(": ") + unknown.id + std::string(" = ") + expr);
+        result.steps.push_back(std::string("Substitute: ") + unknown.id + std::string(" = ") + substitute(expr, shown));
     } else {
-        result.steps.push_back("Unknown: " + unknown.display + " (" + unknown.name + ")");
-        result.steps.push_back("Substitute: " + substitute(formula.equation, shown));
-        result.steps.push_back("The equation is solved numerically for " + unknown.id +
+        result.steps.push_back(std::string("Unknown: ") + unknown.display + std::string(" (") + unknown.name + ")");
+        result.steps.push_back(std::string("Substitute: ") + substitute(formula.equation, shown));
+        result.steps.push_back(std::string("The equation is solved numerically for ") + unknown.id +
                                " (find the value that makes left side = right side).");
     }
     {   // verification, both sides with the solution
@@ -230,17 +230,17 @@ SolveResult SolverEngine::solve(const Formula& formula,
         try {
             const double l = ExpressionEvaluator::evaluate(lhs, check);
             const double r = ExpressionEvaluator::evaluate(rhs, check);
-            result.checkSummary = "left side = " + formatNumber(l) + ", right side = " + formatNumber(r);
-            result.steps.push_back("Check: " + result.checkSummary);
+            result.checkSummary = std::string("left side = ") + formatNumber(l) + std::string(", right side = ") + formatNumber(r);
+            result.steps.push_back(std::string("Check: ") + result.checkSummary);
         } catch (const std::exception&) {}
     }
     result.answerLatex = LatexFormatter::answer(unknown.latex.empty() ? unknown.display : unknown.latex,
                                                 result.value, unknownUnit);
-    result.steps.push_back("Answer: " + unknown.display + " = " + formatNumber(result.value) + unitText);
+    result.steps.push_back(std::string("Answer: ") + unknown.display + std::string(" = ") + formatNumber(result.value) + unitText);
     if (!result.otherSolutions.empty()) {
         std::string others;
         for (double o : result.otherSolutions) others += (others.empty() ? "" : ", ") + formatNumber(o);
-        result.steps.push_back("Other mathematical solutions in the search range: " + others + unitText);
+        result.steps.push_back(std::string("Other mathematical solutions in the search range: ") + others + unitText);
     }
     return result;
 }

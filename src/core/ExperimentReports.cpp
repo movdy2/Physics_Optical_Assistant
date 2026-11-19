@@ -23,8 +23,8 @@ std::string fx(double v) { return NF::fixed(v, 4); }
 
 std::string measured(double value, double sigma, const std::string& unit = {}) {
     std::string text = num(value);
-    if (sigma > 0.0) text += " ± " + num(sigma);
-    if (!unit.empty()) text += " " + unit;
+    if (sigma > 0.0) text += std::string(" ± ") + num(sigma);
+    if (!unit.empty()) text += std::string(" ") + unit;
     return text;
 }
 
@@ -43,7 +43,7 @@ std::string ordinal(int m) {
     case 1: return "FIRST BRIGHT FRINGE";
     case 2: return "SECOND BRIGHT FRINGE";
     case 3: return "THIRD BRIGHT FRINGE";
-    default: return "BRIGHT FRINGE m = " + std::to_string(m);
+    default: return std::string("BRIGHT FRINGE m = ") + std::to_string(m);
     }
 }
 
@@ -70,9 +70,9 @@ std::string sizeDescription(double magnification) {
         for (const auto& [value, glyph] : fractions)
             if (std::fabs(a - value) < 5e-4) { text = glyph; break; }
         if (text.empty()) text = NF::general(a, 3);
-        return "DIMINISHED (" + text + "×)";
+        return std::string("DIMINISHED (") + text + "×)";
     }
-    return "ENLARGED (" + NF::general(a, 3) + "×)";
+    return std::string("ENLARGED (") + NF::general(a, 3) + "×)";
 }
 
 // ------------------------------------------------------------------------------ refraction & TIR
@@ -99,8 +99,8 @@ Report refraction(const RefractionInput& in, const ReportContext& ctx) {
     if (!issues.empty()) {
         const std::string first = issues.front().label;
         return ReportSupport::pausedReport("E_INPUT_RANGE", issues,
-                            {"n₁ = " + fx(in.n1) + "   n₂ = " + fx(in.n2), "θ₁ = " + fx(in.theta1) + "°", "ACTION: " + issues.front().message},
-                            {"Calculation paused / " + first + " out of range",
+                            {std::string("n₁ = ") + fx(in.n1) + std::string("   n₂ = ") + fx(in.n2), std::string("θ₁ = ") + fx(in.theta1) + "°", std::string("ACTION: ") + issues.front().message},
+                            {std::string("Calculation paused / ") + first + " out of range",
                              "Refractive indices must be positive and 0° ≤ θ₁ < 90°. No new result has been calculated.\n\n"
                              "Diagram, chart and retained results show %RUN%, not the current inputs."}, ctx);
     }
@@ -133,9 +133,9 @@ Report refraction(const RefractionInput& in, const ReportContext& ctx) {
         const auto fresnel = PC::fresnelReflectance(in.n1, in.n2, thetaA);
         LcdRegister r;
         r.lines = {"01  n₁ sin θ₁ = n₂ sin θ₂",
-                   "02  n₁ sin θ₁ = " + fx(n1sin1),
-                   "03  n₂ sin θ₂ = " + fx(n2sin2),
-                   "04  sin θ₂ = " + fx(sin2)};
+                   std::string("02  n₁ sin θ₁ = ") + fx(n1sin1),
+                   std::string("03  n₂ sin θ₂ = ") + fx(n2sin2),
+                   std::string("04  sin θ₂ = ") + fx(sin2)};
         r.resultLabel = "REFRACTION ANGLE · θ₂";
         if (ref.totalInternalReflection) {
             r.lines.push_back("05  θ₂ undefined: sin θ₂ > 1");
@@ -143,18 +143,18 @@ Report refraction(const RefractionInput& in, const ReportContext& ctx) {
             r.resultValue = "TIR";
             rep.headline = "θ₂ = TIR";
         } else {
-            r.lines.push_back("05  θ₂ = asin(" + fx(sin2) + ")");
-            r.lines.push_back("06  Reflectance R = " + fx(fresnel.R));
+            r.lines.push_back(std::string("05  θ₂ = asin(") + fx(sin2) + ")");
+            r.lines.push_back(std::string("06  Reflectance R = ") + fx(fresnel.R));
             r.resultValue = fx(ref.refractedDeg) + "°";
-            rep.headline = "θ₂ = " + fx(ref.refractedDeg) + "°";
+            rep.headline = std::string("θ₂ = ") + fx(ref.refractedDeg) + "°";
             if (thetaEstimate.valid && anyUncertainty({in.sigmaN1, in.sigmaN2, in.sigmaTheta1})) {
-                r.resultValue += " ± " + num(thetaEstimate.standardUncertainty) + "°";
-                r.extraLines.push_back("σ(θ₂) = " + num(thetaEstimate.standardUncertainty) + "° (1σ)");
-                rep.headline += " ± " + num(thetaEstimate.standardUncertainty) + "°";
+                r.resultValue += std::string(" ± ") + num(thetaEstimate.standardUncertainty) + "°";
+                r.extraLines.push_back(std::string("σ(θ₂) = ") + num(thetaEstimate.standardUncertainty) + "° (1σ)");
+                rep.headline += std::string(" ± ") + num(thetaEstimate.standardUncertainty) + "°";
             }
         }
         rep.registers.push_back(r);
-        rep.retained = retainedRegister({"n₁ = " + fx(in.n1) + " · n₂ = " + fx(in.n2), "θ₁ = " + NF::fixed(in.theta1, 2) + "°"},
+        rep.retained = retainedRegister({std::string("n₁ = ") + fx(in.n1) + std::string(" · n₂ = ") + fx(in.n2), std::string("θ₁ = ") + NF::fixed(in.theta1, 2) + "°"},
                                         "RETAINED REFRACTION ANGLE · θ₂", r.resultValue, {});
     }
     {
@@ -162,16 +162,16 @@ Report refraction(const RefractionInput& in, const ReportContext& ctx) {
         LcdRegister r;
         r.title = "TIR COMPARISON";
         if (crit) {
-            r.lines = {"θc = asin(n₂ / n₁)", "θc = " + fx(*crit) + "°",
-                       "θ₁ = " + num(thetaB) + "° " + (thetaB > *crit ? ">" : "<") + " θc",
-                       "sin θ₂ = " + fx(sinB) + (sinB > 1.0 ? " > 1" : ""),
+            r.lines = {"θc = asin(n₂ / n₁)", std::string("θc = ") + fx(*crit) + "°",
+                       std::string("θ₁ = ") + num(thetaB) + "° " + (thetaB > *crit ? ">" : "<") + " θc",
+                       std::string("sin θ₂ = ") + fx(sinB) + (sinB > 1.0 ? " > 1" : ""),
                        sinB > 1.0 ? "STATUS: TOTAL REFLECTION" : "STATUS: PARTIAL REFRACTION"};
         } else {
-            r.lines = {"θc = asin(n₂ / n₁)", "n₁ ≤ n₂: no critical angle", "θ₁ = " + num(thetaB) + "°",
-                       "sin θ₂ = " + fx(sinB), "STATUS: REFRACTION ONLY"};
+            r.lines = {"θc = asin(n₂ / n₁)", "n₁ ≤ n₂: no critical angle", std::string("θ₁ = ") + num(thetaB) + "°",
+                       std::string("sin θ₂ = ") + fx(sinB), "STATUS: REFRACTION ONLY"};
         }
         if (crit && criticalEstimate.valid && anyUncertainty({in.sigmaN1, in.sigmaN2}))
-            r.extraLines.push_back("σ(θc) = " + num(criticalEstimate.standardUncertainty) + "° (1σ)");
+            r.extraLines.push_back(std::string("σ(θc) = ") + num(criticalEstimate.standardUncertainty) + "° (1σ)");
         rep.registers.push_back(r);
     }
     if (anyUncertainty({in.sigmaN1, in.sigmaN2, in.sigmaTheta1})) {
@@ -184,12 +184,12 @@ Report refraction(const RefractionInput& in, const ReportContext& ctx) {
         if (fit.ok) {
             LcdRegister& analysis = rep.registers[1];
             analysis.extraLines.push_back(std::string(fit.weighted ? "WEIGHTED FIT · " : "OLS FIT · ") +
-                "slope = " + num(fit.slope) + " ± " + num(fit.slopeUncertainty) + " (1σ)");
+                std::string("slope = ") + num(fit.slope) + std::string(" ± ") + num(fit.slopeUncertainty) + " (1σ)");
             const std::string fitQuality = fit.degreesOfFreedom <= 0 ? "fit quality = n/a" :
-                fit.weighted ? "χ²/ν = " + num(fit.chiSquared / fit.degreesOfFreedom) :
-                               "residual s = " + num(std::sqrt(fit.chiSquared / fit.degreesOfFreedom));
-            analysis.extraLines.push_back("intercept = " + num(fit.intercept) + " ± " + num(fit.interceptUncertainty) + " (1σ)"+
-                " · R² = " + num(fit.r2) + " · " + fitQuality);
+                fit.weighted ? std::string("χ²/ν = ") + num(fit.chiSquared / fit.degreesOfFreedom) :
+                               std::string("residual s = ") + num(std::sqrt(fit.chiSquared / fit.degreesOfFreedom));
+            analysis.extraLines.push_back(std::string("intercept = ") + num(fit.intercept) + std::string(" ± ") + num(fit.interceptUncertainty) + " (1σ)"+
+                std::string(" · R² = ") + num(fit.r2) + std::string(" · ") + fitQuality);
         }
     }
     rep.notices.push_back({"Physical limit, not a solver error",
@@ -198,7 +198,7 @@ Report refraction(const RefractionInput& in, const ReportContext& ctx) {
     rep.parameters = {{"Mode", "Refraction"}, {"n₁", measured(in.n1, in.sigmaN1)}, {"n₂", measured(in.n2, in.sigmaN2)},
                       {"θ₁ (incidence)", measured(in.theta1, in.sigmaTheta1, "°")}};
     if (crit && criticalEstimate.valid && anyUncertainty({in.sigmaN1, in.sigmaN2}))
-        rep.parameters.emplace_back("Critical angle θc", fx(*crit) + "° ± " + num(criticalEstimate.standardUncertainty) + "°");
+        rep.parameters.emplace_back("Critical angle θc", fx(*crit) + std::string("° ± ") + num(criticalEstimate.standardUncertainty) + "°");
     return rep;
 }
 
@@ -226,20 +226,20 @@ Report tirReport(const RefractionInput& in, const ReportContext&) {
     r1.mode = "OK";
     r1.lines.push_back("01 θc = asin(n₂ / n₁)");
     if (crit) {
-        r1.lines.push_back("02 θc = asin(" + NF::fixed(in.n2, 1) + " / " + NF::fixed(in.n1, 1) + ")");
-        r1.lines.push_back("03 θc = " + fx(*crit) + "°");
-        r1.lines.push_back("04 θ₁ = " + fx(th) + "° " + (th > *crit ? ">" : "<") + " θc");
-        r1.lines.push_back("05 " + num(in.n1) + " sin(" + num(th) + "°) = " + fx(sin2));
-        r1.lines.push_back(tir ? "06 " + fx(sin2) + " > 1 → no real θ₂" : "06 " + fx(sin2) + " ≤ 1 → real θ₂ exists");
+        r1.lines.push_back(std::string("02 θc = asin(") + NF::fixed(in.n2, 1) + std::string(" / ") + NF::fixed(in.n1, 1) + ")");
+        r1.lines.push_back(std::string("03 θc = ") + fx(*crit) + "°");
+        r1.lines.push_back(std::string("04 θ₁ = ") + fx(th) + "° " + (th > *crit ? ">" : "<") + " θc");
+        r1.lines.push_back(std::string("05 ") + num(in.n1) + std::string(" sin(") + num(th) + std::string("°) = ") + fx(sin2));
+        r1.lines.push_back(tir ? std::string("06 ") + fx(sin2) + " > 1 → no real θ₂" : std::string("06 ") + fx(sin2) + " ≤ 1 → real θ₂ exists");
     } else {
         r1.lines.push_back("02 n₁ ≤ n₂: sin θc would exceed 1");
         r1.lines.push_back("03 θc = undefined");
         r1.lines.push_back("04 light enters a denser medium");
-        r1.lines.push_back("05 " + num(in.n1) + " sin(" + num(th) + "°) = " + fx(sin2));
-        r1.lines.push_back("06 " + fx(sin2) + " ≤ 1 → refraction only");
+        r1.lines.push_back(std::string("05 ") + num(in.n1) + std::string(" sin(") + num(th) + std::string("°) = ") + fx(sin2));
+        r1.lines.push_back(std::string("06 ") + fx(sin2) + " ≤ 1 → refraction only");
     }
     if (crit && criticalEstimate.valid && anyUncertainty({in.sigmaN1, in.sigmaN2}))
-        r1.extraLines.push_back("σ(θc) = " + num(criticalEstimate.standardUncertainty) + "° (1σ)");
+        r1.extraLines.push_back(std::string("σ(θc) = ") + num(criticalEstimate.standardUncertainty) + "° (1σ)");
     r1.resultLabel = "PHYSICAL OUTCOME";
     r1.resultValue = tir ? "TIR" : (crit ? "PARTIAL" : "NO TIR");
     rep.registers.push_back(r1);
@@ -247,8 +247,8 @@ Report tirReport(const RefractionInput& in, const ReportContext&) {
     LcdRegister r2;
     r2.title = "REFLECTION REGISTER";
     r2.mode = "OK";
-    r2.lines.push_back("θᵣ = θ₁ = " + fx(th) + "°");
-    if (in.sigmaTheta1 > 0.0) r2.extraLines.push_back("σ(θᵣ) = " + num(in.sigmaTheta1) + "° (1σ)");
+    r2.lines.push_back(std::string("θᵣ = θ₁ = ") + fx(th) + "°");
+    if (in.sigmaTheta1 > 0.0) r2.extraLines.push_back(std::string("σ(θᵣ) = ") + num(in.sigmaTheta1) + "° (1σ)");
     if (tir) {
         r2.lines.push_back("TRANSMISSION: NONE");
         r2.lines.push_back("Reflectance R = 1.000 (TIR)");
@@ -256,8 +256,8 @@ Report tirReport(const RefractionInput& in, const ReportContext&) {
         r2.resultLabel = "ABOVE CRITICAL BY";
         r2.resultValue = fx(th - *crit) + "°";
     } else {
-        r2.lines.push_back("TRANSMISSION: θ₂ = " + fx(ref.refractedDeg) + "°");
-        r2.lines.push_back("Reflectance R = " + fx(fresnel.R));
+        r2.lines.push_back(std::string("TRANSMISSION: θ₂ = ") + fx(ref.refractedDeg) + "°");
+        r2.lines.push_back(std::string("Reflectance R = ") + fx(fresnel.R));
         r2.lines.push_back(std::string("STATUS: VALID / ") + (crit ? "REFRACTION" : "NO TIR"));
         if (crit) { r2.resultLabel = "BELOW CRITICAL BY"; r2.resultValue = fx(*crit - th) + "°"; }
         if (!ref.totalInternalReflection && anyUncertainty({in.sigmaN1, in.sigmaN2, in.sigmaTheta1})) {
@@ -265,7 +265,7 @@ Report tirReport(const RefractionInput& in, const ReportContext&) {
                 const double q = v[0] * std::sin(v[2] * kDeg) / v[1];
                 return std::fabs(q) <= 1.0 ? std::asin(q) / kDeg : std::numeric_limits<double>::quiet_NaN();
             });
-            if (thetaEstimate.valid) r2.extraLines.push_back("σ(θ₂) = " + num(thetaEstimate.standardUncertainty) + "° (1σ)");
+            if (thetaEstimate.valid) r2.extraLines.push_back(std::string("σ(θ₂) = ") + num(thetaEstimate.standardUncertainty) + "° (1σ)");
         }
     }
     if (crit && anyUncertainty({in.sigmaN1, in.sigmaN2, in.sigmaTheta1})) {
@@ -276,30 +276,30 @@ Report tirReport(const RefractionInput& in, const ReportContext&) {
             const double critical = std::asin(ratio) / kDeg;
             return sign * (v[2] - critical);
         });
-        if (margin.valid) r2.resultValue += " ± " + num(margin.standardUncertainty) + "°";
+        if (margin.valid) r2.resultValue += std::string(" ± ") + num(margin.standardUncertainty) + "°";
     }
     rep.registers.push_back(r2);
 
     const std::string n1 = in.name1, n2 = in.name2;
     if (tir)
         rep.notices.push_back({"Valid physical outcome, not an error",
-                               "All physical rays remain in " + ReportSupport::lowercaseAscii(n1) + ". Above θc there is no propagating transmitted ray; the sweep stops at θ₂ = 90° at the critical limit.", false});
+                               std::string("All physical rays remain in ") + ReportSupport::lowercaseAscii(n1) + ". Above θc there is no propagating transmitted ray; the sweep stops at θ₂ = 90° at the critical limit.", false});
     else
         rep.notices.push_back({"Refraction occurs, no TIR",
-                               crit ? "θ₁ is below θc = " + fx(*crit) + "°, so part of the light is transmitted into " + ReportSupport::lowercaseAscii(n2) + " and part is reflected."
+                               crit ? std::string("θ₁ is below θc = ") + fx(*crit) + std::string("°, so part of the light is transmitted into ") + ReportSupport::lowercaseAscii(n2) + " and part is reflected."
                                     : "TIR requires n₁ > n₂. Going into a denser medium the ray always refracts.", false});
-    rep.headline = tir ? "θc = " + fx(*crit) + "° · TIR" : "θ₂ = " + fx(std::asin(std::min(1.0, sin2)) / kDeg) + "°";
+    rep.headline = tir ? std::string("θc = ") + fx(*crit) + "° · TIR" : std::string("θ₂ = ") + fx(std::asin(std::min(1.0, sin2)) / kDeg) + "°";
     if (tir && crit && criticalEstimate.valid && anyUncertainty({in.sigmaN1, in.sigmaN2}))
-        rep.headline = "θc = " + fx(*crit) + "° ± " + num(criticalEstimate.standardUncertainty) + "° · TIR";
+        rep.headline = std::string("θc = ") + fx(*crit) + std::string("° ± ") + num(criticalEstimate.standardUncertainty) + "° · TIR";
     if (!tir && anyUncertainty({in.sigmaN1, in.sigmaN2, in.sigmaTheta1})) {
         const UncertainEstimate thetaEstimate = propagateUncertainty(values, sigmas, [](const std::vector<double>& v) {
             const double q = v[0] * std::sin(v[2] * kDeg) / v[1];
             return std::fabs(q) <= 1.0 ? std::asin(q) / kDeg : std::numeric_limits<double>::quiet_NaN();
         });
-        if (thetaEstimate.valid) rep.headline += " ± " + num(thetaEstimate.standardUncertainty) + "°";
+        if (thetaEstimate.valid) rep.headline += std::string(" ± ") + num(thetaEstimate.standardUncertainty) + "°";
     }
     rep.statusText = tir ? "Valid outcome: TIR" : "Valid outcome: refraction";
-    rep.retained = retainedRegister({"n₁ = " + fx(in.n1) + " · n₂ = " + fx(in.n2), "θ₁ = " + NF::fixed(th, 2) + "°"},
+    rep.retained = retainedRegister({std::string("n₁ = ") + fx(in.n1) + std::string(" · n₂ = ") + fx(in.n2), std::string("θ₁ = ") + NF::fixed(th, 2) + "°"},
                                     "RETAINED OUTCOME", r1.resultValue, {});
     rep.parameters = {{"Mode", "TIR"}, {"n₁", measured(in.n1, in.sigmaN1)}, {"n₂", measured(in.n2, in.sigmaN2)},
                       {"θ₁ (incidence)", measured(th, in.sigmaTheta1, "°")}};
@@ -310,7 +310,7 @@ Report tirReport(const RefractionInput& in, const ReportContext&) {
 
 DataSeries refractionSweep(const RefractionInput& in) {
     DataSeries s{"refraction_sweep", "Refraction sweep",
-                 in.name1 + " → " + in.name2 + " · n₁ = " + fx(in.n1) + " · n₂ = " + fx(in.n2),
+                 in.name1 + std::string(" → ") + in.name2 + std::string(" · n₁ = ") + fx(in.n1) + std::string(" · n₂ = ") + fx(in.n2),
                  "sin θ is dimensionless; uncertainty columns are independent 1σ standard uncertainties",
                  {"θ₁ (°)", "θ₂ (°)", "sin θ₁", "sin θ₂", "σ θ₂ (°)", "σ sin θ₁", "σ sin θ₂"}, {}, {}};
     for (int a = 0; a <= 35; a += 5) {
@@ -363,7 +363,7 @@ DataSeries refractionSweep(const RefractionInput& in) {
 
 DataSeries tirSweep(const RefractionInput& in) {
     DataSeries s{"critical_sweep", "Critical-angle sweep",
-                 in.name1 + " → " + in.name2 + " · n₁ = " + fx(in.n1) + " · n₂ = " + fx(in.n2),
+                 in.name1 + std::string(" → ") + in.name2 + std::string(" · n₁ = ") + fx(in.n1) + std::string(" · n₂ = ") + fx(in.n2),
                  "θ₂ is empty where TIR occurs; σ columns are 1σ standard uncertainties",
                  {"θ₁ (°)", "θ₂ (°)", "σ θ₂ (°)"}, {}, {}};
     s.analysis = {{"Input n₁", measured(in.n1, in.sigmaN1)}, {"Input n₂", measured(in.n2, in.sigmaN2)},
@@ -457,17 +457,17 @@ Report imaging(const ImagingInput& in, const ReportContext& ctx) {
     validateSigma(issues, FieldIds::sigmaObjectHeight, in.sigmaH, "σ(hₒ)");
     if (!issues.empty())
         return ReportSupport::pausedReport("E_INPUT_RANGE", issues,
-                            {"f = " + num(in.f) + " cm   dₒ = " + num(in.s) + " cm", "hₒ = " + num(in.h) + " cm", "ACTION: " + issues.front().message},
-                            {"Calculation paused / " + issues.front().label + " out of range",
+                            {std::string("f = ") + num(in.f) + std::string(" cm   dₒ = ") + num(in.s) + " cm", std::string("hₒ = ") + num(in.h) + " cm", std::string("ACTION: ") + issues.front().message},
+                            {std::string("Calculation paused / ") + issues.front().label + " out of range",
                              "Enter a non-zero focal length and positive object distance and height. No new result has been calculated.\n\n"
                              "Diagram, chart and retained results show %RUN%, not the current inputs."}, ctx);
 
     const auto img = PC::imageFormation(in.s, in.f);
     if (img.atInfinity)
         return ReportSupport::pausedReport("E_FOCAL_PLANE", {{FieldIds::objectDistance, "Object in the focal plane: move dₒ away from f.", "dₒ"}},
-                            {"dₒ = f = " + num(in.s) + " cm", "dᵢ → ∞  (image at infinity)", "m → undefined", "ACTION: MOVE dₒ AWAY FROM f"},
+                            {std::string("dₒ = f = ") + num(in.s) + " cm", "dᵢ → ∞  (image at infinity)", "m → undefined", "ACTION: MOVE dₒ AWAY FROM f"},
                             {"Guarded case / E_FOCAL_PLANE",
-                             "Comparison: dₒ = f = " + num(in.s) + " cm. Image at infinity; finite dᵢ and m suppressed. Move the object away from the focal plane to calculate a finite image.\n\n"
+                             std::string("Comparison: dₒ = f = ") + num(in.s) + " cm. Image at infinity; finite dᵢ and m suppressed. Move the object away from the focal plane to calculate a finite image.\n\n"
                              "Diagram, chart and retained results show %RUN%, not the current inputs."}, ctx);
 
     const double m = img.magnification;
@@ -488,37 +488,37 @@ Report imaging(const ImagingInput& in, const ReportContext& ctx) {
     const bool uncertain = anyUncertainty({in.sigmaF, in.sigmaS, in.sigmaH});
     Report rep;
     LcdRegister r1;
-    const std::string fText = in.f < 0 ? "(" + num(in.f) + ")" : num(in.f);
+    const std::string fText = in.f < 0 ? std::string("(") + num(in.f) + ")" : num(in.f);
     const std::string sText = num(in.s);
     const std::string invDi = NF::fixed(1.0 / in.f - 1.0 / in.s, 6);
     const std::string hText = num(in.h);
     // ---- Step-by-step solution panel (Item 16) ----
     r1.lines = {"01  Gaussian imaging: 1/f = 1/dₒ + 1/dᵢ   ·   m = −dᵢ/dₒ",
-                "02  Substitution:  1/dᵢ = 1/" + fText + " − 1/" + sText};
+                std::string("02  Substitution:  1/dᵢ = 1/") + fText + std::string(" − 1/") + sText};
     if (in.mirrorMode) {
         r1.title = "GAUSSIAN MIRROR REGISTER";
         r1.mode = "OK";
-        r1.lines.push_back("03  1/dᵢ = " + invDi + " cm⁻¹");
-        r1.lines.push_back("04  dᵢ = (" + invDi + ")⁻¹ = " + fx(img.imageDistance) + " cm");
-        r1.lines.push_back("05  m = −dᵢ/dₒ = −(" + fx(img.imageDistance) + ")/(" + sText + ") = " + fx(m));
-        r1.lines.push_back("06  hᵢ = m × hₒ = " + fx(m) + " × " + hText + " = " + fx(m * in.h) + " cm");
+        r1.lines.push_back(std::string("03  1/dᵢ = ") + invDi + " cm⁻¹");
+        r1.lines.push_back(std::string("04  dᵢ = (") + invDi + std::string(")⁻¹ = ") + fx(img.imageDistance) + " cm");
+        r1.lines.push_back(std::string("05  m = −dᵢ/dₒ = −(") + fx(img.imageDistance) + std::string(")/(") + sText + std::string(") = ") + fx(m));
+        r1.lines.push_back(std::string("06  hᵢ = m × hₒ = ") + fx(m) + std::string(" × ") + hText + std::string(" = ") + fx(m * in.h) + " cm");
         r1.resultLabel = "IMAGE DISTANCE / cm";
         r1.resultValue = fx(img.imageDistance);
     } else {
-        r1.lines.push_back("03  1/dᵢ = " + invDi + " cm⁻¹");
-        r1.lines.push_back("04  dᵢ = (" + invDi + ")⁻¹ = " + NF::signedFixed(img.imageDistance) + " cm");
-        r1.lines.push_back("05  m = −dᵢ/dₒ = −(" + NF::signedFixed(img.imageDistance) + ")/(" + sText + ") = " + fx(m));
-        r1.lines.push_back("06  hᵢ = m × hₒ = " + fx(m) + " × " + hText + " = " + fx(m * in.h) + " cm");
+        r1.lines.push_back(std::string("03  1/dᵢ = ") + invDi + " cm⁻¹");
+        r1.lines.push_back(std::string("04  dᵢ = (") + invDi + std::string(")⁻¹ = ") + NF::signedFixed(img.imageDistance) + " cm");
+        r1.lines.push_back(std::string("05  m = −dᵢ/dₒ = −(") + NF::signedFixed(img.imageDistance) + std::string(")/(") + sText + std::string(") = ") + fx(m));
+        r1.lines.push_back(std::string("06  hᵢ = m × hₒ = ") + fx(m) + std::string(" × ") + hText + std::string(" = ") + fx(m * in.h) + " cm");
         r1.resultLabel = "MAGNIFICATION · m = -dᵢ/dₒ";
         r1.resultValue = fx(m);
     }
     if (uncertain) {
-        if (imageDistanceEstimate.valid) r1.extraLines.push_back("σ(dᵢ) = " + num(imageDistanceEstimate.standardUncertainty) + " cm (1σ)");
-        if (magnificationEstimate.valid) r1.extraLines.push_back("σ(m) = " + num(magnificationEstimate.standardUncertainty) + " (1σ)");
+        if (imageDistanceEstimate.valid) r1.extraLines.push_back(std::string("σ(dᵢ) = ") + num(imageDistanceEstimate.standardUncertainty) + " cm (1σ)");
+        if (magnificationEstimate.valid) r1.extraLines.push_back(std::string("σ(m) = ") + num(magnificationEstimate.standardUncertainty) + " (1σ)");
         if (in.mirrorMode && imageDistanceEstimate.valid)
-            r1.resultValue += " ± " + num(imageDistanceEstimate.standardUncertainty) + " cm";
+            r1.resultValue += std::string(" ± ") + num(imageDistanceEstimate.standardUncertainty) + " cm";
         else if (magnificationEstimate.valid)
-            r1.resultValue += " ± " + num(magnificationEstimate.standardUncertainty);
+            r1.resultValue += std::string(" ± ") + num(magnificationEstimate.standardUncertainty);
     }
     rep.registers.push_back(r1);
 
@@ -528,37 +528,37 @@ Report imaging(const ImagingInput& in, const ReportContext& ctx) {
     r2.lines = {
         std::string("IMAGE: ") + (img.real ? "REAL" : "VIRTUAL"),
         std::string("ORIENTATION: ") + (img.upright ? "UPRIGHT" : "INVERTED"),
-        "SIZE: " + sizeDescription(m),
+        std::string("SIZE: ") + sizeDescription(m),
         std::string("dᵢ sign: ") + (img.imageDistance > 0 ? "positive (real space)" : "negative (virtual space)"),
         std::string("m sign: ") + (m > 0 ? "positive (upright)" : "negative (inverted)")};
     if (uncertain && heightEstimate.valid)
-        r2.extraLines.push_back("σ(hᵢ) = " + num(heightEstimate.standardUncertainty) + " cm (1σ)");
+        r2.extraLines.push_back(std::string("σ(hᵢ) = ") + num(heightEstimate.standardUncertainty) + " cm (1σ)");
     rep.registers.push_back(r2);
 
     if (in.mirrorMode) {
         rep.notices.push_back(img.imageDistance < 0
             ? Notice{"Negative distance ≠ invalid input",
-                     "dᵢ < 0 locates the virtual image behind the mirror" + std::string(in.f < 0 ? ", between P and F" : "") +
+                     std::string("dᵢ < 0 locates the virtual image behind the mirror") + std::string(in.f < 0 ? ", between P and F" : "") +
                      ". Positive magnification means upright; |m| < 1 means diminished.", false}
             : Notice{"Real image in front of the mirror",
                      "dᵢ > 0 locates the real image in front of the mirror, on the same side as the object. Negative magnification means inverted.", false});
-        rep.footnote = "P: pole · F: " + NF::general(in.f, 5) + " cm · C: " + NF::general(2 * in.f, 5) + " cm";
+        rep.footnote = std::string("P: pole · F: ") + NF::general(in.f, 5) + std::string(" cm · C: ") + NF::general(2 * in.f, 5) + " cm";
     } else {
         rep.notices.push_back({"Guarded case / E_FOCAL_PLANE",
-                               "Comparison: dₒ = f = " + num(in.f) + " cm. Image at infinity; finite dᵢ and m suppressed. Move the object away from the focal plane to calculate a finite image.", true});
+                               std::string("Comparison: dₒ = f = ") + num(in.f) + " cm. Image at infinity; finite dᵢ and m suppressed. Move the object away from the focal plane to calculate a finite image.", true});
     }
-    rep.headline = "dᵢ = " + NF::signedFixed(img.imageDistance) + " cm";
+    rep.headline = std::string("dᵢ = ") + NF::signedFixed(img.imageDistance) + " cm";
     if (uncertain && imageDistanceEstimate.valid)
-        rep.headline += " ± " + num(imageDistanceEstimate.standardUncertainty) + " cm";
+        rep.headline += std::string(" ± ") + num(imageDistanceEstimate.standardUncertainty) + " cm";
     rep.statusText = img.real ? "Real image · positive distances" : "Virtual image · negative distances are valid";
     std::string retainedDi = NF::signedFixed(img.imageDistance) + " cm";
-    std::vector<std::string> retainedExtra{"m = " + fx(m) + " · hᵢ = " + fx(m * in.h) + " cm"};
-    if (uncertain && imageDistanceEstimate.valid) retainedDi += " ± " + num(imageDistanceEstimate.standardUncertainty) + " cm";
+    std::vector<std::string> retainedExtra{std::string("m = ") + fx(m) + std::string(" · hᵢ = ") + fx(m * in.h) + " cm"};
+    if (uncertain && imageDistanceEstimate.valid) retainedDi += std::string(" ± ") + num(imageDistanceEstimate.standardUncertainty) + " cm";
     if (uncertain && magnificationEstimate.valid)
-        retainedExtra.push_back("σ(m) = " + num(magnificationEstimate.standardUncertainty) + " (1σ)");
+        retainedExtra.push_back(std::string("σ(m) = ") + num(magnificationEstimate.standardUncertainty) + " (1σ)");
     if (uncertain && heightEstimate.valid)
-        retainedExtra.push_back("σ(hᵢ) = " + num(heightEstimate.standardUncertainty) + " cm (1σ)");
-    rep.retained = retainedRegister({"f = " + NF::signedFixed(in.f, 2) + " cm · dₒ = " + NF::fixed(in.s, 2) + " cm", "hₒ = " + NF::fixed(in.h, 2) + " cm"},
+        retainedExtra.push_back(std::string("σ(hᵢ) = ") + num(heightEstimate.standardUncertainty) + " cm (1σ)");
+    rep.retained = retainedRegister({std::string("f = ") + NF::signedFixed(in.f, 2) + std::string(" cm · dₒ = ") + NF::fixed(in.s, 2) + " cm", std::string("hₒ = ") + NF::fixed(in.h, 2) + " cm"},
                                     "RETAINED IMAGE DISTANCE · dᵢ", retainedDi, std::move(retainedExtra));
     rep.parameters = {{"Element", std::string(in.mirrorMode ? "Mirror" : "Thin lens") + (in.f < 0 ? " (diverging / convex)" : " (converging / concave)")},
                       {"f", measured(in.f, in.sigmaF, "cm")}, {"dₒ", measured(in.s, in.sigmaS, "cm")},
@@ -617,8 +617,8 @@ Report prism(const PrismInput& in, const ReportContext& ctx) {
     validateSigma(issues, FieldIds::sigmaWavelength, in.sigmaWavelengthNm, "σ(λ)");
     if (!issues.empty())
         return ReportSupport::pausedReport("E_INPUT_RANGE", issues,
-                            {"A = " + num(in.apex) + "°   i₁ = " + num(in.incidence) + "°", "λ = " + num(in.wavelengthNm) + " nm", "ACTION: " + issues.front().message},
-                            {"Calculation paused / " + issues.front().label + " out of range",
+                            {std::string("A = ") + num(in.apex) + std::string("°   i₁ = ") + num(in.incidence) + "°", std::string("λ = ") + num(in.wavelengthNm) + " nm", std::string("ACTION: ") + issues.front().message},
+                            {std::string("Calculation paused / ") + issues.front().label + " out of range",
                              "Apex 0° < A < 180°, incidence 0° ≤ i₁ < 90°, wavelength > 0. No new result has been calculated.\n\n"
                              "Diagram, chart and retained results show %RUN%, not the current inputs."}, ctx);
 
@@ -648,7 +648,7 @@ Report prism(const PrismInput& in, const ReportContext& ctx) {
     Report rep;
     if (p.exitTir || p.entryTir) {
         LcdRegister r;
-        r.lines = {"r₁ = " + fx(p.r1) + "°", "r₂ = A − r₁ = " + fx(p.r2) + "°", "n sin r₂ = " + fx(n * std::sin(p.r2 * kDeg)) + " > 1"};
+        r.lines = {std::string("r₁ = ") + fx(p.r1) + "°", std::string("r₂ = A − r₁ = ") + fx(p.r2) + "°", std::string("n sin r₂ = ") + fx(n * std::sin(p.r2 * kDeg)) + " > 1"};
         r.resultLabel = "PHYSICAL OUTCOME";
         r.resultValue = "TIR";
         rep.registers.push_back(r);
@@ -657,7 +657,7 @@ Report prism(const PrismInput& in, const ReportContext& ctx) {
         rep.notices.push_back({"Exit-face validation", "n sin r₂ > 1: the exit ray undergoes TIR. The solver reports no emergent ray rather than an invalid angle.", false});
         rep.headline = "δ = no emergent ray";
         rep.statusText = "Valid outcome: TIR at the exit face";
-        rep.retained = retainedRegister({"n = " + fx(n) + " · A = " + NF::fixed(in.apex, 2) + "°", "i₁ = " + fx(in.incidence) + "°"}, "RETAINED OUTCOME", "TIR", {});
+        rep.retained = retainedRegister({std::string("n = ") + fx(n) + std::string(" · A = ") + NF::fixed(in.apex, 2) + "°", std::string("i₁ = ") + fx(in.incidence) + "°"}, "RETAINED OUTCOME", "TIR", {});
         rep.parameters = {{"Mode", in.dispersion ? "Dispersion" : "Single ray"},
                           {"n (prism / medium)", measured(n, ratioEstimate.valid ? ratioEstimate.standardUncertainty : 0.0)},
                           {"n prism", measured(in.nPrism, sigmaPrismIndex)}, {"n medium", measured(in.nMedium, sigmaMediumIndex)},
@@ -670,37 +670,37 @@ Report prism(const PrismInput& in, const ReportContext& ctx) {
 
     const bool symmetric = std::fabs(p.i1 - p.i2) < 0.005;
     LcdRegister r;
-    if (in.dispersion) r.lines.push_back("λ = " + NF::general(in.wavelengthNm, 5) + " nm   n = " + fx(n));
+    if (in.dispersion) r.lines.push_back(std::string("λ = ") + NF::general(in.wavelengthNm, 5) + std::string(" nm   n = ") + fx(n));
     r.lines.push_back("01  r₁ = asin(sin i₁ / n)");
-    r.lines.push_back("    = asin(sin " + fx(in.incidence) + "° / " + fx(n) + ") = " + fx(p.r1) + "°");
-    r.lines.push_back("02  r₂ = A − r₁ = " + fx(in.apex) + "° − " + fx(p.r1) + "° = " + fx(p.r2) + "°");
+    r.lines.push_back(std::string("    = asin(sin ") + fx(in.incidence) + std::string("° / ") + fx(n) + std::string(") = ") + fx(p.r1) + "°");
+    r.lines.push_back(std::string("02  r₂ = A − r₁ = ") + fx(in.apex) + std::string("° − ") + fx(p.r1) + std::string("° = ") + fx(p.r2) + "°");
     r.lines.push_back("03  i₂ = asin(n sin r₂)");
-    r.lines.push_back("    = asin(" + fx(n) + " × sin " + fx(p.r2) + "°) = " + fx(p.i2) + "°");
-    r.lines.push_back("04  δ = i₁ + i₂ − A = " + fx(in.incidence) + "° + " + fx(p.i2) + "° − " + fx(in.apex) + "° = " + fx(p.deviation) + "°");
+    r.lines.push_back(std::string("    = asin(") + fx(n) + std::string(" × sin ") + fx(p.r2) + std::string("°) = ") + fx(p.i2) + "°");
+    r.lines.push_back(std::string("04  δ = i₁) + fx(in.incidence) + std::string("°) + fx(p.i2) + std::string("° − ") + fx(in.apex) + std::string("° = ") + fx(p.deviation) + "°");
     r.resultLabel = symmetric ? "MINIMUM DEVIATION · δmin" : "DEVIATION · δ";
     r.resultValue = fx(p.deviation) + "°";
     if (uncertain && deviationEstimate.valid) {
-        r.resultValue += " ± " + num(deviationEstimate.standardUncertainty) + "°";
-        r.extraLines.push_back("σ(δ) = " + num(deviationEstimate.standardUncertainty) + "° (1σ)");
+        r.resultValue += std::string(" ± ") + num(deviationEstimate.standardUncertainty) + "°";
+        r.extraLines.push_back(std::string("σ(δ) = ") + num(deviationEstimate.standardUncertainty) + "° (1σ)");
     }
     rep.registers.push_back(r);
 
     if (symmetric)
         rep.notices.push_back({"Symmetry verified", "i₁ = i₂ and r₁ = r₂ = A/2. The ray is at the stationary point of the deviation curve.", false});
     else if (dmin)
-        rep.notices.push_back({"Off the minimum", "i₁ ≠ i₂. δmin = " + fx(*dmin) + "° occurs at i₁ = " + fx((in.apex + *dmin) / 2.0) + "° (symmetric passage).", false});
+        rep.notices.push_back({"Off the minimum", std::string("i₁ ≠ i₂. δmin = ") + fx(*dmin) + std::string("° occurs at i₁ = ") + fx((in.apex + *dmin) / 2.0) + "° (symmetric passage).", false});
     rep.notices.push_back({"Exit-face validation", "If n sin r₂ > 1, the exit ray undergoes TIR. The solver reports no emergent ray rather than an invalid angle.", false});
 
     if (dmin) {
         const auto nBack = PC::indexFromMinimumDeviation(*dmin, in.apex);
-        rep.footnote = "n = sin[(A + δmin)/2]\n    / sin(A/2)\n  = " + fx(nBack.value_or(n));
+        rep.footnote = std::string("n = sin[(A) + fx(nBack.value_or(n));
     }
-    rep.headline = std::string(symmetric ? "δmin" : "δ") + " = " + fx(p.deviation) + "°";
-    if (uncertain && deviationEstimate.valid) rep.headline += " ± " + num(deviationEstimate.standardUncertainty) + "°";
-    std::vector<std::string> retainedExtra{"i₂ = " + fx(p.i2) + "°"};
+    rep.headline = std::string(symmetric ? "δmin" : "δ") + std::string(" = ") + fx(p.deviation) + "°";
+    if (uncertain && deviationEstimate.valid) rep.headline += std::string(" ± ") + num(deviationEstimate.standardUncertainty) + "°";
+    std::vector<std::string> retainedExtra{std::string("i₂ = ") + fx(p.i2) + "°"};
     if (uncertain && deviationEstimate.valid)
-        retainedExtra.push_back("σ(δ) = " + num(deviationEstimate.standardUncertainty) + "° (1σ)");
-    rep.retained = retainedRegister({"n = " + fx(n) + " · A = " + NF::fixed(in.apex, 2) + "°", "i₁ = " + fx(in.incidence) + "°"},
+        retainedExtra.push_back(std::string("σ(δ) = ") + num(deviationEstimate.standardUncertainty) + "° (1σ)");
+    rep.retained = retainedRegister({std::string("n = ") + fx(n) + std::string(" · A = ") + NF::fixed(in.apex, 2) + "°", std::string("i₁ = ") + fx(in.incidence) + "°"},
                                     "RETAINED DEVIATION · δ", r.resultValue, std::move(retainedExtra));
     rep.parameters = {{"Mode", in.dispersion ? "Dispersion" : "Single ray"},
                       {"n (prism / medium)", measured(n, ratioEstimate.valid ? ratioEstimate.standardUncertainty : 0.0)},
@@ -715,7 +715,7 @@ Report prism(const PrismInput& in, const ReportContext& ctx) {
 DataSeries prismSweep(const PrismInput& in) {
     const double sigmaPrismIndex = std::hypot(in.sigmaNPrism, in.dnPrismDlambda * in.sigmaWavelengthNm);
     const double sigmaMediumIndex = std::hypot(in.sigmaNMedium, in.dnMediumDlambda * in.sigmaWavelengthNm);
-    DataSeries s{"prism_sweep", "Prism deviation sweep", "n = " + fx(in.nPrism / in.nMedium) + " · A = " + NF::general(in.apex, 5) + "°",
+    DataSeries s{"prism_sweep", "Prism deviation sweep", std::string("n = ") + fx(in.nPrism / in.nMedium) + std::string(" · A = ") + NF::general(in.apex, 5) + "°",
                  "σ columns are independent 1σ standard uncertainties",
                  {"i₁ (°)", "δ (°)", "σ i₁ (°)", "σ δ (°)"}, {}, {}};
     s.analysis = {{"Input n prism", measured(in.nPrism, in.sigmaNPrism)},
@@ -769,10 +769,10 @@ Report doubleSlit(const SlitInput& in, const ReportContext& ctx) {
     if (!issues.empty()) {
         std::vector<std::string> lines;
         for (const auto& i : issues) {
-            if (i.field == FieldIds::slitSeparation) { lines.push_back("d = " + NF::fixed(in.separationMm, 3) + " mm"); lines.push_back("β = λL / d → UNDEFINED"); }
-            else if (i.field == FieldIds::wavelength) lines.push_back("λ = " + num(in.wavelengthNm) + " nm");
-            else if (i.field == FieldIds::screenDistance) lines.push_back("L = " + num(in.screenM) + " m");
-            else lines.push_back("m = " + std::to_string(in.order));
+            if (i.field == FieldIds::slitSeparation) { lines.push_back(std::string("d = ") + NF::fixed(in.separationMm, 3) + " mm"); lines.push_back("β = λL / d → UNDEFINED"); }
+            else if (i.field == FieldIds::wavelength) lines.push_back(std::string("λ = ") + num(in.wavelengthNm) + " nm");
+            else if (i.field == FieldIds::screenDistance) lines.push_back(std::string("L = ") + num(in.screenM) + " m");
+            else lines.push_back(std::string("m = ") + std::to_string(in.order));
         }
         const std::string cond = issues.front().message.substr(6, issues.front().message.size() - 6 - 1);     // "d > 0 mm" without "Enter " and "."
         lines.push_back("ACTION: ENTER " + (issues.front().field == FieldIds::slitSeparation ? std::string("d > 0") : cond));
@@ -804,14 +804,14 @@ Report doubleSlit(const SlitInput& in, const ReportContext& ctx) {
 
     Report rep;
     LcdRegister r1;
-    r1.lines = {"01  λ = " + NF::scientific(lam) + " m", "02  d = " + NF::scientific(d) + " m"};
+    r1.lines = {std::string("01  λ = ") + NF::scientific(lam) + " m", std::string("02  d = ") + NF::scientific(d) + " m"};
     r1.lines.push_back(in.useExactFormula ? "03  β = λL / d (exact geometry)" : "03  β = λL / d (small angle)");
-    r1.lines.push_back("    β = " + NF::fixed(beta, 6) + " m");
+    r1.lines.push_back(std::string("    β = ") + NF::fixed(beta, 6) + " m");
     r1.resultLabel = "FRINGE SPACING · β";
     r1.resultValue = fx(beta * 1e3) + " mm";
     if (uncertain && betaEstimate.valid) {
-        r1.resultValue += " ± " + num(betaEstimate.standardUncertainty) + " mm";
-        r1.extraLines.push_back("σ(β) = " + num(betaEstimate.standardUncertainty) + " mm (1σ)");
+        r1.resultValue += std::string(" ± ") + num(betaEstimate.standardUncertainty) + " mm";
+        r1.extraLines.push_back(std::string("σ(β) = ") + num(betaEstimate.standardUncertainty) + " mm (1σ)");
     }
     rep.registers.push_back(r1);
 
@@ -821,35 +821,35 @@ Report doubleSlit(const SlitInput& in, const ReportContext& ctx) {
     static const char* sub[] = {"₀", "₁", "₂", "₃", "₄", "₅", "₆", "₇", "₈", "₉"};
     const std::string yName = (in.order >= 0 && in.order < 10) ? std::string("y") + sub[in.order] : "y(m)";
     const std::string formula = in.useExactFormula ? yName + " = L tan(asin(mλ/d))" : yName + " = mλL / d";
-    r2.lines = {"m = " + m, formula, yName + " = " + NF::signedFixed(ym * 1e3) + " mm",
-                "Δ = " + m + "λ = " + NF::fixed(std::abs(in.order) * in.wavelengthNm, 1) + " nm", "I(" + yName + ") / I₀ = " + fx(intensity)};
+    r2.lines = {std::string("m = ") + m, formula, yName + std::string(" = ") + NF::signedFixed(ym * 1e3) + " mm",
+                std::string("Δ = ") + m + std::string("λ = ") + NF::fixed(std::abs(in.order) * in.wavelengthNm, 1) + " nm", std::string("I(") + yName + std::string(") / I₀ = ") + fx(intensity)};
     if (in.showEnvelope && in.slitWidthMm > 0.0)
-        r2.lines.push_back("Envelope sinc² = " + fx(env));
+        r2.lines.push_back(std::string("Envelope sinc² = ") + fx(env));
     if (in.intensityRatio != 1.0)
-        r2.lines.push_back("Intensity ratio I₂/I₁ = " + fx(in.intensityRatio) + " · visibility V = " + fx(2.0 * std::sqrt(in.intensityRatio) / (1.0 + in.intensityRatio)));
+        r2.lines.push_back(std::string("Intensity ratio I₂/I₁ = ") + fx(in.intensityRatio) + std::string(" · visibility V = ") + fx(2.0 * std::sqrt(in.intensityRatio) / (1.0 + in.intensityRatio)));
     if (uncertain && fringeEstimate.valid)
-        r2.extraLines.push_back("σ(" + yName + ") = " + num(fringeEstimate.standardUncertainty) + " mm (1σ)");
+        r2.extraLines.push_back(std::string("σ(") + yName + std::string(") = ") + num(fringeEstimate.standardUncertainty) + " mm (1σ)");
     if (uncertain && intensityEstimate.valid)
-        r2.extraLines.push_back("σ(I/I₀) = " + num(intensityEstimate.standardUncertainty) + " (1σ)");
+        r2.extraLines.push_back(std::string("σ(I/I₀) = ") + num(intensityEstimate.standardUncertainty) + " (1σ)");
     rep.registers.push_back(r2);
     std::string assumptions = "Equal slit intensities, coherent sources and L ≫ d.";
     if (in.showEnvelope && in.slitWidthMm > 0.0)
-        assumptions += " Single-slit envelope sinc²(π a y / λL) applied with a = " + NF::fixed(in.slitWidthMm, 3) + " mm.";
+        assumptions += std::string(" Single-slit envelope sinc²(π a y / λL) applied with a = ") + NF::fixed(in.slitWidthMm, 3) + " mm.";
     else
         assumptions += " Ideal narrow slits; no diffraction envelope.";
     if (in.intensityRatio != 1.0)
-        assumptions += " Unequal slit intensities I₂/I₁ = " + fx(in.intensityRatio) + ".";
+        assumptions += std::string(" Unequal slit intensities I₂/I₁ = ") + fx(in.intensityRatio) + ".";
     assumptions += std::string(" ") + (in.useExactFormula ? "Exact geometry y = L tan(asin(mλ/d))." : "Small-angle geometry y ≈ Lθ.");
     assumptions += " Entered uncertainties are independent 1σ standard uncertainties.";
     rep.notices.push_back({"Model assumptions", assumptions, false});
-    rep.headline = "β = " + fx(beta * 1e3) + " mm";
-    if (uncertain && betaEstimate.valid) rep.headline += " ± " + num(betaEstimate.standardUncertainty) + " mm";
-    std::vector<std::string> retainedExtra{"m = " + m + " · " + yName + " = " + NF::signedFixed(ym * 1e3) + " mm"};
+    rep.headline = std::string("β = ") + fx(beta * 1e3) + " mm";
+    if (uncertain && betaEstimate.valid) rep.headline += std::string(" ± ") + num(betaEstimate.standardUncertainty) + " mm";
+    std::vector<std::string> retainedExtra{std::string("m = ") + m + std::string(" · ") + yName + std::string(" = ") + NF::signedFixed(ym * 1e3) + " mm"};
     if (in.showEnvelope && in.slitWidthMm > 0.0)
-        retainedExtra.push_back("envelope = " + fx(env));
+        retainedExtra.push_back(std::string("envelope = ") + fx(env));
     if (uncertain && fringeEstimate.valid)
-        retainedExtra.push_back("σ(" + yName + ") = " + num(fringeEstimate.standardUncertainty) + " mm (1σ)");
-    rep.retained = retainedRegister({"λ = " + NF::fixed(in.wavelengthNm, 1) + " nm", "d = " + NF::fixed(in.separationMm, 3) + " mm · L = " + NF::fixed(in.screenM, 3) + " m"},
+        retainedExtra.push_back(std::string("σ(") + yName + std::string(") = ") + num(fringeEstimate.standardUncertainty) + " mm (1σ)");
+    rep.retained = retainedRegister({std::string("λ = ") + NF::fixed(in.wavelengthNm, 1) + " nm", std::string("d = ") + NF::fixed(in.separationMm, 3) + std::string(" mm · L = ") + NF::fixed(in.screenM, 3) + " m"},
                                     "RETAINED FRINGE SPACING · β", r1.resultValue, std::move(retainedExtra));
     rep.parameters = {{"Wavelength λ", measured(in.wavelengthNm, in.sigmaWavelengthNm, "nm")},
                       {"Slit separation d", measured(in.separationMm, in.sigmaSeparationMm, "mm")},
@@ -863,11 +863,11 @@ Report doubleSlit(const SlitInput& in, const ReportContext& ctx) {
 }
 
 DataSeries doubleSlitSweep(const SlitInput& in) {
-    std::string desc = NF::general(in.wavelengthNm, 5) + " nm · d = " + NF::general(in.separationMm, 4) + " mm · L = " + NF::general(in.screenM, 5) + " m";
+    std::string desc = NF::general(in.wavelengthNm, 5) + std::string(" nm · d = ") + NF::general(in.separationMm, 4) + std::string(" mm · L = ") + NF::general(in.screenM, 5) + " m";
     if (in.showEnvelope && in.slitWidthMm > 0.0)
-        desc += " · envelope a = " + NF::general(in.slitWidthMm, 3) + " mm";
+        desc += std::string(" · envelope a = ") + NF::general(in.slitWidthMm, 3) + " mm";
     if (in.intensityRatio != 1.0)
-        desc += " · I₂/I₁ = " + NF::general(in.intensityRatio, 3);
+        desc += std::string(" · I₂/I₁ = ") + NF::general(in.intensityRatio, 3);
     desc += in.useExactFormula ? " · exact" : " · small-angle";
     DataSeries s{"double_slit_sweep", "Double-slit intensity", desc,
                  "ideal coherent sources; σ(I/I₀) is an independent-input 1σ uncertainty",
@@ -922,8 +922,8 @@ Report thickLens(const ThickLensInput& in, const ReportContext& ctx) {
     const TL::Result a = TL::analyse(ti);
     if (!a.valid)
         return ReportSupport::pausedReport("E_INPUT_RANGE", {{FieldIds::thickness, a.error, "t"}},
-                            {"n = " + num(in.n) + "   R₁ = " + num(in.r1) + " cm", "R₂ = " + num(in.r2) + " cm   t = " + num(in.thickness) + " cm",
-                             "ACTION: " + a.error},
+                            {std::string("n = ") + num(in.n) + std::string("   R₁ = ") + num(in.r1) + " cm", std::string("R₂ = ") + num(in.r2) + std::string(" cm   t = ") + num(in.thickness) + " cm",
+                             std::string("ACTION: ") + a.error},
                             {"Calculation paused / element not usable", a.error + "\n\nDiagram, chart and retained results show %RUN%, not the current inputs."}, ctx);
 
     Report rep;
@@ -942,15 +942,15 @@ Report thickLens(const ThickLensInput& in, const ReportContext& ctx) {
             const TL::Result r = TL::analyse(s);
             if (!r.valid) continue;
             lo = std::min(lo, r.focalLength); hi = std::max(hi, r.focalLength);
-            rows.push_back(std::string(line.name) + " " + NF::fixed(line.nm, 1) + " nm: n = " + NF::fixed(s.n, 5) +
-                           "  f = " + NF::signedFixed(r.focalLength, 4) + " cm");
-            if (headline.empty()) headline = "f(" + NF::fixed(line.nm, 1) + " nm) = " + NF::signedFixed(r.focalLength, 4) + " cm";
+            rows.push_back(std::string(line.name) + std::string(" ") + NF::fixed(line.nm, 1) + std::string(" nm: n = ") + NF::fixed(s.n, 5) +
+                           std::string("  f = ") + NF::signedFixed(r.focalLength, 4) + " cm");
+            if (headline.empty()) headline = std::string("f(") + NF::fixed(line.nm, 1) + std::string(" nm) = ") + NF::signedFixed(r.focalLength, 4) + " cm";
         }
         const double spread = hi - lo;
         LcdRegister r1;
-        r1.title = "CAUCHY / " + std::string(glass.name);
+        r1.title = std::string("CAUCHY / ") + std::string(glass.name);
         r1.mode = "OK";
-        r1.lines = {"n(λ) = A + B/λ²", "A = " + NF::fixed(glass.a, 4) + "   B = " + NF::fixed(glass.b, 4)};
+        r1.lines = {"n(λ) = A + B/λ²", std::string("A = ") + NF::fixed(glass.a, 4) + std::string("   B = ") + NF::fixed(glass.b, 4)};
         r1.lines.insert(r1.lines.end(), rows.begin(), rows.end());
         r1.resultLabel = "FOCAL SPREAD f(red) − f(blue)";
         r1.resultValue = NF::fixed(std::fabs(spread), 4) + " cm";
@@ -959,17 +959,17 @@ Report thickLens(const ThickLensInput& in, const ReportContext& ctx) {
         const double nD = TL::cauchyIndex(glass.a, glass.b, 587.6);
         const double nF = TL::cauchyIndex(glass.a, glass.b, 486.1), nC = TL::cauchyIndex(glass.a, glass.b, 656.3);
         const double abbe = std::fabs(nF - nC) > 1e-12 ? (nD - 1.0) / (nF - nC) : 0.0;
-        r2.lines = {"V_d = (n_d − 1) / (n_F − n_C)", "n_d = " + NF::fixed(nD, 5) + "   n_F = " + NF::fixed(nF, 5), "n_C = " + NF::fixed(nC, 5),
+        r2.lines = {"V_d = (n_d − 1) / (n_F − n_C)", std::string("n_d = ") + NF::fixed(nD, 5) + std::string("   n_F = ") + NF::fixed(nF, 5), std::string("n_C = ") + NF::fixed(nC, 5),
                     "small V = strong dispersion"};
         r2.resultLabel = "ABBE NUMBER Vd";
         r2.resultValue = NF::fixed(abbe, 2);
         rep.registers = {r1, r2};
         rep.notices = {info("Blue light sees a larger index, so it is bent more: the blue focus sits closer to the lens and the image edge is fringed. The spread here is " +
-                                      NF::fixed(std::fabs(spread), 4) + " cm for f ≈ " + NF::fixed(std::fabs(a.focalLength), 3) + " cm — real crown-glass lenses are far better corrected than that."),
+                                      NF::fixed(std::fabs(spread), 4) + std::string(" cm for f ≈ ") + NF::fixed(std::fabs(a.focalLength), 3) + " cm — real crown-glass lenses are far better corrected than that."),
                        limit("Cauchy's two-term law is a fit over the visible range. Achromats pair a crown and a flint element; this screen models one element.")};
         rep.headline = headline.empty() ? "f not defined" : headline;
-        rep.retained = retainedRegister({"n = " + num(in.n) + " · R₁ = " + num(in.r1) + " · R₂ = " + num(in.r2), "t = " + num(in.thickness) + " cm"},
-                                        "RETAINED FOCAL SPREAD", NF::fixed(std::fabs(spread), 4) + " cm", {"Vd = " + NF::fixed(abbe, 2)});
+        rep.retained = retainedRegister({std::string("n = ") + num(in.n) + std::string(" · R₁ = ") + num(in.r1) + std::string(" · R₂ = ") + num(in.r2), std::string("t = ") + num(in.thickness) + " cm"},
+                                        "RETAINED FOCAL SPREAD", NF::fixed(std::fabs(spread), 4) + " cm", {std::string("Vd = ") + NF::fixed(abbe, 2)});
         rep.parameters = {{"n", num(in.n)}, {"R₁", num(in.r1) + " cm"}, {"R₂", num(in.r2) + " cm"}, {"t", num(in.thickness) + " cm"}, {"mode", "spectrum"}};
         return rep;
     }
@@ -977,32 +977,32 @@ Report thickLens(const ThickLensInput& in, const ReportContext& ctx) {
     LcdRegister r1;
     r1.title = "THICK-LENS POWER / SI";
     r1.lines = {"P = (n−1)(1/R₁ − 1/R₂) + (n−1)² t /(n R₁R₂)",
-                "P = " + NF::fixed(a.power, 6) + " cm⁻¹", "f = 1/P = " + fText,
-                "ELEMENT: " + a.element, "BFL = " + NF::signedFixed(a.backFocal, 4) + " cm   FFL = " + NF::signedFixed(a.frontFocal, 4) + " cm"};
+                std::string("P = ") + NF::fixed(a.power, 6) + " cm⁻¹", std::string("f = 1/P = ") + fText,
+                std::string("ELEMENT: ") + a.element, std::string("BFL = ") + NF::signedFixed(a.backFocal, 4) + std::string(" cm   FFL = ") + NF::signedFixed(a.frontFocal, 4) + " cm"};
     r1.resultLabel = "THICK-LENS FOCAL LENGTH · f";
     r1.resultValue = fText;
     LcdRegister r2;
     r2.title = "PRINCIPAL PLANES / cm";
-    r2.lines = {"V₁H₁ = " + NF::signedFixed(a.h1, 4) + "   V₂H₂ = " + NF::signedFixed(a.h2, 4),
-                "dₒ from H₁ = " + NF::signedFixed(a.objectFromH1, 4),
-                a.atInfinity ? std::string("dᵢ = ∞ (object in the focal plane)") : "dᵢ from H₂ = " + NF::signedFixed(a.imageFromH2, 4) + " cm",
-                a.atInfinity ? std::string("m = undefined") : "m = −dᵢ/dₒ = " + NF::signedFixed(a.magnification, 4),
+    r2.lines = {std::string("V₁H₁ = ") + NF::signedFixed(a.h1, 4) + std::string("   V₂H₂ = ") + NF::signedFixed(a.h2, 4),
+                std::string("dₒ from H₁ = ") + NF::signedFixed(a.objectFromH1, 4),
+                a.atInfinity ? std::string("dᵢ = ∞ (object in the focal plane)") : std::string("dᵢ from H₂ = ") + NF::signedFixed(a.imageFromH2, 4) + " cm",
+                a.atInfinity ? std::string("m = undefined") : std::string("m = −dᵢ/dₒ = ") + NF::signedFixed(a.magnification, 4),
                 std::string("IMAGE: ") + (a.real ? "REAL" : "VIRTUAL") + (a.atInfinity ? "" : std::string(a.upright ? " · UPRIGHT" : " · INVERTED"))};
     r2.resultLabel = "MAGNIFICATION · m";
     r2.resultValue = a.atInfinity ? std::string("—") : NF::signedFixed(a.magnification, 4);
     rep.registers = {r1, r2};
 
-    const std::string saSign = a.longitudinalSa < 0 ? "marginal rays cross " + NF::fixed(std::fabs(a.longitudinalSa), 4) + " cm in front of the paraxial focus"
-                                                    : "marginal rays cross " + NF::fixed(a.longitudinalSa, 4) + " cm behind the paraxial focus";
-    rep.notices = {info("The principal planes are imaginary surfaces inside the glass, " + NF::signedFixed(a.h1, 3) +
-                                  " cm / " + NF::signedFixed(a.h2, 3) + " cm from the vertices: all distances are measured from them, which is why the thick lens does not obey the thin-lens equation from the vertices. Spherical aberration (third order, D = " +
-                                  num(in.diameter) + " cm): " + a.saClass + " — " + saSign + "."),
-                   limit("Paraxial power and third-order aberration only: no coma, astigmatism or field curvature. The aberration assumes the stop at the lens and an object at infinity; the aperture is " + num(in.diameter) + " cm.")};
-    rep.headline = a.atInfinity ? "dᵢ → ∞" : "dᵢ = " + NF::signedFixed(a.imageFromH2, 4) + " cm";
-    rep.footnote = "H₁: front principal plane · H₂: rear · BFL " + NF::signedFixed(a.backFocal, 3) + " cm · f/# " + NF::fixed(a.fNumber, 2);
-    rep.statusText = a.converging ? (a.saClass == "NEGLIGIBLE" ? "Well-corrected aperture" : "Converging element · " + a.saClass) : "Diverging element · virtual focus";
-    rep.retained = retainedRegister({"n = " + num(in.n) + " · R₁ = " + num(in.r1) + " cm · R₂ = " + num(in.r2) + " cm", "t = " + num(in.thickness) + " cm · D = " + num(in.diameter) + " cm"},
-                                    "RETAINED THICK-LENS FOCAL LENGTH", fText, {"ΔSA = " + NF::signedFixed(a.longitudinalSa, 4) + " cm · " + a.saClass});
+    const std::string saSign = a.longitudinalSa < 0 ? std::string("marginal rays cross ") + NF::fixed(std::fabs(a.longitudinalSa), 4) + " cm in front of the paraxial focus"
+                                                    : std::string("marginal rays cross ") + NF::fixed(a.longitudinalSa, 4) + " cm behind the paraxial focus";
+    rep.notices = {info(std::string("The principal planes are imaginary surfaces inside the glass, ") + NF::signedFixed(a.h1, 3) +
+                                  std::string(" cm / ") + NF::signedFixed(a.h2, 3) + " cm from the vertices: all distances are measured from them, which is why the thick lens does not obey the thin-lens equation from the vertices. Spherical aberration (third order, D = " +
+                                  num(in.diameter) + std::string(" cm): ") + a.saClass + std::string(" — ") + saSign + "."),
+                   limit(std::string("Paraxial power and third-order aberration only: no coma, astigmatism or field curvature. The aberration assumes the stop at the lens and an object at infinity; the aperture is ") + num(in.diameter) + " cm.")};
+    rep.headline = a.atInfinity ? "dᵢ → ∞" : std::string("dᵢ = ") + NF::signedFixed(a.imageFromH2, 4) + " cm";
+    rep.footnote = std::string("H₁: front principal plane · H₂: rear · BFL ") + NF::signedFixed(a.backFocal, 3) + std::string(" cm · f/# ") + NF::fixed(a.fNumber, 2);
+    rep.statusText = a.converging ? (a.saClass == "NEGLIGIBLE" ? "Well-corrected aperture" : std::string("Converging element · ") + a.saClass) : "Diverging element · virtual focus";
+    rep.retained = retainedRegister({std::string("n = ") + num(in.n) + std::string(" · R₁ = ") + num(in.r1) + std::string(" cm · R₂ = ") + num(in.r2) + " cm", std::string("t = ") + num(in.thickness) + std::string(" cm · D = ") + num(in.diameter) + " cm"},
+                                    "RETAINED THICK-LENS FOCAL LENGTH", fText, {std::string("ΔSA = ") + NF::signedFixed(a.longitudinalSa, 4) + std::string(" cm · ") + a.saClass});
     rep.parameters = {{"Element", a.element}, {"n", num(in.n)}, {"R₁", num(in.r1) + " cm"}, {"R₂", num(in.r2) + " cm"},
                       {"t", num(in.thickness) + " cm"}, {"D", num(in.diameter) + " cm"}, {"dₒ", num(in.objectDistance) + " cm"}};
     return rep;
@@ -1013,7 +1013,7 @@ DataSeries thickLensSweep(const ThickLensInput& in) {
     ti.n = in.n; ti.nMedium = in.nMedium; ti.r1 = in.r1; ti.r2 = in.r2;
     ti.thickness = in.thickness; ti.diameter = in.diameter; ti.objectDistance = in.objectDistance;
     DataSeries s{"thick_lens_sweep", "Thick-lens sweep",
-                 "n = " + num(in.n) + " · R₁ = " + num(in.r1) + " cm · R₂ = " + num(in.r2) + " cm · t = " + num(in.thickness) + " cm",
+                 std::string("n = ") + num(in.n) + std::string(" · R₁ = ") + num(in.r1) + std::string(" cm · R₂ = ") + num(in.r2) + std::string(" cm · t = ") + num(in.thickness) + " cm",
                  "dᵢ measured from the rear principal plane H₂", {"dₒ (cm)", "dᵢ (cm)", "m"}, {}};
     for (const auto& [dObj, dImg] : TL::imageCurve(ti, 12)) {
         const TL::Result r = TL::analyse([&] { ThickLensInput c = ti; c.objectDistance = dObj; return c; }());

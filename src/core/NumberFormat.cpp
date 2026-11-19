@@ -16,7 +16,7 @@ std::string fixed(double value, int decimals) {
 
 std::string signedFixed(double value, int decimals) {
     const std::string text = fixed(value, decimals);
-    return (text[0] == '-') ? text : "+" + text;
+    return (text[0] == '-') ? text : std::string("+") + text;
 }
 
 std::string general(double value, int digits) {
@@ -33,7 +33,7 @@ std::string scientific(double value, int decimals) {
     static const char* superscript[] = {"⁰", "¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "⁹"};
     std::string exp = exponent < 0 ? "⁻" : "";
     for (char ch : std::to_string(std::abs(exponent))) exp += superscript[ch - '0'];
-    return fixed(mantissa, decimals) + " × 10" + exp;
+    return fixed(mantissa, decimals) + std::string(" × 10") + exp;
 }
 
 std::string superscriptInt(int value) {
@@ -50,7 +50,7 @@ std::string scientificCompact(double value) {
     if (std::fabs(mantissa) >= 9.99995) { mantissa /= 10.0; ++exponent; }
     if (exponent == 0) return general(mantissa, 6);
     const std::string m = general(mantissa, 6);
-    return (m == "1" ? std::string() : m + "×") + "10" + superscriptInt(exponent);
+    return (m == "1" ? std::string() : m + "×") + std::string("10") + superscriptInt(exponent);
 }
 
 } // namespace phy104::NumberFormat

@@ -401,14 +401,14 @@ void ReportPage::savePdf() {
     printer.setPageOrientation(m_paper->current() == 1 ? QPageLayout::Landscape : QPageLayout::Portrait);
     printer.setPageMargins(QMarginsF(15, 15, 15, 15), QPageLayout::Millimeter);
     if (!renderTo(printer)) {
-        emit m_ctx->message("Could not write " + path);
+        emit m_ctx->message(std::string("Could not write ") + path);
         return;
     }
 
     const ExportRecord rec = ExportService::makeRecord(
         path, "PDF report", "report", static_cast<int>(m_ctx->log.runs().size()), m_sections);
     m_ctx->recordExport(rec);
-    emit m_ctx->message("PDF report written: " + QFileInfo(path).fileName());
+    emit m_ctx->message(std::string("PDF report written: ") + QFileInfo(path).fileName());
     refreshRecent();
 }
 

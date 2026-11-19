@@ -14,7 +14,7 @@ namespace phy104 {
 NotesPage::NotesPage(AppContext* ctx, std::vector<ScientificPage> keyboardPages, QWidget* parent)
     : BasePage("Notes", "MARKDOWN STUDY WORKSPACE / Write, edit and preview your lab notes", ctx, parent) {
     // One panel across the whole window: the editor, its toolbar and the live preview, nothing else.
-    m_notesPanel = new Panel("Session notes", "SAVED " + ctx->lastSavedTime());
+    m_notesPanel = new Panel("Session notes", std::string("SAVED ") + ctx->lastSavedTime());
     m_notes = new MarkdownWorkspace;
     const QString saved = QString::fromStdString(ctx->log.notes());
     const bool showingStarter = saved.isEmpty();
@@ -51,8 +51,8 @@ NotesPage::NotesPage(AppContext* ctx, std::vector<ScientificPage> keyboardPages,
     connect(ctx, &AppContext::notesSaved, this, [this] {
         const QString latest = QString::fromStdString(m_ctx->log.notes());
         if (m_notes->markdown() != latest) m_notes->setMarkdown(latest);   // keep the Study Hub editor in sync
-        m_notesPanel->setMeta("SAVED " + m_ctx->lastSavedTime());
-        m_notes->setSavedText("Saved " + m_ctx->lastSavedTime());
+        m_notesPanel->setMeta(std::string("SAVED ") + m_ctx->lastSavedTime());
+        m_notes->setSavedText(std::string("Saved ") + m_ctx->lastSavedTime());
     });
 }
 

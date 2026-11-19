@@ -118,7 +118,7 @@ void DiagramsPage::exportPng() {
     const QString file = QFileDialog::getSaveFileName(this, "Export diagram", name + ".png", "PNG image (*.png)");
     if (file.isEmpty()) return;
     if (!m_view->exportPng(file, 2400))
-        QMessageBox::warning(this, "Export", "Could not write " + file);
+        QMessageBox::warning(this, "Export", std::string("Could not write ") + file);
 }
 
 } // namespace phy104

@@ -86,7 +86,7 @@ void MathSolverPage::calculate() {
         m_input->selectAll();                                      // next typing replaces the previous expression
     } else {
         m_result->setText("ERROR");
-        m_status->setText("✖ " + QString::fromStdString(entry.error));
+        m_status->setText(std::string("✖ ") + QString::fromStdString(entry.error));
         m_status->show();
     }
 }

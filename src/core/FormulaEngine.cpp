@@ -28,7 +28,7 @@ FormulaEngine::FormulaEngine(std::unique_ptr<IFormulaRepository> formulaRepo,
                 var = d->second;
             } else {
                 var.id = var.display = var.name = id;
-                m_warnings.push_back("Variable '" + id + "' (formula " + formula.id +
+                m_warnings.push_back(std::string("Variable '") + id + std::string("' (formula ") + formula.id +
                                      ") is missing from variables.json");
             }
             const auto c = constants.find(id);                 // c, epsilon0, mu0 -> pre-filled
@@ -67,7 +67,7 @@ std::vector<const Formula*> FormulaEngine::byChapter(const std::string& chapter)
 std::optional<std::string> FormulaEngine::validate(const Formula& formula) {
     const auto eq = formula.equation.find('=');
     if (eq == std::string::npos || formula.equation.find('=', eq + 1) != std::string::npos)
-        return "Formula '" + formula.id + "': equation must contain exactly one '='";
+        return std::string("Formula '") + formula.id + "': equation must contain exactly one '='";
 
     // Evaluate both sides with every variable = 0.7: catches syntax errors and unknown functions.
     VariableMap vars;
@@ -76,7 +76,7 @@ std::optional<std::string> FormulaEngine::validate(const Formula& formula) {
         ExpressionEvaluator::evaluate(formula.equation.substr(0, eq), vars);
         ExpressionEvaluator::evaluate(formula.equation.substr(eq + 1), vars);
     } catch (const std::exception& e) {
-        return "Formula '" + formula.id + "': " + e.what();
+        return std::string("Formula '") + formula.id + std::string("': ") + e.what();
     }
     return std::nullopt;
 }

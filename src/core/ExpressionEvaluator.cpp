@@ -104,7 +104,7 @@ private:
 
             if (accept('(')) {                     // function call
                 const double arg = parseExpression();
-                if (!accept(')')) throw std::runtime_error("Missing ')' after " + name);
+                if (!accept(')')) throw std::runtime_error(std::string("Missing ')' after ") + name);
                 return callFunction(name, arg);
             }
             return lookup(name);
@@ -122,7 +122,7 @@ private:
         if (name == "mm") return 1e-3;
         if (name == "cm") return 1e-2;
         if (name == "km") return 1e3;
-        throw std::runtime_error("Unknown variable '" + name + "'");
+        throw std::runtime_error(std::string("Unknown variable '") + name + "'");
     }
 
     // ---- trigonometry in degrees: exact for multiples of 90 (sin(180) = 0, not 1.2e-16) ----
@@ -167,7 +167,7 @@ private:
         if (f == "ceil") return std::ceil(x);
         if (f == "round") return std::round(x);
         if (f == "sgn")  return x > 0 ? 1.0 : (x < 0 ? -1.0 : 0.0);
-        throw std::runtime_error("Unknown function '" + f + "'");
+        throw std::runtime_error(std::string("Unknown function '") + f + "'");
     }
 };
 
@@ -238,7 +238,7 @@ std::string ExpressionEvaluator::normalize(std::string text) {
             while (end < text.size() &&
                    (std::isalnum(static_cast<unsigned char>(text[end])) || text[end] == '.' || text[end] == '_'))
                 ++end;
-            text.replace(pos, end - pos, "sqrt(" + text.substr(after, end - after) + ")");
+            text.replace(pos, end - pos, std::string("sqrt(") + text.substr(after, end - after) + ")");
         }
         pos += 4;
     }

@@ -12,11 +12,11 @@ std::string elementName(double r1, double r2, double power) {
     const bool flat1 = std::fabs(r1) > 1e5, flat2 = std::fabs(r2) > 1e5;
     const std::string kind = power >= 0 ? "converging" : "diverging";
     if (flat1 && flat2) return "Plano-plano (window)";
-    if (flat1) return "Plano-" + std::string(r2 < 0 ? "convex" : "concave") + " (" + kind + ")";
-    if (flat2) return "Plano-" + std::string(r1 > 0 ? "convex" : "concave") + " (" + kind + ")";
-    if (r1 > 0 && r2 < 0) return std::string(power >= 0 ? "Biconvex" : "Biconvex (negative power)") + " (" + kind + ")";
-    if (r1 < 0 && r2 > 0) return std::string(power < 0 ? "Biconcave" : "Biconcave (positive power)") + " (" + kind + ")";
-    return "Meniscus (" + kind + ")";
+    if (flat1) return std::string("Plano-") + std::string(r2 < 0 ? "convex" : "concave") + std::string(" (") + kind + ")";
+    if (flat2) return std::string("Plano-") + std::string(r1 > 0 ? "convex" : "concave") + std::string(" (") + kind + ")";
+    if (r1 > 0 && r2 < 0) return std::string(power >= 0 ? "Biconvex" : "Biconvex (negative power)") + std::string(" (") + kind + ")";
+    if (r1 < 0 && r2 > 0) return std::string(power < 0 ? "Biconcave" : "Biconcave (positive power)") + std::string(" (") + kind + ")";
+    return std::string("Meniscus (") + kind + ")";
 }
 
 Result analyse(const ThickLensInput& in) {

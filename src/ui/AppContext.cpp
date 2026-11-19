@@ -24,14 +24,14 @@ void AppContext::recordRun(const QString& experiment, const QString& description
         run.series = series->second;                           // the sweep stays attached to its run
     emit runsChanged();
     saveSession();
-    emit message("Saved calculation " + QString::fromStdString(SessionLog::runLabel(log.runs().back().id)) + " · " + result);
+    emit message(std::string("Saved calculation ") + QString::fromStdString(SessionLog::runLabel(log.runs().back().id)) + std::string(" · ") + result);
 }
 
 bool AppContext::deleteRun(int id) {
     if (!log.removeRun(id)) return false;
     emit runsChanged();
     saveSession();
-    emit message("Deleted " + QString::fromStdString(SessionLog::runLabel(id)));
+    emit message(std::string("Deleted ") + QString::fromStdString(SessionLog::runLabel(id)));
     return true;
 }
 
@@ -53,21 +53,21 @@ void AppContext::recordExport(const ExportRecord& record) {
     log.setLastExport(record);
     saveSession();                                             // the recent export survives a restart
     emit exportRecorded();
-    emit message("Exported " + QString::fromStdString(record.path));
+    emit message(std::string("Exported ") + QString::fromStdString(record.path));
 }
 
 bool AppContext::saveSession() {
     if (!m_store) return false;
     const bool ok = m_store->save(log);
     if (ok) m_lastSaved = QTime::currentTime().toString("HH:mm");
-    else emit message("Could not save " + sessionFile);
+    else emit message(std::string("Could not save ") + sessionFile);
     return ok;
 }
 
 QString AppContext::nextRunLabel() const {
     int next = 1;
     for (const auto& r : log.runs()) next = std::max(next, r.id + 1);
-    return "RUN " + QString::number(next).rightJustified(3, '0');
+    return std::string("RUN ") + QString::number(next).rightJustified(3, '0');
 }
 
 } // namespace phy104

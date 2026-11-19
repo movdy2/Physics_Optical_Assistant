@@ -94,7 +94,7 @@ private:
                 std::string sub = group();
                 std::string flat;
                 for (char ch : sub) if (std::isalnum(static_cast<unsigned char>(ch))) flat += ch;
-                name += "_" + flat;
+                name += std::string("_") + flat;
             } else if (!atEnd() && m_s[m_i] == '\'') {
                 ++m_i;
                 name += "p";                                // s' -> sp
@@ -107,7 +107,7 @@ private:
         const std::string name = commandName();
         if (name == "frac" || name == "dfrac") {
             const std::string a = group(), b = group();
-            return {"((" + a + ")/(" + b + "))", true, true};
+            return {std::string("((") + a + std::string(")/(") + b + "))", true, true};
         }
         if (name == "sqrt") {
             skipSpaces();
@@ -117,34 +117,34 @@ private:
                 while (!atEnd() && m_s[m_i] != ']') n += m_s[m_i++];
                 if (atEnd()) throw std::runtime_error("Missing ']' in the LaTeX");
                 ++m_i;
-                return {"((" + group() + ")^(1/" + n + "))", true, true};
+                return {std::string("((") + group() + std::string(")^(1/") + n + "))", true, true};
             }
-            return {"sqrt(" + group() + ")", true, true};
+            return {std::string("sqrt(") + group() + ")", true, true};
         }
         if (name == "left" || name == "right") {
             skipSpaces();
-            if (atEnd()) throw std::runtime_error("Missing bracket after \\" + name);
+            if (atEnd()) throw std::runtime_error(std::string("Missing bracket after \\") + name);
             const char b = m_s[m_i++];
             const bool open = name == "left";
             if (b == '(' || b == '[') return {"(", !open, open};
             if (b == ')' || b == ']') return {")", true, false};
             if (b == '.') return {"", false, false};
-            throw std::runtime_error("Unsupported bracket after \\" + name);
+            throw std::runtime_error(std::string("Unsupported bracket after \\") + name);
         }
         if (name == "cdot" || name == "times") return {"*", false, false};
         if (name == "div") return {"/", false, false};
         if (name == "operatorname") {                                  // \operatorname{sinh} -> the function name
             const std::string fn = group();
-            if (!kFunctions.count(fn)) throw std::runtime_error("Unsupported function " + fn);
+            if (!kFunctions.count(fn)) throw std::runtime_error(std::string("Unsupported function ") + fn);
             return {fn, false, true};
         }
         if (name == "," || name == ";" || name == " " || name == "!" || name == "quad" || name == "qquad") return {"", false, false};
         if (name == "pi") return {"pi", true, true};
         if (name == "circ") return {"", false, false};
         if (kGreek.count(name)) return identifier(name);
-        if (name == "arcsin" || name == "arccos" || name == "arctan") return {"a" + name.substr(3), false, true};
+        if (name == "arcsin" || name == "arccos" || name == "arctan") return {std::string("a") + name.substr(3), false, true};
         if (kFunctions.count(name)) return {name, false, true};
-        throw std::runtime_error("Unsupported LaTeX command \\" + name);
+        throw std::runtime_error(std::string("Unsupported LaTeX command \\") + name);
     }
 
     std::string sequence(bool untilBrace) {
@@ -167,7 +167,7 @@ private:
                     continue;
                 }
                 const std::string e = group();
-                items.push_back({"^(" + e + ")", true, false});
+                items.push_back({std::string("^(") + e + ")", true, false});
                 continue;
             }
             if (c == '_') throw std::runtime_error("Subscript '_' must follow a letter");
@@ -204,10 +204,10 @@ private:
                     arg = sub.run();                                          // includes the brackets
                 } else {
                     Item operand = atom();
-                    arg = "(" + operand.text + ")";
+                    arg = std::string("(") + operand.text + ")";
                 }
                 const std::string call = a.text + arg;
-                items.push_back({power.empty() ? call : "(" + call + ")^(" + power + ")", true, true});
+                items.push_back({power.empty() ? call : std::string("(") + call + std::string(")^(") + power + ")", true, true});
                 continue;
             }
             items.push_back(a);
@@ -228,7 +228,7 @@ public:
         skip();
         if (m_i < m_s.size() && m_s[m_i] == '=') {
             ++m_i;
-            out += " = " + expr();
+            out += std::string(" = ") + expr();
             skip();
         }
         if (m_i < m_s.size()) throw std::runtime_error(std::string("Unexpected '") + m_s[m_i] + "'");
@@ -245,8 +245,8 @@ private:
     std::string expr() {
         std::string out = term().latex;
         for (;;) {
-            if (accept('+')) out += " + " + term().latex;
-            else if (accept('-')) out += " - " + term().latex;
+            if (accept('+')) out += std::string(") + term().latex;
+            else if (accept('-')) out += std::string(" - ") + term().latex;
             else return out;
         }
     }
@@ -260,13 +260,13 @@ private:
                 acc = {acc.latex + (numbers ? " \\times " : " ") + f.latex, false};
             } else if (accept('/')) {
                 Piece f = factor();
-                acc = {"\\frac{" + acc.latex + "}{" + f.latex + "}", false};
+                acc = {std::string("\\frac{") + acc.latex + std::string("}{") + f.latex + "}", false};
             } else return acc;
         }
     }
 
     Piece factor() {
-        if (accept('-')) { Piece p = factor(); return {"-" + p.latex, false}; }
+        if (accept('-')) { Piece p = factor(); return {std::string("-") + p.latex, false}; }
         if (accept('+')) return factor();
         return power();
     }
@@ -275,24 +275,24 @@ private:
         Piece base = primary();
         if (accept('^')) {
             Piece e = factor();
-            return {(base.simple ? base.latex : "\\left(" + base.latex + "\\right)") + "^{" + e.latex + "}", false};
+            return {(base.simple ? base.latex : std::string("\\left(") + base.latex + "\\right)") + std::string("^{") + e.latex + "}", false};
         }
         return base;
     }
 
     static std::string identifierLatex(const std::string& id) {
-        auto greek = [](const std::string& s) { return kGreek.count(s) ? "\\" + s : s; };
+        auto greek = [](const std::string& s) { return kGreek.count(s) ? std::string("\\") + s : s; };
         // theta1 -> \theta_{1}, n1 -> n_{1}, n_a -> n_{a}, lambda0 -> \lambda_{0}, Emax -> E_{max}
         for (const auto& g : kGreek) {
             if (id.compare(0, g.size(), g) == 0) {
                 std::string rest = id.substr(g.size());
                 if (!rest.empty() && rest[0] == '_') rest.erase(0, 1);
-                return "\\" + g + (rest.empty() ? "" : "_{" + rest + "}");
+                return std::string("\\") + g + (rest.empty() ? "" : std::string("_{") + rest + "}");
             }
         }
         const auto us = id.find('_');
-        if (us != std::string::npos) return greek(id.substr(0, us)) + "_{" + id.substr(us + 1) + "}";
-        if (id.size() > 1) return id.substr(0, 1) + "_{" + id.substr(1) + "}";
+        if (us != std::string::npos) return greek(id.substr(0, us)) + std::string("_{") + id.substr(us + 1) + "}";
+        if (id.size() > 1) return id.substr(0, 1) + std::string("_{") + id.substr(1) + "}";
         return id;
     }
 
@@ -304,7 +304,7 @@ private:
             ++m_i;
             std::string inner = expr();
             if (!accept(')')) throw std::runtime_error("Missing ')'");
-            return {"\\left(" + inner + "\\right)", false};
+            return {std::string("\\left(") + inner + "\\right)", false};
         }
         if (isDigit(c) || c == '.') {
             std::size_t start = m_i;
@@ -319,11 +319,11 @@ private:
             if (m_i < m_s.size() && m_s[m_i] == '(' && kFunctions.count(name)) {
                 ++m_i;
                 std::string arg = expr();
-                if (!accept(')')) throw std::runtime_error("Missing ')' after " + name);
-                if (name == "sqrt") return {"\\sqrt{" + arg + "}", false};
-                if (name == "abs") return {"\\left|" + arg + "\\right|", false};
-                const std::string cmd = (name[0] == 'a' && name.size() == 4) ? "\\arc" + name.substr(1) : "\\" + name;
-                return {cmd + "\\left(" + arg + "\\right)", false};
+                if (!accept(')')) throw std::runtime_error(std::string("Missing ')' after ") + name);
+                if (name == "sqrt") return {std::string("\\sqrt{") + arg + "}", false};
+                if (name == "abs") return {std::string("\\left|") + arg + "\\right|", false};
+                const std::string cmd = (name[0] == 'a' && name.size() == 4) ? std::string("\\arc") + name.substr(1) : std::string("\\") + name;
+                return {cmd + std::string("\\left(") + arg + "\\right)", false};
             }
             if (name == "pi") return {"\\pi", true};
             if (name == "e") return {"e", true};

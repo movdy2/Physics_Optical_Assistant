@@ -174,7 +174,7 @@ void ScientificKeyboard::setTarget(QPlainTextEdit* target) {
 void ScientificKeyboard::updateCaption() {
     QString where = "no source";
     if (m_target) { const QTextCursor c = m_target->textCursor(); where = QString("Ln %1, Col %2").arg(c.blockNumber() + 1).arg(c.positionInBlock() + 1); }
-    m_caption->setText("INSERT → SOURCE · " + where);
+    m_caption->setText(std::string("INSERT → SOURCE · ") + where);
 }
 
 void ScientificKeyboard::refreshDisplay() {
