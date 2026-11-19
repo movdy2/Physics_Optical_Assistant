@@ -634,6 +634,18 @@
      {
       "legend": "N",
       "latex": "N"
+     },
+     {
+      "legend": "ΔOPD",
+      "latex": "\\Delta OPD"
+     },
+     {
+      "legend": "ΔN",
+      "latex": "\\Delta N"
+     },
+     {
+      "legend": "I_min",
+      "latex": "I_{min}"
      }
     ]
    ]
