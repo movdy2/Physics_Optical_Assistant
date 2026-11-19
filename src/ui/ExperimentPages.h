@@ -12,7 +12,7 @@ class QStackedWidget;
 
 namespace phy104 {
 
-class LcdRegisterView;
+class RegisterView;
 class LensCanvas;
 class LineChart;
 class MirrorCanvas;
@@ -44,7 +44,7 @@ protected:
     bool readFields();                          // parses all bound fields; marks bad ones; false on failure
     void captureValid();                        // remembers the current field values as "last valid"
     void applyIssues(const Report& report);     // inline errors, buttons, status bar, engine light
-    void showRegisters(LcdRegisterView* first, LcdRegisterView* second, const Report& report);
+    void showRegisters(RegisterView* first, RegisterView* second, const Report& report);
     ReportContext reportContext() const;
     QString lastRunLabel() const;               // "RUN 021" for this experiment, or ""
     void setPanels(Panel* diagram, Panel* chart, Panel* results, const QString& diagramMeta, const QString& chartMeta);
@@ -91,7 +91,7 @@ private:
     TirCanvas* m_tirCanvas;
     LineChart* m_chart;
     Panel *m_diagram, *m_chartPanel, *m_results;
-    LcdRegisterView *m_reg1, *m_reg2;
+    RegisterView *m_reg1, *m_reg2;
     NoticeCard* m_notice;
     bool m_lastModeTir = false;
 };
@@ -121,7 +121,7 @@ private:
     MirrorCanvas *m_mirrorSmall, *m_mirrorBig;
     LineChart* m_chart;
     Panel *m_lensPanel, *m_mirrorSmallPanel, *m_mirrorBigPanel, *m_chartPanel, *m_results;
-    LcdRegisterView *m_reg1, *m_reg2;
+    RegisterView *m_reg1, *m_reg2;
     NoticeCard* m_notice;
     QLabel* m_caption;
     bool m_syncing = false;
@@ -146,7 +146,7 @@ private:
     PrismCanvas* m_canvas;
     LineChart* m_chart;
     Panel *m_diagram, *m_chartPanel, *m_results;
-    LcdRegisterView* m_reg;
+    RegisterView* m_reg;
     NoticeCard *m_noticeInline, *m_noticeExit;
     QLabel* m_footnote;
 };
@@ -170,7 +170,7 @@ private:
     WaveCanvas* m_canvas;
     LineChart* m_chart;
     Panel *m_diagram, *m_chartPanel, *m_results;
-    LcdRegisterView *m_reg1, *m_reg2;
+    RegisterView *m_reg1, *m_reg2;
     NoticeCard* m_notice;
 };
 

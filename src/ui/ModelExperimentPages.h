@@ -36,9 +36,9 @@ protected:
 
 private:
     void showChart(const ChartData& c);
-    Panel *m_controls, *m_diagram, *m_chartPanel;
+    Panel *m_controls, *m_diagram, *m_chartPanel, *m_results;
     LineChart* m_chart;
-    LcdRegisterView *m_reg1, *m_reg2;
+    RegisterView *m_reg1, *m_reg2;
     NoticeCard *m_interpretation, *m_guard;
     QString m_diagramTitle;
     QList<QWidget*> m_pending;                 // controls added before build()

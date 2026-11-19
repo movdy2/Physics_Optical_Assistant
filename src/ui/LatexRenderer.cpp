@@ -509,7 +509,7 @@ bool LatexRenderer::validate(const QString& latex, QString* error) {
 // ---------------------------------------------------------------------------- widget
 LatexWidget::LatexWidget(QWidget* parent) : QWidget(parent), m_baseFont(QWidget::font()) {
     connect(&ThemeManager::instance(), &ThemeManager::themeChanged, this, [this] {
-        if (m_lcd) setFont(ThemeManager::lcdFont(m_baseFont));
+        setFont(m_baseFont);
         update();
     });
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
@@ -519,7 +519,7 @@ void LatexWidget::setLatex(const QString& latex) { m_latex = latex; updateGeomet
 void LatexWidget::setPointSize(qreal points)    { m_points = points; updateGeometry(); update(); }
 void LatexWidget::setLcdStyle(bool lcd) {
     m_lcd = lcd;
-    setFont(lcd ? ThemeManager::lcdFont(m_baseFont) : m_baseFont);
+    setFont(m_baseFont);
     updateGeometry();
     update();
 }
@@ -528,7 +528,7 @@ void LatexWidget::setInkColor(const QColor& c)  { m_inkOverride = c; update(); }
 QColor LatexWidget::ink() const {
     if (m_inkOverride.isValid()) return m_inkOverride;
     const Theme& t = ThemeManager::instance().theme();
-    return m_lcd ? t.lcdText : t.text;
+    return m_lcd ? t.amber : t.text;
 }
 
 QSize LatexWidget::sizeHint() const {
@@ -544,9 +544,9 @@ void LatexWidget::paintEvent(QPaintEvent*) {
     p.setRenderHint(QPainter::Antialiasing);
     const Theme& t = ThemeManager::instance().theme();
     if (m_lcd) {
-        p.setPen(QPen(t.lcdFrame, 3));
-        p.setBrush(t.lcdBg);
-        p.drawRoundedRect(QRectF(rect()).adjusted(1.5, 1.5, -1.5, -1.5), 8, 8);
+        p.setPen(QPen(t.border, 2));
+        p.setBrush(t.card);
+        p.drawRoundedRect(QRectF(rect()).adjusted(1.5, 1.5, -1.5, -1.5), 6, 6);
     }
     if (m_latex.isEmpty()) return;
     QFont f = font(); f.setPointSizeF(m_points);
