@@ -599,6 +599,8 @@ LensesPage::LensesPage(AppContext* ctx, QWidget* parent)
     mirrorRayLayout->addWidget(mrayParallel);
     mirrorRayLayout->addWidget(mrayCenter);
     mirrorRayLayout->addStretch();
+    m_mirrorBigPanel = new Panel("Spherical mirror / concave", "");
+    m_mirrorBigPanel->body()->setContentsMargins(0, 0, 0, 0);
     m_mirrorBigPanel->body()->addWidget(mirrorRayBar);
     m_mirrorBigPanel->body()->addWidget(m_mirrorBig);
     m_chart = new LineChart;
