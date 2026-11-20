@@ -915,11 +915,11 @@ QString::fromStdString(std::string(" ") + NumberFormat::signedFixed(dphi) + " ra
         const double phase = dphi + phaseGrad * (i - screenCenter);
         const double I = (1 + vis * std::cos(phase)) / (1 + vis);
         p.setPen(mix(t.canvas, t.lime, I));
-        p.drawLine(screenRect.left() + i, screenRect.top(), screenRect.left() + i, screenRect.bottom());
+        p.drawLine(static_cast<int>(screenRect.left()) + i, static_cast<int>(screenRect.top()), static_cast<int>(screenRect.left()) + i, static_cast<int>(screenRect.bottom()));
     }
 
     // Center marker: intensity at screen center = I/Imax
-    const int centerX = screenRect.left() + static_cast<int>(screenCenter);
+    const int centerX = static_cast<int>(screenRect.left()) + static_cast<int>(screenCenter);
     p.setPen(QPen(t.amber, 2));
     p.drawLine(QPointF(centerX, screenRect.top() - 4), QPointF(centerX, screenRect.top() + screenH + 4));
     text(p, QPointF(centerX, screenRect.bottom() + 12), QString(" ") + num(intensity, 4), t.amber, 8, Qt::AlignHCenter);

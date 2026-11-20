@@ -552,13 +552,6 @@ LensesPage::LensesPage(AppContext* ctx, QWidget* parent)
     auto* lensRayLayout = new QHBoxLayout(lensRayBar);
     lensRayLayout->setContentsMargins(8, 4, 8, 4);
     lensRayLayout->setSpacing(8);
-    auto makeRayToggle = [&](QCheckBox*& cb, const QString& label, bool checked, LensCanvas* canvas, void (LensCanvas::*setter)(bool)) {
-        cb = new QCheckBox(label);
-        cb->setChecked(checked);
-        cb->setObjectName("rayToggle");
-        connect(cb, &QCheckBox::toggled, canvas, [setter, canvas](bool on) { (canvas->*setter)(on); });
-        return cb;
-    };
     m_rayParallel = new QCheckBox("Parallel ray");
     m_rayParallel->setChecked(true);
     m_rayParallel->setObjectName("rayToggle");
