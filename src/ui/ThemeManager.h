@@ -26,6 +26,8 @@ struct Theme {
     QColor sage;        // optical-bench lines (interfaces, lens, prism outline)
     // older names still used by the SVG diagrams, LaTeX and formula cards
     QColor yellow, green, red, orange, blue, aqua;
+    // Casio-style LCD colours
+    QColor lcdBg, lcdText, lcdFrame, lcdDivider;
 
     static Theme figmaDark();
     static Theme figmaLight();
@@ -45,6 +47,7 @@ public:
     /// Shared sans-serif and glyph fallback order for English, Arabic and custom-painted UI text.
     static QStringList uiFontFamilies() { return {uiFont(), "Noto Sans Arabic", "DejaVu Sans", "Segoe UI", "Arial"}; }
     static QString monoFont() { return "JetBrains Mono"; }
+    static QFont lcdFont() { return QFont("DSEG14 Classic"); }
 
     void apply(QApplication& app, bool dark);
     const Theme& theme() const { return m_theme; }
