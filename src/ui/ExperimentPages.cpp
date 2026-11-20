@@ -2,7 +2,6 @@
 #include "FieldIds.h"
 #include "AppContext.h"
 #include "Components.h"
-#include "NumberFormat.h"
 #include "OpticsCanvases.h"
 #include "PhysicsCalculator.h"
 #include "ThemeManager.h"
@@ -409,7 +408,8 @@ void RefractionPage::apply(bool record) {
         ChartSeries curve;
         curve.line = true;
         const double top = crit ? *crit : 90.0;
-        for (double a = 0; a <= top + 1e-9; a += 0.5) {
+        for (int ai = 0; ai * 0.5 <= top; ++ai) {
+            const double a = ai * 0.5;
             const double s = in.n1 * std::sin(a * std::numbers::pi / 180.0) / in.n2;
             if (std::fabs(s) <= 1.0) curve.points << QPointF(a, std::asin(s) * 180.0 / std::numbers::pi);
         }
@@ -746,7 +746,8 @@ void LensesPage::apply(bool record) {
         ChartSeries branch;
         branch.line = true;
         double lo = 1e9, hi = -1e9;
-        for (double so = 0.5; so <= 60.0 + 1e-9; so += 0.25) {
+        for (int si = 2; si * 0.25 <= 60.0; ++si) {
+            const double so = si * 0.25;
             const auto img = PC::imageFormation(so, in.f);
             if (img.atInfinity || std::fabs(so - in.f) < 0.3 || std::fabs(img.imageDistance) > 4 * af + 1e-9 * 0) {
                 if (!branch.points.isEmpty()) { series << branch; branch = ChartSeries(); branch.line = true; }
@@ -1016,7 +1017,8 @@ void PrismsPage::apply(bool record) {
 
     ChartSeries curve;
     double lo = 1e9, hi = -1e9;
-    for (double a = 35; a <= 65.001; a += 0.5) {
+    for (int ai = 70; ai * 0.5 <= 65.0; ++ai) {
+        const double a = ai * 0.5;
         const auto p = PC::prism(in.nPrism, in.nMedium, in.apex, a);
         if (!p.valid || p.entryTir || p.exitTir) continue;
         curve.points << QPointF(a, p.deviation);

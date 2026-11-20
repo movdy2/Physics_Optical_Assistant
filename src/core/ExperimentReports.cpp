@@ -884,8 +884,8 @@ DataSeries doubleSlitSweep(const SlitInput& in) {
         const double env = in.showEnvelope && slitWidthM > 0.0 ? PC::singleSlitEnvelope(y, lam, L, slitWidthM) : 1.0;
         const double intensity = d > 0 ? PC::relativeIntensityUnequal(y, lam, L, d, in.intensityRatio) * env : kNaN;
         const auto error = propagateUncertainty(values, sigmas, [y, slitWidthM, &in](const std::vector<double>& v) {
-            const double env = in.showEnvelope && slitWidthM > 0.0 ? PC::singleSlitEnvelope(y, v[0] * 1e-9, v[2], slitWidthM) : 1.0;
-            return PC::relativeIntensityUnequal(y, v[0] * 1e-9, v[2], v[1] * 1e-3, in.intensityRatio) * env;
+            const double envVal = in.showEnvelope && slitWidthM > 0.0 ? PC::singleSlitEnvelope(y, v[0] * 1e-9, v[2], slitWidthM) : 1.0;
+            return PC::relativeIntensityUnequal(y, v[0] * 1e-9, v[2], v[1] * 1e-3, in.intensityRatio) * envVal;
         });
         s.rows.push_back({double(k) * 0.5, intensity, std::isfinite(intensity) && error.valid ? error.standardUncertainty : kNaN});
     }
