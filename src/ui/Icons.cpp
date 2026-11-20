@@ -7,7 +7,7 @@
 namespace phy104 {
 
 QPixmap Icons::pixmap(const QString& name, const QColor& color, int size, qreal dpr) {
-    QFile file(QString("/") + name + ".svg");
+    QFile file(":/icons/" + name + ".svg");
     if (!file.open(QIODevice::ReadOnly)) return QPixmap();
     QByteArray svg = file.readAll();
     svg.replace("currentColor", color.name().toUtf8());
