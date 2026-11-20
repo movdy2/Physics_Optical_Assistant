@@ -157,7 +157,8 @@ UnitField::UnitField(const QString& unit, QWidget* parent) : QFrame(parent) {
 
     auto refreshIcons = [this] {
         const QColor c = ThemeManager::instance().theme().dim;
-        for (auto* b : m_arrows->findChildren<QToolButton*>())
+        const auto arrows = m_arrows->findChildren<QToolButton*>();
+        for (auto* b : arrows)
             b->setIcon(Icons::get(b->property("iconName").toString(), c, ThemeManager::instance().theme().amber, 12));
     };
     refreshIcons();
@@ -270,7 +271,8 @@ RegisterView::RegisterView(QWidget* parent) : QFrame(parent) {
 
 void RegisterView::updateTextAlignment() {
     const bool rtl = LanguageManager::instance().isArabic();
-    for (QLabel* label : findChildren<QLabel*>()) {
+    const auto labels = findChildren<QLabel*>();
+    for (QLabel* label : labels) {
         const QString name = label->objectName();
         if (name == "regTitle") {
             const bool mode = label->property("regMode").toBool();
