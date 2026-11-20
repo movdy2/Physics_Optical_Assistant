@@ -26,7 +26,7 @@ public:
 private:
     QLabel* m_title;
     QLabel* m_meta;
-    QVBoxLayout* m_body;
+    mutable QVBoxLayout* m_body;  // mutable for lazy init in const body()
 };
 
 /// Numeric input with an optional unit on the right, amber focus ring and red error state.

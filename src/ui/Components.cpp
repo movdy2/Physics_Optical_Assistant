@@ -93,7 +93,7 @@ QVBoxLayout* Panel::body() const {
         m_body = new QVBoxLayout(holder);
         m_body->setContentsMargins(12, 12, 12, 12);
         m_body->setSpacing(8);
-        if (auto* root = const_cast<Panel*>(this)->layout())
+        if (auto* root = layout())
             root->addWidget(holder);
     }
     return m_body;
