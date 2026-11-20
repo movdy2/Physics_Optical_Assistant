@@ -20,7 +20,7 @@ class Panel : public QFrame {
     Q_OBJECT
 public:
     explicit Panel(const QString& title, const QString& meta = QString(), QWidget* parent = nullptr);
-    QVBoxLayout* body() const { return m_body; }
+    QVBoxLayout* body() const;
     void setMeta(const QString& meta);
     void setTitle(const QString& title);
 private:

@@ -15,6 +15,7 @@
 #include <QTimer>
 #include <QToolButton>
 #include <QWheelEvent>
+#include <QDebug>
 #include <QPushButton>
 #include <QSizePolicy>
 #include <QStyle>
@@ -85,6 +86,19 @@ Panel::Panel(const QString& title, const QString& meta, QWidget* parent) : QFram
     m_body->setSpacing(8);
     root->addWidget(bodyHolder, 1);
 }
+QVBoxLayout* Panel::body() const {
+    if (!m_body) {
+        qWarning("Panel::body(): m_body was null, reinitializing lazily");
+        auto* holder = new QWidget(const_cast<Panel*>(this));
+        m_body = new QVBoxLayout(holder);
+        m_body->setContentsMargins(12, 12, 12, 12);
+        m_body->setSpacing(8);
+        if (auto* root = const_cast<Panel*>(this)->layout())
+            root->addWidget(holder);
+    }
+    return m_body;
+}
+
 void Panel::setMeta(const QString& meta) { m_meta->setText(meta.toUpper()); }
 void Panel::setTitle(const QString& title) { m_title->setText(title); m_title->setWordWrap(true); m_title->setMinimumWidth(0); }
 
