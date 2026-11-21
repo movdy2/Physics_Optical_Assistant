@@ -112,6 +112,12 @@ int main(int argc, char* argv[]) {
     phy104::ThemeManager::loadFonts();
     phy104::ThemeManager::instance().apply(app, phy104::ThemeManager::storedDarkTheme());   // as last time
 
+    // --- تمت الإضافة هنا: ضبط اتجاه الواجهة للغة العربية ---
+    const bool isArabic = (phy104::LanguageManager::instance().language() == phy104::UiLanguage::Arabic);
+    phy104::ThemeManager::instance().setLayoutDirectionForLanguage(isArabic);
+    QWidget::setLayoutDirection(Qt::LeftToRight);
+    // -------------------------------------------------------
+
     try {
         phy104::App application({QCoreApplication::applicationDirPath() + "/data",
                                   QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/optics_lab.phy"});
