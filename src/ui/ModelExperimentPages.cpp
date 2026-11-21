@@ -10,6 +10,7 @@
 #include <QSignalBlocker>
 #include <QLabel>
 #include <QPushButton>
+#include <QSizePolicy>
 #include <QSlider>
 #include <QVBoxLayout>
 #include <cmath>
@@ -285,6 +286,7 @@ MichelsonPage::MichelsonPage(AppContext* ctx, QWidget* parent)
         b->setObjectName("presetBtn");
         b->setCursor(Qt::PointingHandCursor);
         b->setMinimumHeight(30);
+        b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         connect(b, &QPushButton::clicked, this, [this, lambda, dxUm, nIdx, fringes] {
             m_syncing = true;
             m_lambda->setValue(lambda, 2);
@@ -301,6 +303,7 @@ MichelsonPage::MichelsonPage(AppContext* ctx, QWidget* parent)
     m_presetCrown = makePreset("Crown · Δx 0.75", 632.8, 0.75, 1, false);
     m_presetFlint = makePreset("Flint · Δx 0.75", 632.8, 0.75, 2, false);
     m_presetFringes = makePreset("Fringes tab", 632.8, 0.75, 0, true);
+    presetRow->addStretch(1);
     m_fieldLayout->addLayout(presetRow);
     m_canvas = new MichelsonCanvas;
     m_canvas->setObjectName("michelsonCanvas");

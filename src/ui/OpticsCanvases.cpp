@@ -855,17 +855,19 @@ void MichelsonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     text(p, QPointF(detector.x() + 12, detector.y() + 7), QString(" ") + num(intensity, 4), t.amber, 9);
 
     // Live fringe counter: ΔN = ΔOPD / λ = 2nΔx / λ — how many fringes have shifted as M2 moves.
+    // Pinned to the top-right corner so it never overlaps the optical beams.
     const double shift = 2 * m_in.n * dxUm * 1e3 / m_in.lambdaNm;
-    text(p, QPointF(detector.x() + 12, detector.y() + 24),
+    const QPointF dataPos(a.right() - 14, a.top() + 18);
+    text(p, QPointF(dataPos.x(), dataPos.y()),
          QString::fromStdString(std::string("ΔN = ") + (shift >= 0 ? "+" : "-") + NumberFormat::fixed(std::fabs(shift), 4) + " fringes"),
-         shift >= 0 ? t.lime : t.amber, 10, Qt::AlignLeft, true);
-    text(p, QPointF(detector.x() + 12, detector.y() + 38),
-QString::fromStdString(std::string(" ") + NumberFormat::signedFixed(dphi) + " rad = " +
+         shift >= 0 ? t.lime : t.amber, 10, Qt::AlignRight, true);
+    text(p, QPointF(dataPos.x(), dataPos.y() + 16),
+QString::fromStdString(std::string("Δφ = ") + NumberFormat::signedFixed(dphi) + " rad = " +
                                NumberFormat::signedFixed(dphi * 180.0 / std::numbers::pi) + "°"),
-         t.amber, 9);
-    text(p, QPointF(detector.x() + 12, detector.y() + 52),
-         QString::fromStdString(std::string(" ") + NumberFormat::fixed(std::fabs(shift), 4)),
-         t.muted, 9);
+         t.amber, 9, Qt::AlignRight);
+    text(p, QPointF(dataPos.x(), dataPos.y() + 32),
+         QString::fromStdString(std::string("I/Imax = ") + NumberFormat::fixed(intensity, 4)),
+         t.muted, 9, Qt::AlignRight);
 
     // Circular detector fringes are a schematic radial phase map. At r = 0 it uses the same
     // Δφ = 4πnΔx/λ and normalized intensity as the register above.

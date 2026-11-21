@@ -123,7 +123,7 @@ QLabel#sectionTitle { font-size: 13px; font-weight: 600; color: @amber@; }
 QLabel#muted { color: @muted@; }
 QLabel#caption { font-family: 'JetBrains Mono'; font-size: 9px; color: @dim@; }
 QLabel#colourSwatch { border: 1px solid @border@; border-radius: 4px; min-height: 30px; }
-QLabel#fieldLabel { font-size: 11px; color: @muted@; }
+QLabel#fieldLabel { font-size: 11px; font-weight: 600; color: @muted@; }
 QLabel#hint { font-size: 11px; color: @dim@; }
 
 /* ---------- panels ---------- */
@@ -168,12 +168,12 @@ QMenu::item:selected { background: @amberTint@; color: @amber@; }
 QToolButton#spinUp, QToolButton#spinDown { background: transparent; border: none; padding: 0; }
 QToolButton#spinUp:hover, QToolButton#spinDown:hover { background: @cardHover@; border-radius: 2px; }
 QLabel#unit { font-family: 'JetBrains Mono'; font-size: 11px; color: @dim@; }
-QComboBox { background: @input@; color: @text@; border: 1px solid @border@; border-radius: 4px; padding: 0 10px; min-height: 30px;
+QComboBox { background: @input@; color: @text@; border: 1px solid @border@; border-radius: 4px; padding: 0 10px; min-height: 30px; min-width: 140px;
     font-family: 'JetBrains Mono'; font-size: 12px; selection-background-color: @amber@; selection-color: @bg@; }
 QComboBox:focus, QComboBox:on { border: 2px solid @amber@; padding: 0 9px; }
 QComboBox::drop-down { border: none; width: 26px; }
 QComboBox::down-arrow { image: url(@chevron@); width: 14px; height: 14px; }
-QComboBox QAbstractItemView { background: @input@; color: @text@; border: 1px solid @border@; selection-background-color: @amber@; selection-color: @bg@; outline: 0; }
+QComboBox QAbstractItemView { background: @input@; color: @text@; border: 1px solid @border@; selection-background-color: @amber@; selection-color: @bg@; outline: 0; min-width: 140px; }
 QLineEdit { background: @input@; color: @text@; border: 1px solid @border@; border-radius: 4px; padding: 5px 10px; selection-background-color: @amber@; selection-color: @bg@; }
 QLineEdit:focus { border: 2px solid @amber@; padding: 4px 9px; }
 QSpinBox, QDoubleSpinBox { background: @input@; color: @text@; border: 1px solid @border@; border-radius: 4px; padding: 3px 8px; font-family: 'JetBrains Mono'; }
@@ -194,14 +194,17 @@ QPushButton#secondary { background: @input@; color: @text@; border: 1px solid @b
 QPushButton#secondary:hover { border-color: @amber@; }
 QPushButton#outline { background: transparent; color: @text@; border: 1px solid @text@; font-weight: 500; font-size: 13px; min-height: 34px; padding: 0 16px; }
 QPushButton#outline:hover { border-color: @amber@; color: @amber@; }
-QPushButton#outlineAmber, QPushButton#sendToNotes { background: transparent; color: @amber@; border: 1px solid @amber@; border-radius: 4px; font-weight: 600; font-size: 12px; }
+QPushButton#outlineAmber, QPushButton#sendToNotes { background: transparent; color: @amber@; border: 1px solid @amber@; border-radius: 4px; font-weight: 600; font-size: 13px; min-height: 44px; padding: 0 16px; }
 QPushButton#outlineAmber:hover, QPushButton#sendToNotes:hover { background: @amberTint@; }
-QPushButton#modeTab { background: @input@; color: @muted@; border: 1px solid @border@; border-radius: 4px; min-height: 30px; font-size: 12px; }
-QPushButton#modeTab:hover { border-color: @amber@; }
-QPushButton#modeTab:checked { background: @amberTint@; color: @amber@; border: 1px solid @amber@; font-weight: 500; }
+QPushButton#modeTab { background: @cardHover@; color: @text@; border: 1px solid @border@; border-radius: 4px; min-height: 30px; font-size: 12px; font-weight: 500; }
+QPushButton#modeTab:hover { border-color: @amber@; color: @amber@; }
+QPushButton#modeTab:checked { background: @amberTint@; color: @amber@; border: 1px solid @amber@; font-weight: 600; }
 QPushButton#flat { background: transparent; border: none; color: @dim@; font-family: 'JetBrains Mono'; font-size: 10px; padding: 2px 8px; }
 QPushButton#flat:hover { color: @amber@; }
 QPushButton#flat:checked { color: @amber@; }
+QPushButton#presetBtn { background: @card@; color: @text@; border: 1px solid @border@; border-radius: 4px; padding: 6px 12px; font-size: 11px; font-weight: 600; min-width: 70px; min-height: 30px; text-align: center; }
+QPushButton#presetBtn:hover { border-color: @amber@; background: @cardHover@; }
+QPushButton#presetBtn:pressed { background: @bg@; }
 QToolButton#fmt { background: transparent; border: 1px solid transparent; border-radius: 3px; padding: 3px 6px; color: @text@; font-family: 'JetBrains Mono'; font-weight: 700; }
 QToolButton#fmt:hover { border-color: @border@; }
 QToolButton#fmt:checked { background: @amberTint@; color: @amber@; }
