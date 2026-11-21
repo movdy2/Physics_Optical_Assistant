@@ -36,7 +36,7 @@ QWidget* labeled(const QString& label, QWidget* field) {
     auto* w = new QWidget;
     auto* l = new QVBoxLayout(w);
     l->setContentsMargins(0, 0, 0, 0);
-    l->setSpacing(5);
+    l->setSpacing(4);
     auto* cap = new QLabel(label);
     cap->setObjectName("fieldLabel");
     l->addWidget(cap);
@@ -83,7 +83,7 @@ Panel::Panel(const QString& title, const QString& meta, QWidget* parent) : QFram
     auto* bodyHolder = new QWidget;
     m_body = new QVBoxLayout(bodyHolder);
     m_body->setContentsMargins(12, 12, 12, 12);
-    m_body->setSpacing(8);
+    m_body->setSpacing(12);
     root->addWidget(bodyHolder, 1);
 }
 QVBoxLayout* Panel::body() const {
@@ -92,7 +92,7 @@ QVBoxLayout* Panel::body() const {
         auto* holder = new QWidget(const_cast<Panel*>(this));
         m_body = new QVBoxLayout(holder);
         m_body->setContentsMargins(12, 12, 12, 12);
-        m_body->setSpacing(8);
+        m_body->setSpacing(12);
         if (auto* root = layout())
             root->addWidget(holder);
     }
