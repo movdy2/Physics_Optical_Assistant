@@ -184,12 +184,14 @@ void ExperimentPage::buildButtons(QVBoxLayout* fields, const QString& hint) {
     send->setObjectName("sendToNotes");
     send->setAccessibleName("Send to Notes");
     send->setCursor(Qt::PointingHandCursor);
-    send->setMinimumHeight(44);
+    send->setMinimumHeight(34);
+    send->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     send->setToolTip("Append the latest valid result to session Notes.");
     m_calc->setText("Calculate &&\nSimulate");
-    m_calc->setMinimumHeight(44);
+    m_calc->setMinimumHeight(34);
+    m_calc->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     auto* row = new QHBoxLayout;
-    row->setSpacing(8);
+    row->setSpacing(6);
     row->addWidget(m_calc);
     row->addWidget(send);
     fields->addLayout(row);
