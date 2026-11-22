@@ -38,9 +38,11 @@ protected:
     QVBoxLayout* m_fieldLayout = nullptr;
     ModeTabs* m_tabs = nullptr;
 
+protected:
+    Panel* m_diagram;                          // diagram panel (subclasses may add help button)
 private:
     void showChart(const ChartData& c);
-    Panel *m_controls, *m_diagram, *m_chartPanel, *m_results;
+    Panel *m_controls, *m_chartPanel, *m_results;
     LineChart* m_chart;
     RegisterView *m_reg1, *m_reg2;
     NoticeCard *m_interpretation, *m_guard;

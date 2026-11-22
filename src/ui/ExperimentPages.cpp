@@ -287,13 +287,50 @@ RefractionPage::RefractionPage(AppContext* ctx, QWidget* parent)
     bind(QString::fromLatin1(FieldIds::sigmaIncidentAngle), m_sigmaTheta);
     auto* f = controls->body();
     f->addWidget(m_mode);
+    m_mode->setToolTip("Refraction: Snell's law with two media.  TIR: total internal reflection (requires n₁ > n₂).");
     f->addWidget(labeled("Incident medium", m_med1));
+    m_med1->setToolTip("Choose the incident medium preset, or Custom to enter n₁ manually.");
     f->addWidget(labeled("Refractive index · n₁", m_n1));
+    m_n1->setToolTip("Refractive index of the incident medium (e.g. 1.50 for crown glass).");
     f->addWidget(labeled("Transmitted medium", m_med2));
+    m_med2->setToolTip("Choose the transmitted medium preset, or Custom to enter n₂ manually.");
     f->addWidget(labeled("Refractive index · n₂", m_n2));
+    m_n2->setToolTip("Refractive index of the transmitted medium (e.g. 1.00 for air).");
     f->addWidget(labeled("Incidence angle · θ₁", m_theta));
+    m_theta->setToolTip("Angle of incidence measured from the surface normal, in degrees (0–90).");
     f->addWidget(uncertaintyInputs({{"σ(n₁)", m_sigmaN1}, {"σ(n₂)", m_sigmaN2}, {"σ(θ₁)", m_sigmaTheta}}));
+    m_sigmaN1->setToolTip("Standard uncertainty (1σ) on n₁. Enter 0 to treat as exact.");
+    m_sigmaN2->setToolTip("Standard uncertainty (1σ) on n₂. Enter 0 to treat as exact.");
+    m_sigmaTheta->setToolTip("Standard uncertainty (1σ) on θ₁ in degrees. Enter 0 to treat as exact.");
     buildButtons(f, "SI units · angles in degrees");
+
+    // ---- Preset scenarios ---
+    auto* presetLabel = new QLabel("Presets:");
+    presetLabel->setObjectName("fieldLabel");
+    f->addWidget(presetLabel);
+    auto* presetRow = new QHBoxLayout;
+    presetRow->setSpacing(4);
+    auto makePreset = [&](const QString& label, double n1Val, double n2Val, double thetaVal, bool tir) {
+        auto* b = new QPushButton(label);
+        b->setObjectName("presetBtn");
+        b->setCursor(Qt::PointingHandCursor);
+        b->setMinimumHeight(30);
+        connect(b, &QPushButton::clicked, this, [this, n1Val, n2Val, thetaVal, tir] {
+            m_mode->setCurrent(tir ? 1 : 0);
+            m_n1->setValue(n1Val, 2);
+            m_n2->setValue(n2Val, 2);
+            m_theta->setValue(thetaVal, 2);
+            apply(false);
+        });
+        presetRow->addWidget(b);
+        return b;
+    };
+    (void)makePreset("Air→Glass · 30°", 1.0, 1.5, 30.0, false);
+    (void)makePreset("Glass→Air · 30°", 1.5, 1.0, 30.0, false);
+    (void)makePreset("TIR · 50°", 1.5, 1.0, 50.0, true);
+    (void)makePreset("Water→Air · 45°", 1.333, 1.0, 45.0, false);
+    presetRow->addStretch(1);
+    f->addLayout(presetRow);
 
     m_canvasStack = new QStackedWidget;
     m_canvas = new RefractionCanvas;
@@ -302,6 +339,25 @@ RefractionPage::RefractionPage(AppContext* ctx, QWidget* parent)
     m_canvasStack->addWidget(m_tirCanvas);
     m_diagram = new Panel("Ray diagram / two incidence cases", "LIVE · 1:1");
     m_diagram->body()->setContentsMargins(0, 0, 0, 0);
+    auto* refrHelpBtn = new QToolButton;
+    refrHelpBtn->setText("?");
+    refrHelpBtn->setFixedSize(24, 24);
+    refrHelpBtn->setToolTip("How to use — Refraction & TIR");
+    refrHelpBtn->setCursor(Qt::PointingHandCursor);
+    connect(refrHelpBtn, &QToolButton::clicked, this, [this] {
+        phy104::showHelpDialog(this, "How to use — Refraction & TIR",
+            "<h3>Refraction &amp; TIR</h3>"
+            "<p><b>n₁ / n₂:</b> refractive indices of the two media. Light bends toward the normal when entering a denser medium (n₂ &gt; n₁), away when entering a rarer medium (n₂ &lt; n₁).</p>"
+            "<p><b>θ₁:</b> angle of incidence measured from the surface normal, in degrees.</p>"
+            "<p><b>TIR mode:</b> total internal reflection occurs only when n₁ &gt; n₂ and θ₁ exceeds the critical angle θc = asin(n₂/n₁). The chart shows θ₂ vs θ₁ up to θc.</p>"
+            "<p><b>Chart:</b> regression of sin θ₂ vs sin θ₁ gives slope n₁/n₂. Error bars show 1σ uncertainty.</p>"
+            "<p>Try setting n₁=1.5, n₂=1.0, θ₁=50° to see total internal reflection.</p>");
+    });
+    auto* refrHelpBar = new QHBoxLayout;
+    refrHelpBar->setContentsMargins(0, 0, 0, 0);
+    refrHelpBar->addStretch(1);
+    refrHelpBar->addWidget(refrHelpBtn);
+    m_diagram->body()->addLayout(refrHelpBar);
     m_diagram->body()->addWidget(m_canvasStack);
     m_chart = new LineChart;
     m_chartPanel = new Panel("Regression analysis", "");
@@ -504,12 +560,21 @@ LensesPage::LensesPage(AppContext* ctx, QWidget* parent)
     m_radiusBlock = labeled("Radius of curvature · R = 2f", m_r);
     auto* f = controls->body();
     f->addWidget(m_mode);
+    m_mode->setToolTip("Thin lens: converging/diverging lens imaging.  Mirror: spherical concave/convex mirror imaging.");
     f->addWidget(typeBox);
+    m_type->setToolTip("Lens/mirror type sets the sign convention for f and R.");
     f->addWidget(labeled("Focal length · f", m_f));
+    m_f->setToolTip("Focal length in cm. Positive = converging lens / concave mirror, negative = diverging.");
     f->addWidget(m_radiusBlock);
+    m_r->setToolTip("Radius of curvature R = 2f in cm (mirror mode only).");
     f->addWidget(labeled("Object distance · dₒ", m_s));
+    m_s->setToolTip("Object distance from the optical element in cm (real-is-positive convention).");
     f->addWidget(labeled("Object height · hₒ", m_h));
+    m_h->setToolTip("Object height in cm. Sign indicates orientation (positive = upright).");
     f->addWidget(uncertaintyInputs({{"σ(f)", m_sigmaF}, {"σ(dₒ)", m_sigmaS}, {"σ(hₒ)", m_sigmaH}}));
+    m_sigmaF->setToolTip("Standard uncertainty (1σ) on focal length. Enter 0 to treat as exact.");
+    m_sigmaS->setToolTip("Standard uncertainty (1σ) on object distance. Enter 0 to treat as exact.");
+    m_sigmaH->setToolTip("Standard uncertainty (1σ) on object height. Enter 0 to treat as exact.");
     // ---- Preset scenarios (Item 19) ----
     auto* presetLabel = new QLabel("Presets:");
     presetLabel->setObjectName("fieldLabel");
@@ -549,6 +614,26 @@ LensesPage::LensesPage(AppContext* ctx, QWidget* parent)
     m_lens = new LensCanvas;
     m_lensPanel = new Panel("Thin lens / principal rays", "SCALE: cm");
     m_lensPanel->body()->setContentsMargins(0, 0, 0, 0);
+    auto* lensHelpBtn = new QToolButton;
+    lensHelpBtn->setText("?");
+    lensHelpBtn->setFixedSize(24, 24);
+    lensHelpBtn->setToolTip("How to use — Lenses & Mirrors");
+    lensHelpBtn->setCursor(Qt::PointingHandCursor);
+    connect(lensHelpBtn, &QToolButton::clicked, this, [this] {
+        phy104::showHelpDialog(this, "How to use — Lenses & Mirrors",
+            "<h3>Lenses &amp; Mirrors</h3>"
+            "<p><b>f:</b> focal length in cm. Positive = converging lens or concave mirror, negative = diverging.</p>"
+            "<p><b>dₒ:</b> object distance from the optical element in cm.</p>"
+            "<p><b>hₒ:</b> object height in cm.</p>"
+            "<p><b>Ray toggles:</b> show/hide the principal rays (parallel, focal, center).</p>"
+            "<p><b>Mirror mode:</b> shows a detailed concave mirror with R = 2f and image distance chart.</p>"
+            "<p>Presets cover dₒ &gt; 2f, dₒ = 2f, f &lt; dₒ &lt; 2f, dₒ = f, and dₒ &lt; f cases.</p>");
+    });
+    auto* lensHelpBar = new QHBoxLayout;
+    lensHelpBar->setContentsMargins(0, 0, 0, 0);
+    lensHelpBar->addStretch(1);
+    lensHelpBar->addWidget(lensHelpBtn);
+    m_lensPanel->body()->addLayout(lensHelpBar);
     // ---- Principal-ray toggles for lens canvas (Item 18) ----
     auto* lensRayBar = new QWidget;
     auto* lensRayLayout = new QHBoxLayout(lensRayBar);
@@ -823,13 +908,24 @@ PrismsPage::PrismsPage(AppContext* ctx, QWidget* parent)
     };
     auto* f = controls->body();
     f->addWidget(m_mode);
+    m_mode->setToolTip("Single ray: trace one ray through the prism.  Dispersion: show how different wavelengths bend differently.");
     f->addWidget(holder(m_materialLabel, m_material));
+    m_material->setToolTip("Prism material preset (uses Cauchy dispersion if available).");
     f->addWidget(holder(m_surroundLabel, m_surround));
+    m_surround->setToolTip("Surrounding medium preset (usually air).");
     f->addWidget(labeled("Apex angle · A", m_apex));
+    m_apex->setToolTip("Apex angle of the prism in degrees (typically 60° for equilateral).");
     f->addWidget(labeled("Incidence angle · i₁", m_incidence));
+    m_incidence->setToolTip("Angle of incidence on the first face, measured from the normal, in degrees.");
     f->addWidget(labeled("Wavelength · λ", m_lambda));
+    m_lambda->setToolTip("Wavelength in nm. Used for Cauchy dispersion (e.g. 589.3 nm sodium D line).");
     f->addWidget(uncertaintyInputs({{"σ(n prism)", m_sigmaNPrism}, {"σ(n medium)", m_sigmaNMedium},
                                     {"σ(A)", m_sigmaApex}, {"σ(i₁)", m_sigmaIncidence}, {"σ(λ)", m_sigmaLambda}}));
+    m_sigmaNPrism->setToolTip("Standard uncertainty (1σ) on prism index. Enter 0 to treat as exact.");
+    m_sigmaNMedium->setToolTip("Standard uncertainty (1σ) on medium index. Enter 0 to treat as exact.");
+    m_sigmaApex->setToolTip("Standard uncertainty (1σ) on apex angle. Enter 0 to treat as exact.");
+    m_sigmaIncidence->setToolTip("Standard uncertainty (1σ) on incidence angle. Enter 0 to treat as exact.");
+    m_sigmaLambda->setToolTip("Standard uncertainty (1σ) on wavelength. Enter 0 to treat as exact.");
     // ---- Preset scenario buttons (Item 19) ----
     auto* presetLabel = new QLabel("Presets:");
     presetLabel->setObjectName("fieldLabel");
@@ -880,6 +976,26 @@ PrismsPage::PrismsPage(AppContext* ctx, QWidget* parent)
     toggleLayout->addStretch();
     m_diagram = new Panel("Prism ray path", "SYMMETRIC PASSAGE");
     m_diagram->body()->setContentsMargins(0, 0, 0, 0);
+    auto* prismHelpBtn = new QToolButton;
+    prismHelpBtn->setText("?");
+    prismHelpBtn->setFixedSize(24, 24);
+    prismHelpBtn->setToolTip("How to use — Prisms");
+    prismHelpBtn->setCursor(Qt::PointingHandCursor);
+    connect(prismHelpBtn, &QToolButton::clicked, this, [this] {
+        phy104::showHelpDialog(this, "How to use — Prisms",
+            "<h3>Prisms</h3>"
+            "<p><b>A:</b> apex angle of the prism in degrees.</p>"
+            "<p><b>i₁:</b> angle of incidence on the first face from the normal, in degrees.</p>"
+            "<p><b>λ:</b> wavelength in nm (for dispersion calculations).</p>"
+            "<p><b>Minimum deviation:</b> click \"Set i → i_min\" to find the angle of minimum deviation, where the ray passes symmetrically through the prism.</p>"
+            "<p><b>Dispersion mode:</b> shows how different colours (wavelengths) separate due to wavelength-dependent refractive index.</p>"
+            "<p>Presets include equilateral crown (60°), minimum deviation finder, thin prism (10°), and high-index flint.</p>");
+    });
+    auto* prismHelpBar = new QHBoxLayout;
+    prismHelpBar->setContentsMargins(0, 0, 0, 0);
+    prismHelpBar->addStretch(1);
+    prismHelpBar->addWidget(prismHelpBtn);
+    m_diagram->body()->addLayout(prismHelpBar);
     m_diagram->body()->addWidget(toggleBar);
     m_diagram->body()->addWidget(m_canvas);
     m_chart = new LineChart;
@@ -1077,21 +1193,82 @@ WavePage::WavePage(AppContext* ctx, QWidget* parent)
     m_view = new ModeTabs({"Intensity", "Wavefronts"});
     auto* f = controls->body();
     f->addWidget(labeled("Source preset", m_source));
+    m_source->setToolTip("Choose a standard light source preset (wavelength), or Custom to enter λ manually.");
     f->addWidget(labeled("Wavelength · λ", m_lambda));
+    m_lambda->setToolTip("Wavelength of the light in nm (e.g. 532 nm for a green laser).");
     f->addWidget(labeled("Slit separation · d", m_d));
+    m_d->setToolTip("Distance between the two slits in mm. Fringe spacing ∝ λL/d.");
     f->addWidget(labeled("Screen distance · L", m_L));
+    m_L->setToolTip("Distance from the slits to the screen in m. Fringe spacing ∝ L.");
     f->addWidget(labeled("Fringe order · m", m_order));
+    m_order->setToolTip("Integer fringe order. Central maximum is m=0; maxima at mλ/d, minima at (m+½)λ/d.");
     f->addWidget(labeled("Slit width · a (envelope)", m_slitWidth));
+    m_slitWidth->setToolTip("Finite slit width in mm (0 = ideal slits). Creates a diffraction envelope that modulates the interference fringes.");
     f->addWidget(labeled("Intensity ratio I₂/I₁", m_intensityRatio));
+    m_intensityRatio->setToolTip("Relative intensity of the second slit compared to the first (1.0 = equal intensities).");
     f->addWidget(uncertaintyInputs({{"σ(λ)", m_sigmaLambda}, {"σ(d)", m_sigmaD}, {"σ(L)", m_sigmaL}}));
+    m_sigmaLambda->setToolTip("Standard uncertainty (1σ) on wavelength. Enter 0 to treat as exact.");
+    m_sigmaD->setToolTip("Standard uncertainty (1σ) on slit separation. Enter 0 to treat as exact.");
+    m_sigmaL->setToolTip("Standard uncertainty (1σ) on screen distance. Enter 0 to treat as exact.");
     f->addWidget(m_chkExact);
+    m_chkExact->setToolTip("Use the exact formula y = L·tan(asin(mλ/d)) instead of the small-angle approximation y ≈ L·mλ/d.");
     f->addWidget(m_chkEnvelope);
+    m_chkEnvelope->setToolTip("Show the single-slit diffraction envelope that modulates the double-slit interference pattern.");
     f->addWidget(m_view);
+    m_view->setToolTip("Intensity: show the screen intensity profile.  Wavefronts: show the Huygens wavefront schematic.");
     buildButtons(f, "Small angles: y ≈ Lθ. Ideal narrow slits.");
+
+    // ---- Preset scenarios ---
+    auto* presetLabel = new QLabel("Presets:");
+    presetLabel->setObjectName("fieldLabel");
+    f->addWidget(presetLabel);
+    auto* presetRow = new QHBoxLayout;
+    presetRow->setSpacing(4);
+    auto makePreset = [&](const QString& label, double lambda, double d, double L, double slitWidth) {
+        auto* b = new QPushButton(label);
+        b->setObjectName("presetBtn");
+        b->setCursor(Qt::PointingHandCursor);
+        b->setMinimumHeight(30);
+        connect(b, &QPushButton::clicked, this, [this, lambda, d, L, slitWidth] {
+            m_lambda->setValue(lambda, 1);
+            m_d->setValue(d, 3);
+            m_L->setValue(L, 3);
+            m_slitWidth->setValue(slitWidth, 4);
+            apply(false);
+        });
+        presetRow->addWidget(b);
+        return b;
+    };
+    (void)makePreset("Red laser · d=0.25mm", 650.0, 0.25, 1.5, 0.0);
+    (void)makePreset("Green laser · d=0.1mm", 532.0, 0.1, 2.0, 0.0);
+    (void)makePreset("With envelope · a=0.05mm", 532.0, 0.2, 1.5, 0.05);
+    presetRow->addStretch(1);
+    f->addLayout(presetRow);
 
     m_canvas = new WaveCanvas;
     m_diagram = new Panel("Wavefronts and interference pattern", "SCHEMATIC · NOT TO SCALE");
     m_diagram->body()->setContentsMargins(0, 0, 0, 0);
+    auto* waveHelpBtn = new QToolButton;
+    waveHelpBtn->setText("?");
+    waveHelpBtn->setFixedSize(24, 24);
+    waveHelpBtn->setToolTip("How to use — Wave Interference");
+    waveHelpBtn->setCursor(Qt::PointingHandCursor);
+    connect(waveHelpBtn, &QToolButton::clicked, this, [this] {
+        phy104::showHelpDialog(this, "How to use — Wave Interference",
+            "<h3>Wave Interference (Double-Slit)</h3>"
+            "<p><b>λ:</b> wavelength of light in nm.</p>"
+            "<p><b>d:</b> slit separation in mm. Fringe spacing on screen ≈ λL/d.</p>"
+            "<p><b>L:</b> screen distance in m.</p>"
+            "<p><b>m:</b> fringe order. Maxima at y = m·λL/d, minima at y = (m+½)·λL/d.</p>"
+            "<p><b>a (slit width):</b> finite width creates a diffraction envelope that modulates the fringes.</p>"
+            "<p><b>I₂/I₁:</b> intensity ratio between slits. Unequal intensities reduce fringe contrast.</p>"
+            "<p><b>Exact formula:</b> use y = L·tan(asin(mλ/d)) for large angles instead of the small-angle approximation.</p>");
+    });
+    auto* waveHelpBar = new QHBoxLayout;
+    waveHelpBar->setContentsMargins(0, 0, 0, 0);
+    waveHelpBar->addStretch(1);
+    waveHelpBar->addWidget(waveHelpBtn);
+    m_diagram->body()->addLayout(waveHelpBar);
     m_diagram->body()->addWidget(m_canvas);
     m_chart = new LineChart;
     m_chartPanel = new Panel("Screen intensity profile", "");

@@ -9,10 +9,13 @@
 
 #include <QComboBox>
 #include <QLabel>
+#include <QHBoxLayout>
 #include <QPushButton>
+#include <QSizePolicy>
 #include <QSignalBlocker>
 #include <QStringList>
 #include <QVBoxLayout>
+#include <QToolButton>
 #include <algorithm>
 #include <cmath>
 #include <utility>
@@ -53,6 +56,15 @@ ThickLensPage::ThickLensPage(AppContext* ctx, QWidget* parent)
     bind("n", m_n); bind("nMedium", m_nMedium); bind("r1", m_r1); bind("r2", m_r2);
     bind("t", m_thickness); bind("D", m_diameter); bind("do", m_object);
 
+    m_type->setToolTip("Element type sets the sign of both radii; magnitudes stay as typed.");
+    m_r1->setToolTip("First radius R₁ in cm. Positive = convex towards the incoming light.");
+    m_r2->setToolTip("Second radius R₂ in cm. Positive = convex towards the incoming light.");
+    m_n->setToolTip("Lens index n. Higher n = stronger power for the same radii.");
+    m_nMedium->setToolTip("Surrounding index n₀ (air ≈ 1.0). Power scales with (n − n₀).");
+    m_thickness->setToolTip("Centre thickness t in cm. Finite thickness shifts principal planes.");
+    m_diameter->setToolTip("Clear aperture D in cm. Limits the accepted beam / marginal rays.");
+    m_object->setToolTip("Object distance dₒ in cm, measured from the first vertex V₁.");
+
     auto* f = controls->body();
     f->addWidget(m_tabs);
     f->addWidget(typeBox);
@@ -65,9 +77,63 @@ ThickLensPage::ThickLensPage(AppContext* ctx, QWidget* parent)
     f->addWidget(labeled("Object distance · dₒ (from V₁)", m_object));
     buildButtons(f, "Signed radii: positive is convex towards the light. Power, principal planes and the third-order aberration.");
 
+    // ---- Preset scenarios (complete working setups) ----
+    auto* presetLabel = new QLabel("Presets:");
+    presetLabel->setObjectName("fieldLabel");
+    f->addWidget(presetLabel);
+    auto* presetRow = new QHBoxLayout;
+    presetRow->setSpacing(4);
+    auto makePreset = [&](const QString& label, int typeIdx, double n, double n0, double r1, double r2, double t, double D, double do_) {
+        auto* b = new QPushButton(label);
+        b->setObjectName("presetBtn");
+        b->setCursor(Qt::PointingHandCursor);
+        b->setMinimumHeight(30);
+        b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        connect(b, &QPushButton::clicked, this, [this, typeIdx, n, n0, r1, r2, t, D, do_] {
+            m_type->setCurrentIndex(typeIdx);
+            m_n->setValue(n, 4);
+            m_nMedium->setValue(n0, 4);
+            m_r1->setValue(r1, 2);
+            m_r2->setValue(r2, 2);
+            m_thickness->setValue(t, 2);
+            m_diameter->setValue(D, 2);
+            m_object->setValue(do_, 2);
+            onTypeChosen();          // apply the type's sign convention (flat surface = ∞ for plano)
+            apply(false);
+        });
+        presetRow->addWidget(b);
+        return b;
+    };
+    (void)makePreset("Biconvex · f≈10 cm", 0, 1.5, 1.0, +10.0, -10.0, 2.0, 5.0, 30.0);
+    (void)makePreset("Biconcave · diverging", 1, 1.5, 1.0, -10.0, +10.0, 2.0, 5.0, 30.0);
+    (void)makePreset("Plano-convex", 2, 1.5, 1.0, +10.0, 0.0, 2.0, 5.0, 30.0);
+    (void)makePreset("Magnifier · f≈5 cm", 0, 1.5, 1.0, +5.0, -5.0, 2.0, 5.0, 6.0);
+    presetRow->addStretch(1);
+    f->addLayout(presetRow);
+
     m_canvas = new ThickLensCanvas;
     m_diagram = new Panel("Thick element / principal planes", "SCALE: cm");
     m_diagram->body()->setContentsMargins(0, 0, 0, 0);
+    auto* thickLensHelpBtn = new QToolButton;
+    thickLensHelpBtn->setText("?");
+    thickLensHelpBtn->setFixedSize(24, 24);
+    thickLensHelpBtn->setToolTip("How to use — Thick Lens & Aberration");
+    thickLensHelpBtn->setCursor(Qt::PointingHandCursor);
+    connect(thickLensHelpBtn, &QToolButton::clicked, this, [this] {
+        phy104::showHelpDialog(this, "How to use — Thick Lens & Aberration",
+            "<h3>Thick Lens &amp; Aberration</h3>"
+            "<p><b>R₁ / R₂:</b> radii in cm. Positive = convex towards the incoming light (signed radii).</p>"
+            "<p><b>n / n₀:</b> lens and surrounding indices. Power scales with (n − n₀).</p>"
+            "<p><b>t:</b> centre thickness in cm; shifts the principal planes H₁, H₂.</p>"
+            "<p><b>D:</b> clear aperture in cm; limits accepted beam / marginal rays.</p>"
+            "<p><b>dₒ:</b> object distance from V₁. Chart shows image distance vs object distance.</p>"
+            "<p>Presets for biconvex / biconcave / plano-convex and a magnifier setup.</p>");
+    });
+    auto* thickLensHelpBar = new QHBoxLayout;
+    thickLensHelpBar->setContentsMargins(0, 0, 0, 0);
+    thickLensHelpBar->addStretch(1);
+    thickLensHelpBar->addWidget(thickLensHelpBtn);
+    m_diagram->body()->addLayout(thickLensHelpBar);
     m_diagram->body()->addWidget(m_canvas);
     m_chart = new LineChart;
     m_chartPanel = new Panel("Image distance vs object distance", "");
