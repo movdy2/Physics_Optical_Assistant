@@ -3,6 +3,7 @@
 #include "WaveExperiments.h"
 
 class QSlider;
+class QTimer;
 
 namespace phy104 {
 
@@ -28,8 +29,11 @@ protected:
     virtual void resetFields() = 0;
     virtual QString runDescription() const = 0;
 
+    /// Calculate and repaint, with optional slider debounce (default: immediate).
     void apply(bool record) override;
     void reset() override;
+    /// Debounced apply: coalesces rapid slider valueChanged calls into a single apply after 16 ms.
+    Q_SLOT void debounceApply();
 
     QVBoxLayout* m_fieldLayout = nullptr;
     ModeTabs* m_tabs = nullptr;
@@ -42,6 +46,7 @@ private:
     NoticeCard *m_interpretation, *m_guard;
     QString m_diagramTitle;
     QList<QWidget*> m_pending;                 // controls added before build()
+    QTimer* m_debounceTimer = nullptr;         // 16 ms slider debounce
 };
 
 class NewtonRingsPage : public ModelPage {
