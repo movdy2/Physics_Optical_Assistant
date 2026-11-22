@@ -132,4 +132,7 @@ QWidget* labeled(const QString& label, QWidget* field);
 /// Removes and deletes every child item of a layout.
 void clearLayout(QLayout* layout);
 
+/// Show a modal "How to use" help dialog with rich-text content.
+void showHelpDialog(QWidget* parent, const QString& title, const QString& html);
+
 } // namespace phy104

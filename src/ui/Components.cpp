@@ -5,6 +5,7 @@
 #include "ThemeManager.h"
 
 #include <QButtonGroup>
+#include <QDialog>
 #include <QEvent>
 #include <QHBoxLayout>
 #include <QKeyEvent>
@@ -12,8 +13,10 @@
 #include <QLineEdit>
 #include <QGridLayout>
 #include <QLocale>
+#include <QTextBrowser>
 #include <QTimer>
 #include <QToolButton>
+#include <QVBoxLayout>
 #include <QWheelEvent>
 #include <QDebug>
 #include <QApplication>
@@ -437,6 +440,24 @@ CalculatorKeypad::CalculatorKeypad(QWidget* parent) : QWidget(parent) {
         }
     }
     for (int c = 0; c < 6; ++c) grid->setColumnStretch(c, 1);
+}
+
+void showHelpDialog(QWidget* parent, const QString& title, const QString& html) {
+    auto* dlg = new QDialog(parent);
+    dlg->setWindowTitle(title);
+    dlg->setMinimumSize(520, 400);
+    auto* lay = new QVBoxLayout(dlg);
+    auto* browser = new QTextBrowser;
+    browser->setOpenExternalLinks(false);
+    browser->setHtml(html);
+    lay->addWidget(browser, 1);
+    auto* btn = new QPushButton("Got it");
+    btn->setObjectName("primary");
+    btn->setDefault(true);
+    connect(btn, &QPushButton::clicked, dlg, &QDialog::accept);
+    lay->addWidget(btn, 0, Qt::AlignRight);
+    dlg->exec();
+    dlg->deleteLater();
 }
 
 } // namespace phy104
