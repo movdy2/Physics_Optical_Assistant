@@ -1037,11 +1037,11 @@ void SingleSlitCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     const Theme& t = th();
     const double aa = m_in.widthMm * 1e-3, lam = m_in.lambdaNm * 1e-9;
     const double s1 = std::min(1.0, lam / aa), theta = std::asin(s1);
-    text(p, QPointF(14, a.top() + 18), QString(" ") + num(m_in.widthMm, 4) + " mm", t.amber, 10);
+    text(p, QPointF(14, a.top() + 24), QString(" ") + num(m_in.widthMm, 4) + " mm", t.amber, 10);
     const QPointF g(a.left() + a.width() * 0.26, a.top() + a.height() * 0.50);
     const double sx = a.right() - 110, gap = 18;
     for (int k = -2; k <= 2; ++k) ray(p, QPointF(a.left() + 20, g.y() + k * 14), QPointF(g.x() - 8, g.y() + k * 14), t.sage, 1.3, -1);
-    p.setPen(QPen(t.text, 4)); p.drawLine(QPointF(g.x(), a.top() + 40), QPointF(g.x(), g.y() - gap / 2)); p.drawLine(QPointF(g.x(), g.y() + gap / 2), QPointF(g.x(), a.bottom() - 40));
+    p.setPen(QPen(t.text, 1.5, Qt::DashLine)); p.drawLine(QPointF(g.x(), a.top() + 40), QPointF(g.x(), g.y() - gap / 2)); p.drawLine(QPointF(g.x(), g.y() + gap / 2), QPointF(g.x(), a.bottom() - 40));
     p.setPen(QPen(t.sage, 2)); p.drawLine(QPointF(sx, a.top() + 40), QPointF(sx, a.bottom() - 40));
     const double yEdge = std::min((a.height() - 90) / 2.0, (sx - g.x()) * std::tan(theta));
     QColor lobe = t.amber; lobe.setAlpha(35);
@@ -1070,20 +1070,32 @@ void SingleSlitCanvas::paintDiagram(QPainter& p, const QRectF& a) {
             p.drawLine(QPointF(sx - 5, g.y() - yl), QPointF(sx + 5, g.y() - yl));    // tick on the screen
             p.drawLine(QPointF(sx - 5, g.y() + yl), QPointF(sx + 5, g.y() + yl));
         }
-        text(p, QPointF(14, a.bottom() - 30),
-             QString("±") + num(m_in.screenM * std::tan(std::asin(std::min(1.0, lam / aa))) * 1e3, 4) + " mm · y₂ = ±"
-                 + num(m_in.screenM * std::tan(std::asin(std::min(1.0, 2 * lam / aa))) * 1e3, 4) + " mm", t.muted, 10);
-        text(p, QPointF(14, a.bottom() - 14),
-             QString("±") + num(m_in.screenM * std::tan(std::asin(std::min(1.0, 3 * lam / aa))) * 1e3, 4)
-                 + QString(" ") + num(m_in.exactGeometry ? 2 * m_in.screenM * std::tan(theta) * 1e3 :
-                    2 * m_in.screenM * (m_in.lambdaNm * 1e-9 / (m_in.widthMm * 1e-3)) * 1e3, 5)
-                 + " mm (central lobe)", t.muted, 10);
+        // Overlay box at bottom-left for geometry readouts
+        {
+            QColor bg = t.surface; bg.setAlpha(200);
+            p.setPen(Qt::NoPen); p.setBrush(bg);
+            p.drawRoundedRect(QRectF(a.left() + 8, a.bottom() - 60, a.width() * 0.42, 46), 4, 4);
+            text(p, QPointF(a.left() + 16, a.bottom() - 44),
+                 QString("±") + num(m_in.screenM * std::tan(std::asin(std::min(1.0, lam / aa))) * 1e3, 4) + " mm · y₂ = ±"
+                     + num(m_in.screenM * std::tan(std::asin(std::min(1.0, 2 * lam / aa))) * 1e3, 4) + " mm", t.text, 10);
+            text(p, QPointF(a.left() + 16, a.bottom() - 28),
+                 QString("±") + num(m_in.screenM * std::tan(std::asin(std::min(1.0, 3 * lam / aa))) * 1e3, 4)
+                     + QString(" ") + num(m_in.exactGeometry ? 2 * m_in.screenM * std::tan(theta) * 1e3 :
+                        2 * m_in.screenM * (m_in.lambdaNm * 1e-9 / (m_in.widthMm * 1e-3)) * 1e3, 5)
+                     + " mm (central lobe)", t.text, 10);
+        }
     } else {
         const double wExact = 2 * m_in.screenM * std::tan(theta) * 1e3;
         const double wApprox = 2 * m_in.screenM * (m_in.lambdaNm * 1e-9 / (m_in.widthMm * 1e-3)) * 1e3;
         const double wDisp = m_in.exactGeometry ? wExact : wApprox;
-        text(p, QPointF(14, a.bottom() - 30), QString("w = ") + (m_in.exactGeometry ? "2L tan θ₁" : "≈ 2L λ/a") + QString(" ") + num(wDisp, 5) + " mm", t.muted, 10);
-        text(p, QPointF(14, a.bottom() - 14), "Minima: a sin θ = mλ", t.muted, 10);
+        // Overlay box at bottom-left for intensity readouts
+        {
+            QColor bg = t.surface; bg.setAlpha(200);
+            p.setPen(Qt::NoPen); p.setBrush(bg);
+            p.drawRoundedRect(QRectF(a.left() + 8, a.bottom() - 44, a.width() * 0.42, 30), 4, 4);
+            text(p, QPointF(a.left() + 16, a.bottom() - 30), QString("w = ") + (m_in.exactGeometry ? "2L tan θ₁" : "≈ 2L λ/a") + QString(" ") + num(wDisp, 5) + " mm", t.text, 10);
+            text(p, QPointF(a.left() + 16, a.bottom() - 14), "Minima: a sin θ = mλ", t.text, 10);
+        }
     }
 }
 
