@@ -13,6 +13,8 @@
 
 namespace phy104 {
 
+QString q(const std::string& s) { return QString::fromStdString(s); }
+
 // ============================================================================ ExperimentBase (shared)
 ExperimentBase::ExperimentBase(const QString& title, const QString& subtitle, const QString& experiment,
                                AppContext* ctx, QWidget* parent)
