@@ -595,7 +595,7 @@ SingleSlitPage::SingleSlitPage(AppContext* ctx, QWidget* parent)
         auto* b = new QPushButton(label);
         b->setObjectName("presetBtn");
         b->setCursor(Qt::PointingHandCursor);
-        b->setMinimumHeight(30);
+        b->setMinimumHeight(32);
         b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         connect(b, &QPushButton::clicked, this, [this, width, lambda, screen, tabIdx] {
             m_syncing = true;
@@ -606,13 +606,12 @@ SingleSlitPage::SingleSlitPage(AppContext* ctx, QWidget* parent)
             m_syncing = false;
             apply(false);
         });
-        presetRow->addWidget(b);
+        presetRow->addWidget(b, 1);
         return b;
     };
-    m_presetStandard = makePreset("a=0.1mm · λ=500", 0.1, 500.0, 1.0, 0);
-    m_presetGeometry = makePreset("Geometry tab", 0.1, 500.0, 1.0, 1);
-    m_presetEnvelope = makePreset("Envelope tab", 0.1, 500.0, 1.0, 2);
-    presetRow->addStretch(1);
+    m_presetStandard = makePreset("a = 0.1 mm", 0.1, 500.0, 1.0, 0);
+    m_presetGeometry = makePreset("Geometry", 0.1, 500.0, 1.0, 1);
+    m_presetEnvelope = makePreset("Envelope", 0.1, 500.0, 1.0, 2);
     m_fieldLayout->addLayout(presetRow);
     // Item 11: real-time updates are built into addField() (edited → apply(false))
     m_wave = addCombo("Incident wave", {"Plane · coherent"}, {0});
