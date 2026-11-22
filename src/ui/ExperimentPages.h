@@ -1,9 +1,5 @@
 #pragma once
-#include "BasePage.h"
-#include "ExperimentReports.h"
-
-#include <QList>
-#include <vector>
+#include "ExperimentBase.h"
 
 class QCheckBox;
 class QComboBox;
@@ -13,6 +9,7 @@ class QStackedWidget;
 
 namespace phy104 {
 
+class AppContext;
 class RegisterView;
 class LensCanvas;
 class LineChart;
@@ -26,47 +23,15 @@ class TirCanvas;
 class UnitField;
 class WaveCanvas;
 
-/// Shared behaviour of the four experiment screens: bound input fields, inline errors, the
-/// "paused" pattern (Calculate disabled, Restore button, last valid result retained), panel meta text.
-class ExperimentPage : public BasePage {
+/// Thin forwarding layer kept for ReportPage compatibility (QList<ExperimentPage*>).
+/// All shared experiment logic lives in ExperimentBase; ExperimentPage adds nothing
+/// beyond the constructor and remains abstract (apply()/reset() are pure virtual).
+class ExperimentPage : public ExperimentBase {
     Q_OBJECT
 public:
-    /// The experiment name the session uses ("Thin-Film Interference", "Refraction & TIR", ...).
-    QString experimentName() const { return m_experiment; }
-    /// The live diagram canvas and chart, captured into the printable report.
-    QWidget* diagramCanvas() const;
-    QWidget* chartWidget() const;
-
-protected:
-    ExperimentPage(const QString& title, const QString& subtitle, const QString& experiment, AppContext* context, QWidget* parent);
-
-    struct Binding { QString id; UnitField* field; double lastValid = 0; bool hasValid = false; };
-    void bind(const QString& id, UnitField* field);
-    bool readFields();                          // parses all bound fields; marks bad ones; false on failure
-    void captureValid();                        // remembers the current field values as "last valid"
-    void applyIssues(const Report& report);     // inline errors, buttons, status bar, engine light
-    void showRegisters(RegisterView* first, RegisterView* second, const Report& report);
-    ReportContext reportContext() const;
-    QString lastRunLabel() const;               // "RUN 021" for this experiment, or ""
-    void setPanels(Panel* diagram, Panel* chart, Panel* results, const QString& diagramMeta, const QString& chartMeta);
-    void refreshMetas(bool paused);
-    void buildButtons(QVBoxLayout* fields, const QString& hint);                         // Calculate + Send to Notes / Reset / Restore + hint
-    void sendToNotes();                                            // appends the last valid result to the session notes
-    void setNormalHint(const QString& text);
-    virtual void apply(bool record) = 0;
-    virtual void reset() = 0;
-
-    QString m_experiment;
-    std::vector<Binding> m_bindings;
-    Report m_last;
-    bool m_haveLast = false;
-    QPushButton *m_calc = nullptr, *m_reset = nullptr, *m_restore = nullptr;
-    QLabel* m_hint = nullptr;
-
-private:
-    Binding* find(const QString& id);
-    Panel *m_diagramPanel = nullptr, *m_chartPanel = nullptr, *m_resultsPanel = nullptr;
-    QString m_diagramMeta, m_chartMeta, m_hintText;
+    ExperimentPage(const QString& title, const QString& subtitle, const QString& experiment,
+                   AppContext* context, QWidget* parent = nullptr)
+        : ExperimentBase(title, subtitle, experiment, context, parent) {}
 };
 
 /// Experiment 01: Snell's law (two cases) and the single-case total internal reflection screen.
