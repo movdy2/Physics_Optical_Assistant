@@ -31,8 +31,8 @@ struct Theme {
     QColor lime;        // valid / success
     QColor error, errorBg;
 
-    // older names still used by the SVG diagrams, LaTeX and formula cards
-    QColor yellow, green, red, orange, blue, aqua;
+    // older names still used by the SVG diagrams, LaTeX, Plots and OpticsCanvases
+    QColor yellow, green, red, orange, blue, aqua, amber, sage;
 
     // Casio-style LCD colours
     QColor lcdBg, lcdText, lcdFrame, lcdDivider;
@@ -75,7 +75,7 @@ public:
     static bool storedDarkTheme();
 
 signals:
-    void themeChanged():
+    void themeChanged();
 
 private:
     ThemeManager() = default;
