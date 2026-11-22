@@ -1,8 +1,7 @@
 /* ============================================================
-   PHY104 Optical Assistant — Qt6 Theme Style Sheet
-   Tokens replaced at runtime by ThemeManager::apply()
-   Tokens: @bg@ @surface@ @surfaceHover@ @border@ @text@ @muted@ @dim@
-           @accentCyan@ @accentAmber@ @accentTeal@ @error@ @success@
+   PHY104 Optical Assistant — Compact Responsive QSS
+   Optimized for 1280×800 and 1920×1080. Zero text clipping.
+   Tokens replaced at runtime by ThemeManager.
    ============================================================ */
 
 /* ---------- Application Root ---------- */
@@ -10,7 +9,7 @@ QMainWindow, QWidget#pageArea, QWidget {
     background: @bg@;
     color: @text@;
     font-family: 'Inter', 'Noto Sans Arabic', 'DejaVu Sans', 'Segoe UI', 'Arial';
-    font-size: 13px;
+    font-size: 12px;
     selection-background-color: @accentCyan@;
     selection-color: @bg@;
 }
@@ -20,8 +19,8 @@ QToolTip {
     color: @text@;
     border: 1px solid @border@;
     border-radius: 6px;
-    padding: 6px 10px;
-    font-size: 12px;
+    padding: 5px 9px;
+    font-size: 11px;
 }
 
 /* ---------- Sidebar ---------- */
@@ -32,15 +31,15 @@ QFrame#sidebar {
 
 QPushButton#navItem {
     text-align: left;
-    padding: 10px 16px;
+    padding: 6px 12px;
     border: none;
     border-left: 3px solid transparent;
     border-radius: 0;
     background: transparent;
     color: @muted@;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
-    min-height: 44px;
+    min-height: 34px;
 }
 
 QPushButton#navItem:hover {
@@ -60,31 +59,31 @@ QLabel#navSection {
     font-family: 'JetBrains Mono';
     font-size: 9px;
     color: @dim@;
-    padding: 10px 14px 2px 14px;
+    padding: 8px 12px 2px 12px;
 }
 
 /* ---------- Page Header ---------- */
 QLabel#pageTitle {
-    font-size: 26px;
+    font-size: 22px;
     font-weight: 700;
     color: @text@;
     padding-bottom: 4px;
 }
 
 QLabel#pageSubtitle {
-    font-size: 13px;
+    font-size: 12px;
     color: @muted@;
-    padding-bottom: 16px;
+    padding-bottom: 12px;
 }
 
 QLabel#sectionTitle {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 700;
     color: @accentAmber@;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding-top: 16px;
-    padding-bottom: 8px;
+    letter-spacing: 0.4px;
+    padding-top: 10px;
+    padding-bottom: 6px;
 }
 
 QLabel#muted { color: @muted@; }
@@ -96,15 +95,15 @@ QLabel#caption {
 QLabel#colourSwatch {
     border: 1px solid @border@;
     border-radius: 4px;
-    min-height: 30px;
+    min-height: 28px;
 }
 
-/* ---------- Panels / Cards ---------- */
+/* ---------- Panels / Cards (compact) ---------- */
 QFrame#panel {
     background: @surface@;
     border: 1px solid @border@;
-    border-radius: 10px;
-    padding: 16px;
+    border-radius: 8px;
+    padding: 8px;
 }
 
 QFrame#panel[hover="true"] {
@@ -113,27 +112,27 @@ QFrame#panel[hover="true"] {
 }
 
 QLabel#panelTitle {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
     color: @text@;
 }
 
 QLabel#panelMeta {
     font-family: 'JetBrains Mono';
-    font-size: 11px;
+    font-size: 10px;
     color: @dim@;
 }
 
-/* ---------- Field Labels & Inputs ---------- */
+/* ---------- Field Labels & Inputs (compact) ---------- */
 QLabel#fieldLabel {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
     color: @muted@;
-    padding-bottom: 4px;
+    padding-bottom: 3px;
 }
 
 QLabel#hint {
-    font-size: 11px;
+    font-size: 10px;
     color: @dim@;
 }
 
@@ -141,16 +140,17 @@ QLineEdit {
     background: @surface@;
     color: @text@;
     border: 1px solid @border@;
-    border-radius: 8px;
-    padding: 10px 14px;
+    border-radius: 6px;
+    padding: 6px 10px;
     font-family: 'JetBrains Mono';
-    font-size: 13px;
-    min-height: 42px;
+    font-size: 12px;
+    min-height: 32px;
 }
 
 QLineEdit:focus {
     border: 2px solid @accentCyan@;
     background: @surfaceHover@;
+    padding: 5px 9px;
 }
 
 QLineEdit[error="true"] {
@@ -159,51 +159,55 @@ QLineEdit[error="true"] {
 
 QLineEdit[error="true"]:focus {
     border: 2px solid @error@;
+    padding: 5px 9px;
 }
 
 QLabel#unit {
     font-family: 'JetBrains Mono';
-    font-size: 12px;
+    font-size: 11px;
     color: @dim@;
-    padding: 0 8px;
+    padding: 0 6px;
     background: transparent;
     border: none;
 }
 
 QLabel#fieldError {
     color: @error@;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
-    padding-top: 4px;
+    padding-top: 3px;
 }
 
-/* ---------- ComboBoxes ---------- */
+/* ---------- ComboBoxes (compact) ---------- */
 QComboBox {
     background: @surface@;
     color: @text@;
     border: 1px solid @border@;
-    border-radius: 8px;
-    padding: 10px 14px;
-    min-height: 42px;
-    min-width: 150px;
+    border-radius: 6px;
+    padding: 6px 10px;
+    min-height: 32px;
+    min-width: 130px;
     font-family: 'JetBrains Mono';
-    font-size: 13px;
+    font-size: 12px;
+    selection-background-color: @accentCyan@;
+    selection-color: @bg@;
 }
 
 QComboBox:focus {
     border: 2px solid @accentCyan@;
     background: @surfaceHover@;
+    padding: 5px 9px;
 }
 
 QComboBox::drop-down {
     border: none;
-    width: 30px;
+    width: 24px;
 }
 
 QComboBox::down-arrow {
     image: url(:/icons/chevron-down.svg);
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
 }
 
 QComboBox QAbstractItemView {
@@ -213,13 +217,13 @@ QComboBox QAbstractItemView {
     selection-background-color: @accentCyan@;
     selection-color: @bg@;
     outline: 0;
-    padding: 6px;
-    min-width: 150px;
+    padding: 5px;
+    min-width: 130px;
 }
 
 QComboBox QAbstractItemView::item {
-    padding: 10px 14px;
-    border-radius: 6px;
+    padding: 8px 12px;
+    border-radius: 5px;
     margin: 2px;
 }
 
@@ -228,16 +232,16 @@ QComboBox QAbstractItemView::item:selected {
     color: @bg@;
 }
 
-/* ---------- Buttons ---------- */
+/* ---------- Buttons (compact, no clipping) ---------- */
 QPushButton {
     background: @surface@;
     color: @text@;
     border: 1px solid @border@;
-    border-radius: 8px;
-    padding: 10px 20px;
-    font-size: 13px;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 12px;
     font-weight: 600;
-    min-height: 44px;
+    min-height: 34px;
 }
 
 QPushButton:hover {
@@ -260,9 +264,9 @@ QPushButton#primary {
     color: @bg@;
     border: none;
     font-weight: 700;
-    font-size: 14px;
-    min-height: 48px;
-    padding: 0 24px;
+    font-size: 13px;
+    min-height: 38px;
+    padding: 0 16px;
 }
 
 QPushButton#primary:hover {
@@ -278,248 +282,4 @@ QPushButton#secondary {
     color: @text@;
     border: 1px solid @border@;
     font-weight: 600;
-    font-size: 13px;
-    min-height: 44px;
-    padding: 0 20px;
-}
-
-QPushButton#secondary:hover {
-    border-color: @accentCyan@;
-    background: @surfaceHover@;
-}
-
-QPushButton#outlineAmber, QPushButton#sendToNotes {
-    background: transparent;
-    color: @accentAmber@;
-    border: 1px solid @accentAmber@;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 13px;
-    min-height: 44px;
-    padding: 0 20px;
-}
-
-QPushButton#outlineAmber:hover, QPushButton#sendToNotes:hover {
-    background: rgba(251, 191, 36, 12);
-}
-
-QPushButton#presetBtn {
-    background: @surface@;
-    color: @text@;
-    border: 1px solid @border@;
-    border-radius: 8px;
-    padding: 8px 14px;
-    font-size: 12px;
-    font-weight: 600;
-    min-width: 75px;
-    min-height: 34px;
-    text-align: center;
-}
-
-QPushButton#presetBtn:hover {
-    border-color: @accentAmber@;
-    background: @surfaceHover@;
-}
-
-QPushButton#presetBtn:pressed {
-    background: @bg@;
-}
-
-/* ---------- Mode Tabs ---------- */
-QPushButton#modeTab {
-    background: @surfaceHover@;
-    color: @text@;
-    border: 1px solid @border@;
-    border-radius: 8px;
-    min-height: 34px;
-    font-size: 13px;
-    font-weight: 500;
-    padding: 0 16px;
-}
-
-QPushButton#modeTab:hover {
-    border-color: @accentCyan@;
-    color: @accentCyan@;
-}
-
-QPushButton#modeTab:checked {
-    background: @accentCyan@;
-    color: @bg@;
-    border: none;
-    font-weight: 600;
-}
-
-/* ---------- Checkboxes ---------- */
-QCheckBox {
-    color: @text@;
-    spacing: 10px;
-    font-size: 13px;
-}
-
-QCheckBox::indicator {
-    width: 20px;
-    height: 20px;
-    border: 2px solid @border@;
-    border-radius: 5px;
-    background: @surface@;
-}
-
-QCheckBox::indicator:checked {
-    background: @accentCyan@;
-    border-color: @accentCyan@;
-    image: url(:/icons/check.svg);
-}
-
-QCheckBox::indicator:hover {
-    border-color: @accentCyan@;
-}
-
-/* ---------- Sliders ---------- */
-QSlider::groove:horizontal {
-    height: 8px;
-    background: @border@;
-    border-radius: 4px;
-}
-
-QSlider::sub-page:horizontal {
-    background: @accentCyan@;
-    border-radius: 4px;
-}
-
-QSlider::handle:horizontal {
-    background: @accentCyan@;
-    width: 20px;
-    height: 20px;
-    margin: -7px 0;
-    border-radius: 10px;
-    border: 2px solid @bg@;
-}
-
-QSlider::handle:horizontal:hover {
-    width: 22px;
-    height: 22px;
-    margin: -8px 0;
-    border-radius: 11px;
-}
-
-/* ---------- Calculation Register / LCD ---------- */
-QFrame#register {
-    background: @surface@;
-    border: 1px solid @border@;
-    border-radius: 10px;
-}
-
-QLabel#regBig {
-    font-family: 'JetBrains Mono';
-    font-size: 20px;
-    font-weight: 700;
-    color: @accentAmber@;
-}
-
-QLabel#regLine {
-    font-family: 'JetBrains Mono';
-    font-size: 12px;
-    color: @muted@;
-    line-height: 1.6;
-}
-
-QLabel#regCaption {
-    font-family: 'JetBrains Mono';
-    font-size: 9px;
-    color: @dim@;
-}
-
-QLabel#regFoot {
-    font-family: 'JetBrains Mono';
-    font-size: 9px;
-    color: @dim@;
-}
-
-/* ---------- Notices ---------- */
-QFrame#notice {
-    background: @surface@;
-    border: 1px solid @border@;
-    border-radius: 8px;
-    padding: 12px 16px;
-}
-
-QFrame#notice[error="true"] {
-    background: rgba(248, 113, 113, 8);
-    border: 1px solid @error@;
-}
-
-QLabel#noticeTitle {
-    font-size: 13px;
-    font-weight: 700;
-    color: @accentAmber@;
-}
-
-QFrame#notice[error="true"] QLabel#noticeTitle {
-    color: @error@;
-}
-
-QLabel#noticeBody {
-    font-size: 12px;
-    color: @muted@;
-    line-height: 1.5;
-}
-
-/* ---------- Scrollbars ---------- */
-QScrollArea {
-    background: transparent;
-    border: none;
-}
-
-QScrollBar:vertical {
-    background: transparent;
-    width: 10px;
-    margin: 0;
-}
-
-QScrollBar::handle:vertical {
-    background: @dim@;
-    border-radius: 5px;
-    min-height: 30px;
-}
-
-QScrollBar::handle:vertical:hover {
-    background: @muted@;
-}
-
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-    height: 0;
-}
-
-QScrollBar:horizontal {
-    background: transparent;
-    height: 10px;
-    margin: 0;
-}
-
-QScrollBar::handle:horizontal {
-    background: @dim@;
-    border-radius: 5px;
-    min-width: 28px;
-}
-
-QScrollBar::handle:horizontal:hover {
-    background: @muted@;
-}
-
-QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
-    width: 0;
-}
-
-/* ---------- Status Bar ---------- */
-QStatusBar {
-    background: @surface@;
-    color: @dim@;
-    border-top: 1px solid @border@;
-    font-size: 12px;
-}
-
-/* ---------- RTL Support Hook ---------- */
-/* When Arabic is active, ThemeManager sets app->setLayoutDirection(Qt::RightToLeft).
-   Numeric inputs and formula widgets must FORCE LTR:
-     widget->setLayoutDirection(Qt::LeftToRight);
-*/
+    
