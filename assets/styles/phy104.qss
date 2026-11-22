@@ -128,7 +128,7 @@ QLabel#fieldLabel {
     font-size: 11px;
     font-weight: 700;
     color: @muted@;
-    padding-bottom: 3px;
+    padding-bottom: 4px;
 }
 
 QLabel#hint {
@@ -264,8 +264,8 @@ QPushButton#primary {
     color: @bg@;
     border: none;
     font-weight: 700;
-    font-size: 13px;
-    min-height: 38px;
+    font-size: 12px;
+    min-height: 40px;
     padding: 0 16px;
 }
 
@@ -312,11 +312,10 @@ QPushButton#presetBtn {
     color: @text@;
     border: 1px solid @border@;
     border-radius: 6px;
-    padding: 4px 8px;
+    padding: 6px 10px;
     font-size: 11px;
     font-weight: 600;
-    min-width: 60px;
-    min-height: 28px;
+    min-height: 32px;
     text-align: center;
 }
 
@@ -411,13 +410,16 @@ QLabel#regBig {
     font-size: 18px;
     font-weight: 700;
     color: @accentAmber@;
+    padding-top: 2px;
+    padding-bottom: 2px;
 }
 
 QLabel#regLine {
     font-family: 'JetBrains Mono';
     font-size: 11px;
     color: @muted@;
-    line-height: 1.5;
+    line-height: 1.6;
+    padding-bottom: 1px;
 }
 
 QLabel#regCaption {

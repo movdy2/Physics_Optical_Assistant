@@ -187,8 +187,8 @@ void ExperimentPage::buildButtons(QVBoxLayout* fields, const QString& hint) {
     send->setMinimumHeight(34);
     send->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     send->setToolTip("Append the latest valid result to session Notes.");
-    m_calc->setText("Calculate &&\nSimulate");
-    m_calc->setMinimumHeight(34);
+    m_calc->setText("Calculate && Simulate");
+    m_calc->setMinimumHeight(40);
     m_calc->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     auto* row = new QHBoxLayout;
     row->setSpacing(6);
