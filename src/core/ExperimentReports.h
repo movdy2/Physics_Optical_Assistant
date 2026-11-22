@@ -11,7 +11,7 @@ namespace phy104 {
 /// One Casio-style calculation register.
 struct LcdRegister {
     std::string title = "CALCULATION REGISTER";
-    std::string mode = "DEG";           // shown as "● DEG" (or "● OK")
+    std::string mode = "";              // shown as "● <mode>" (or "● OK"); empty = no unit tag
     bool resultFirst = false;           // big value right under the title (error code registers)
     std::vector<std::string> lines;
     std::string resultLabel;            // small caption above the big value ("" = none)

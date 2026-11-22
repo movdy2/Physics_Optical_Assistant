@@ -26,7 +26,7 @@ ModelPage::ModelPage(const QString& title, const QString& subtitle, const QStrin
     : ExperimentPage(title, subtitle, experiment, ctx, parent) {
     useSaveExportHeader();
     m_controls = new Panel("Experiment controls");
-    m_controls->body()->setSpacing(10);
+    m_controls->body()->setSpacing(12);
     m_fieldLayout = m_controls->body();
 }
 
@@ -287,7 +287,7 @@ MichelsonPage::MichelsonPage(AppContext* ctx, QWidget* parent)
         auto* b = new QPushButton(label);
         b->setObjectName("presetBtn");
         b->setCursor(Qt::PointingHandCursor);
-        b->setMinimumHeight(30);
+        b->setMinimumHeight(32);
         b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         connect(b, &QPushButton::clicked, this, [this, lambda, dxUm, nIdx, fringes] {
             m_syncing = true;
@@ -298,14 +298,13 @@ MichelsonPage::MichelsonPage(AppContext* ctx, QWidget* parent)
             m_syncing = false;
             apply(false);
         });
-        presetRow->addWidget(b);
+        presetRow->addWidget(b, 1);
         return b;
     };
     m_presetAir = makePreset("Air · Δx 0.75", 632.8, 0.75, 0, false);
     m_presetCrown = makePreset("Crown · Δx 0.75", 632.8, 0.75, 1, false);
     m_presetFlint = makePreset("Flint · Δx 0.75", 632.8, 0.75, 2, false);
     m_presetFringes = makePreset("Fringes tab", 632.8, 0.75, 0, true);
-    presetRow->addStretch(1);
     m_fieldLayout->addLayout(presetRow);
     m_canvas = new MichelsonCanvas;
     m_canvas->setObjectName("michelsonCanvas");

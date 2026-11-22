@@ -760,7 +760,7 @@ void MichelsonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     const double dphi = 4 * std::numbers::pi * m_in.n * dxUm * 1e3 / m_in.lambdaNm;
     const double intensity = (1 + vis * std::cos(dphi)) / (1 + vis);
 
-    text(p, QPointF(a.left() + 14, a.top() + 18), "MICHELSON · TOP VIEW", t.amber, 10);
+    text(p, QPointF(a.left() + 14, a.top() + 18), "MICHELSON · TOP VIEW", t.amber, 11);
 
     // The arm medium occupies both paths conceptually; ΔOPD = 2nΔx for the movable M2 arm.
     if (m_in.n > 1.0001) {
@@ -846,28 +846,16 @@ void MichelsonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     const double mirrorHalfW = dragging ? 26.0 : 22.0;
     p.setPen(QPen(t.amber, dragging ? 4.0 : 3.0, Qt::SolidLine, Qt::RoundCap));
     p.drawLine(QPointF(m2x - mirrorHalfW, bs.y()), QPointF(m2x + mirrorHalfW, bs.y()));
-    text(p, QPointF(bs.x() - 30, m1.y()), "M1 · fixed", t.muted, 9, Qt::AlignRight);
-    text(p, QPointF(m2x + 30, bs.y() - 5), "M2 · movable", t.amber, 9);
-    text(p, QPointF(m2x + 30, bs.y() + 10), QString(" ") + QString(dxUm > 0 ? "+" : "") + num(dxUm, 4) + " µm", t.muted, 9);
-    text(p, source + QPointF(-8, -20), "Source", t.muted, 9);
-    text(p, bs + QPointF(0, 28), "BS", t.muted, 9, Qt::AlignHCenter);
-    text(p, QPointF(detector.x() + 12, detector.y() - 8), "Detector", t.muted, 9);
-    text(p, QPointF(detector.x() + 12, detector.y() + 7), QString(" ") + num(intensity, 4), t.amber, 9);
+    text(p, QPointF(bs.x() - 30, m1.y()), "M1 · fixed", t.muted, 11, Qt::AlignRight);
+    text(p, QPointF(m2x + 30, bs.y() - 5), "M2 · movable", t.amber, 11);
+    text(p, QPointF(m2x + 30, bs.y() + 10), QString(" ") + QString(dxUm > 0 ? "+" : "") + num(dxUm, 4) + " µm", t.muted, 11);
+    text(p, source + QPointF(-8, -20), "Source", t.muted, 11);
+    text(p, bs + QPointF(0, 28), "BS", t.muted, 11, Qt::AlignHCenter);
+    text(p, QPointF(detector.x() + 12, detector.y() - 8), "Detector", t.muted, 11);
+    text(p, QPointF(detector.x() + 12, detector.y() + 7), QString(" ") + num(intensity, 4), t.amber, 11);
 
-    // Live fringe counter: ΔN = ΔOPD / λ = 2nΔx / λ — how many fringes have shifted as M2 moves.
-    // Pinned to the top-right corner so it never overlaps the optical beams.
-    const double shift = 2 * m_in.n * dxUm * 1e3 / m_in.lambdaNm;
-    const QPointF dataPos(a.right() - 14, a.top() + 18);
-    text(p, QPointF(dataPos.x(), dataPos.y()),
-         QString::fromStdString(std::string("ΔN = ") + (shift >= 0 ? "+" : "-") + NumberFormat::fixed(std::fabs(shift), 4) + " fringes"),
-         shift >= 0 ? t.lime : t.amber, 10, Qt::AlignRight, true);
-    text(p, QPointF(dataPos.x(), dataPos.y() + 16),
-QString::fromStdString(std::string("Δφ = ") + NumberFormat::signedFixed(dphi) + " rad = " +
-                               NumberFormat::signedFixed(dphi * 180.0 / std::numbers::pi) + "°"),
-         t.amber, 9, Qt::AlignRight);
-    text(p, QPointF(dataPos.x(), dataPos.y() + 32),
-         QString::fromStdString(std::string("I/Imax = ") + NumberFormat::fixed(intensity, 4)),
-         t.muted, 9, Qt::AlignRight);
+    // Live fringe counter data is shown in the LCD registers on the right panel;
+    // not drawn on the canvas to avoid overlapping the optical beam diagram.
 
     // Circular detector fringes are a schematic radial phase map. At r = 0 it uses the same
     // Δφ = 4πnΔx/λ and normalized intensity as the register above.
