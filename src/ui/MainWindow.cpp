@@ -1,10 +1,14 @@
 #include "MainWindow.h"
 #include "AppContext.h"
 #include "BasePage.h"
+#include "ExperimentBase.h"
 #include "ExportPage.h"
 #include "Icons.h"
 #include "LanguageManager.h"
 #include "ThemeManager.h"
+
+#include <QCloseEvent>
+#include <QSettings>
 
 #include <QAbstractItemView>
 #include <QApplication>
@@ -381,7 +385,14 @@ void MainWindow::setCurrentPage(int index) {
     m_stack->setCurrentIndex(index);
     for (const NavEntry& e : m_nav)
         if (e.page == index) { e.button->setChecked(true); break; }
-    if (changed) addActivity("Opened", pageName(index));
+    // Restore this page's saved field values the first time it becomes visible.
+    if (changed) {
+        addActivity("Opened", pageName(index));
+        if (auto* page = qobject_cast<ExperimentBase*>(m_stack->widget(index))) {
+            QSettings settings(QStringLiteral("PHY104"), QStringLiteral("PHY104OpticalAssistant"));
+            if (!page->stateRestored()) page->restoreState(settings);
+        }
+    }
 }
 
 void MainWindow::refreshIcons() {
@@ -394,6 +405,23 @@ void MainWindow::refreshLanguageButton() {
     m_languageButton->setText(arabic ? "English" : "العربية");
     m_languageButton->setToolTip(arabic ? "التبديل إلى الإنجليزية" : "Switch the interface to Arabic");
     m_languageButton->setAccessibleName(arabic ? "التبديل إلى الإنجليزية" : "Switch to Arabic");
+}
+
+void MainWindow::restoreLastPage() {
+    QSettings settings(QStringLiteral("PHY104"), QStringLiteral("PHY104OpticalAssistant"));
+    const int last = settings.value(QStringLiteral("ui/lastPage"), 0).toInt();
+    if (last >= 0 && last < m_stack->count()) setCurrentPage(last);
+}
+
+void MainWindow::closeEvent(QCloseEvent* event) {
+    QSettings settings(QStringLiteral("PHY104"), QStringLiteral("PHY104OpticalAssistant"));
+    settings.setValue(QStringLiteral("ui/lastPage"), m_stack->currentIndex());
+    // Persist every experiment page's bound field values so they survive a restart.
+    for (int i = 0; i < m_stack->count(); ++i) {
+        if (auto* page = qobject_cast<ExperimentBase*>(m_stack->widget(i)))
+            page->saveState(settings);
+    }
+    QMainWindow::closeEvent(event);
 }
 
 } // namespace phy104
