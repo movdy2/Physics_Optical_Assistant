@@ -211,6 +211,7 @@ ModelReport michelson(const MichelsonInput& in, const ReportContext& ctx) {
         ChartData& c = out.chart;
         c.xLabel = "Δx (µm)"; c.yLabel = "I / Imax";
         c.xMin = -sweepUm; c.xMax = sweepUm; c.yMin = 0; c.yMax = 1; c.xTicks = 4; c.yTicks = 2; c.xDecimals = 1; c.yDecimals = 1;
+        c.curve.reserve(601);
         for (int k = 0; k <= 600; ++k) {
             const double x = -sweepUm + 2 * sweepUm * k / 600.0;
             const double opdX = 2 * in.n * x * 1e3 + opdPlate;
@@ -256,6 +257,7 @@ ModelReport michelson(const MichelsonInput& in, const ReportContext& ctx) {
     ChartData& c = out.chart;
     c.xLabel = "Δx (µm)"; c.yLabel = "I / Imax";
     c.xMin = -2; c.xMax = 2; c.yMin = 0; c.yMax = 1; c.xTicks = 4; c.yTicks = 2; c.xDecimals = 1; c.yDecimals = 1;
+    c.curve.reserve(801);
     for (int k = 0; k <= 800; ++k) {
         const double x = -2 + k * 0.005;
         const double opdX = 2 * in.n * x * 1e3 + opdPlate;
@@ -329,6 +331,7 @@ ModelReport thinFilm(const ThinFilmInput& in, const ReportContext& ctx) {
         ChartData& c = out.chart;
         c.xLabel = "λ (nm)"; c.yLabel = "R(λ)";
         c.xMin = 400; c.xMax = 700; c.yMin = 0; c.yMax = 1; c.xTicks = 3; c.yTicks = 2; c.xDecimals = 0; c.yDecimals = 1;
+        c.curve.reserve(401);
         for (int k = 0; k <= 400; ++k) {
             const double w = 400 + 300.0 * k / 400.0;
             c.curve.push_back({w, thinFilmReflectance(in.thicknessNm, 1.0, in.n, in.n2, w, in.thetaDeg)});
@@ -371,6 +374,7 @@ ModelReport thinFilm(const ThinFilmInput& in, const ReportContext& ctx) {
         c.xLabel = "t (nm)"; c.yLabel = "I_t / I_t,max";
         c.xMin = 0; c.xMax = std::max(400.0, std::ceil(in.thicknessNm / 100.0) * 100.0); c.yMin = 0; c.yMax = 1;
         c.xTicks = static_cast<int>(c.xMax / 100); c.yTicks = 2; c.xDecimals = 0; c.yDecimals = 1;
+        c.curve.reserve(401);
         for (int k = 0; k <= 400; ++k) {
             const double t = c.xMax * k / 400.0;
             c.curve.push_back({t, thinFilmReflectance(t, 1.0, in.n, in.n2, in.lambdaNm, in.thetaDeg)});
@@ -404,6 +408,7 @@ ModelReport thinFilm(const ThinFilmInput& in, const ReportContext& ctx) {
     c.xLabel = "t (nm)"; c.yLabel = "I_r / I_r,max";
     c.xMin = 0; c.xMax = std::max(400.0, std::ceil(in.thicknessNm / 100.0) * 100.0); c.yMin = 0; c.yMax = 1;
     c.xTicks = static_cast<int>(c.xMax / 100); c.yTicks = 2; c.xDecimals = 0; c.yDecimals = 1;
+    c.curve.reserve(401);
     for (int k = 0; k <= 400; ++k) {
         const double t = c.xMax * k / 400.0;
         c.curve.push_back({t, thinFilmReflectance(t, 1.0, in.n, in.n2, in.lambdaNm, in.thetaDeg)});
@@ -495,6 +500,8 @@ ModelReport grating(const GratingInput& in, const ReportContext& ctx) {
         ChartData& c = out.chart;
         c.xLabel = "θ (degrees)"; c.yLabel = "I / Imax";
         c.xMin = -90; c.xMax = 90; c.yMin = 0; c.yMax = 1; c.xTicks = 4; c.yTicks = 2; c.xDecimals = 0; c.yDecimals = 1;
+        c.curve.reserve(1801);
+        c.marker.reserve(orders.size());
         for (int k = 0; k <= 1800; ++k) {
             const double th = -90 + k * 0.1;
             c.curve.push_back({th, gratingIntensity(th, in.linesPerCm, in.lambdaNm, in.slits, in.incidenceDeg)});
@@ -535,6 +542,7 @@ ModelReport grating(const GratingInput& in, const ReportContext& ctx) {
     ChartData& c = out.chart;
     c.xLabel = "θ (degrees)"; c.yLabel = "I / Imax";
     c.xMin = -90; c.xMax = 90; c.yMin = 0; c.yMax = 1; c.xTicks = 4; c.yTicks = 2; c.xDecimals = 0; c.yDecimals = 1;
+    c.curve.reserve(1801);
     for (int k = 0; k <= 1800; ++k) {
         const double th = -90 + k * 0.1;
         c.curve.push_back({th, gratingIntensity(th, in.linesPerCm, in.lambdaNm, in.slits, in.incidenceDeg)});
@@ -545,6 +553,7 @@ ModelReport grating(const GratingInput& in, const ReportContext& ctx) {
         const double lam2 = in.lambda2Nm * 1e-9;
         const double sinTheta2 = m * lam2 / d - std::sin(in.incidenceDeg * kDeg);
         const bool secondPropagates = std::fabs(sinTheta2) <= 1.0;
+        c.curve2.reserve(1801);
         for (int k = 0; k <= 1800; ++k) {
             const double th = -90 + k * 0.1;
             c.curve2.push_back({th, gratingIntensity(th, in.linesPerCm, in.lambda2Nm, in.slits, in.incidenceDeg)});
@@ -650,6 +659,7 @@ ModelReport singleSlit(const SingleSlitInput& in, const ReportContext& ctx) {
     c.xLabel = "θ (degrees)"; c.yLabel = "I / I₀";
     const double range = std::max(0.3, std::round(4.2 * theta * 10) / 10);
     c.xMin = -range; c.xMax = range; c.yMin = 0; c.yMax = 1; c.xTicks = 4; c.yTicks = 2; c.xDecimals = 1; c.yDecimals = 1;
+    c.curve.reserve(801);
     for (int k = 0; k <= 800; ++k) {
         const double th = -range + 2 * range * k / 800.0;
         c.curve.push_back({th, singleSlitIntensity(th, in.widthMm, in.lambdaNm)});
@@ -722,6 +732,8 @@ ModelReport polarization(const PolarizationInput& in, const ReportContext& ctx) 
         ChartData& c = out.chart;
         c.xLabel = "θ (degrees)"; c.yLabel = "R";
         c.xMin = 0; c.xMax = 90; c.yMin = 0; c.yMax = 1; c.xTicks = 3; c.yTicks = 2; c.xDecimals = 0; c.yDecimals = 1;
+        c.curve.reserve(181);
+        c.curve2.reserve(181);
         for (int k = 0; k <= 180; ++k) {
             double rs = 0, rp = 0;
             fresnel(k * 0.5 * kDeg, rs, rp);
@@ -754,6 +766,7 @@ ModelReport polarization(const PolarizationInput& in, const ReportContext& ctx) 
     ChartData& c = out.chart;
     c.xLabel = "θ (degrees)"; c.yLabel = "I (W/m²)";
     c.xMin = 0; c.xMax = 90; c.yMin = 0; c.yMax = std::max(1.0, i0); c.xTicks = 3; c.yTicks = 2; c.xDecimals = 0; c.yDecimals = 0;
+    c.curve.reserve(181);
     for (int k = 0; k <= 180; ++k) c.curve.push_back({k * 0.5, i0 * std::pow(std::cos(k * 0.5 * kDeg), 2)});
     c.marker = {{in.angleDeg, out2}};
     c.legend = std::string("Malus: I = I₀ cos²θ   ● θ = ") + num(in.angleDeg) + "°";
@@ -829,6 +842,7 @@ ModelReport doubleSlitEnvelope(const SingleSlitInput& in, const ReportContext& c
     c.xLabel = "θ (degrees)"; c.yLabel = "I / I₀";
     const double range = std::max(0.6, std::round(3.2 * theta1 * 10) / 10);
     c.xMin = -range; c.xMax = range; c.yMin = 0; c.yMax = 1; c.xTicks = 4; c.yTicks = 2; c.xDecimals = 1; c.yDecimals = 1;
+    c.curve.reserve(1401);
     for (int k = 0; k <= 1400; ++k) {
         const double th = -range + 2 * range * k / 1400.0;
         c.curve.push_back({th, doubleSlitEnvelopeIntensity(th, in.widthMm, in.separationMm, in.lambdaNm)});
@@ -898,6 +912,8 @@ ModelReport gratingResolution(const GratingResolutionInput& in, const ReportCont
         const double x = (lambdaNm - centre) / dLambda;                          // 1 = one Rayleigh step away
         return multiSlitFactor(2 * std::numbers::pi * x / (R / std::max(1.0, std::abs(double(m)))), in.slits);
     };
+    c.curve.reserve(601);
+    c.marker.reserve(601);
     for (int k = 0; k <= 600; ++k) {
         const double w = c.xMin + (c.xMax - c.xMin) * k / 600.0;
         c.curve.push_back({w, profile(w)});

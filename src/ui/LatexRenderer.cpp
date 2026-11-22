@@ -509,21 +509,31 @@ bool LatexRenderer::validate(const QString& latex, QString* error) {
 // ---------------------------------------------------------------------------- widget
 LatexWidget::LatexWidget(QWidget* parent) : QWidget(parent), m_baseFont(QWidget::font()) {
     connect(&ThemeManager::instance(), &ThemeManager::themeChanged, this, [this] {
+        m_cacheValid = false;         // ink colour depends on the theme
         setFont(m_baseFont);
         update();
     });
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 }
 
-void LatexWidget::setLatex(const QString& latex) { m_latex = latex; updateGeometry(); update(); }
-void LatexWidget::setPointSize(qreal points)    { m_points = points; updateGeometry(); update(); }
+void LatexWidget::setLatex(const QString& latex) { m_latex = latex; m_cacheValid = false; updateGeometry(); update(); }
+void LatexWidget::setPointSize(qreal points)    { m_points = points; m_cacheValid = false; updateGeometry(); update(); }
 void LatexWidget::setLcdStyle(bool lcd) {
     m_lcd = lcd;
+    m_cacheValid = false;
     setFont(m_baseFont);
     updateGeometry();
     update();
 }
-void LatexWidget::setInkColor(const QColor& c)  { m_inkOverride = c; update(); }
+void LatexWidget::setInkColor(const QColor& c)  { m_inkOverride = c; m_cacheValid = false; update(); }
+
+void LatexWidget::refreshCachedPixmap() {
+    if (m_cacheValid && !m_cachedPixmap.isNull()) return;
+    if (m_latex.isEmpty()) { m_cachedPixmap = QPixmap(); m_cacheValid = true; return; }
+    QFont f = font(); f.setPointSizeF(m_points);
+    m_cachedPixmap = LatexRenderer::render(m_latex, f, ink(), devicePixelRatioF() * 2.0);
+    m_cacheValid = true;
+}
 
 QColor LatexWidget::ink() const {
     if (m_inkOverride.isValid()) return m_inkOverride;
@@ -549,12 +559,12 @@ void LatexWidget::paintEvent(QPaintEvent*) {
         p.drawRoundedRect(QRectF(rect()).adjusted(1.5, 1.5, -1.5, -1.5), 6, 6);
     }
     if (m_latex.isEmpty()) return;
-    QFont f = font(); f.setPointSizeF(m_points);
-    const QPixmap pix = LatexRenderer::render(m_latex, f, ink(), devicePixelRatioF() * 2.0);
-    const QSizeF logical = pix.deviceIndependentSize();
+    refreshCachedPixmap();
+    if (m_cachedPixmap.isNull()) return;
+    const QSizeF logical = m_cachedPixmap.deviceIndependentSize();
     p.setRenderHint(QPainter::SmoothPixmapTransform);
     const double x = m_left ? (m_lcd ? 14.0 : 2.0) : (width() - logical.width()) / 2;
-    p.drawPixmap(QPointF(x, (height() - logical.height()) / 2), pix);
+    p.drawPixmap(QPointF(x, (height() - logical.height()) / 2), m_cachedPixmap);
 }
 
 } // namespace phy104

@@ -46,6 +46,8 @@ protected:
 
 private:
     QColor ink() const;
+    /// Re-render the cached pixmap when latex, font, size or ink changes.
+    void refreshCachedPixmap();
 
     QFont m_baseFont;
     QString m_latex;
@@ -53,6 +55,8 @@ private:
     bool m_lcd = false;
     bool m_left = false;
     QColor m_inkOverride;
+    QPixmap m_cachedPixmap;        // rendered formula; invalidated on property change
+    bool m_cacheValid = false;
 };
 
 } // namespace phy104
