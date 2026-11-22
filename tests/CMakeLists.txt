@@ -3,6 +3,13 @@ target_link_libraries(test_core PRIVATE phy104_core)
 phy104_enable_warnings(test_core)
 add_test(NAME core_tests COMMAND test_core)
 
+# Pure-physics unit tests (no Qt, no test framework): Snell's law, lenses,
+# wave interference, thin films, gratings, Michelson interferometer.
+add_executable(test_physics test_physics.cpp)
+target_link_libraries(test_physics PRIVATE phy104_core)
+phy104_enable_warnings(test_physics)
+add_test(NAME physics_tests COMMAND test_physics)
+
 # Real JSON files + round-trip test of every formula (needs the Qt data layer)
 if(TARGET phy104_data)
     add_executable(test_data test_data.cpp)

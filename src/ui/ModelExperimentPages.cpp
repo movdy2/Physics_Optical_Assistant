@@ -12,6 +12,7 @@
 #include <QPushButton>
 #include <QSizePolicy>
 #include <QSlider>
+#include <QTimer>
 #include <QVBoxLayout>
 #include <cmath>
 
@@ -28,6 +29,16 @@ ModelPage::ModelPage(const QString& title, const QString& subtitle, const QStrin
     m_controls = new Panel("Experiment controls");
     m_controls->body()->setSpacing(10);
     m_fieldLayout = m_controls->body();
+
+    // Slider debounce timer: coalesces rapid valueChanged calls into a single apply after 16 ms (~60 fps).
+    m_debounceTimer = new QTimer(this);
+    m_debounceTimer->setSingleShot(true);
+    m_debounceTimer->setInterval(16);
+    connect(m_debounceTimer, &QTimer::timeout, this, &ModelPage::debounceApply);
+}
+
+void ModelPage::debounceApply() {
+    apply(false);
 }
 
 UnitField* ModelPage::addField(const QString& id, const QString& label, const QString& unit, double value, int decimals, bool signedValue, bool spinner, double step) {
@@ -346,7 +357,7 @@ MichelsonPage::MichelsonPage(AppContext* ctx, QWidget* parent)
     // Index slider: moving it sets n and re-applies; choosing a medium preset updates the slider.
     connect(m_nSlider, &QSlider::valueChanged, this, [this](int) {
         m_medium->setCurrentIndex(m_medium->count() - 1);  // "Custom"
-        apply(false);
+        debounceApply();
     });
     connect(m_medium, &QComboBox::activated, this, [this](int index) {
         const double n = m_medium->itemData(index).toDouble();
@@ -359,7 +370,7 @@ MichelsonPage::MichelsonPage(AppContext* ctx, QWidget* parent)
 
     // Item 13-15 real-time connections for new parameters
     connect(m_coherenceLength, &UnitField::edited, this, [this] { apply(false); });
-    connect(m_tiltSlider, &QSlider::valueChanged, this, [this] { apply(false); });
+    connect(m_tiltSlider, &QSlider::valueChanged, this, [this] { debounceApply(); });
     connect(m_plateThickness, &UnitField::edited, this, [this] { apply(false); });
     connect(m_plateIndex, &UnitField::edited, this, [this] { apply(false); });
 
@@ -382,7 +393,7 @@ void MichelsonPage::setMirrorDisplacement(double displacementUm) {
     m_dx->setValue(travel, 4);
     QSignalBlocker blocker(m_dxSlider);
     m_dxSlider->setValue(static_cast<int>(std::lround(travel * 10000.0)));
-    apply(false);
+    debounceApply();
 }
 void MichelsonPage::updateCanvas() {
     const bool fringes = m_tabs->current() == 1;

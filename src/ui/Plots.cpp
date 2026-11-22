@@ -22,7 +22,8 @@ GridCanvas::GridCanvas(QWidget* parent) : QWidget(parent) {
 void GridCanvas::paintEvent(QPaintEvent*) {
     const Theme& t = ThemeManager::instance().theme();
     QPainter p(this);
-    p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+    if (m_antialiased)
+        p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
     p.fillRect(rect(), t.canvas);
     p.setPen(QPen(t.grid, 1));
     for (int x = 0; x < width(); x += 36) p.drawLine(x, 0, x, height());
@@ -65,7 +66,8 @@ void LineChart::setAnnotations(const QList<ChartVLine>& v, const QList<ChartHLin
 void LineChart::paintEvent(QPaintEvent*) {
     const Theme& t = ThemeManager::instance().theme();
     QPainter p(this);
-    p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+    if (m_antialiased)
+        p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
     p.fillRect(rect(), t.canvas);
 
     QFont mono(ThemeManager::monoFont());
