@@ -26,7 +26,7 @@ struct Item { Box box; Kind kind = Kind::Ord; };
 
 QFont makeFont(const QFont& base, qreal pixelSize, bool italic) {
     QFont f = base;
-    f.setFamilies({"STIX Two Text", "Cambria", "DejaVu Serif", "Times New Roman", "serif"});
+    f.setFamilies({"STIX Two Text", "Cambria", "DejaVu Serif", "Times New Roman", "Noto Sans Arabic", "serif"});
     f.setPixelSize(qMax(1, qRound(pixelSize)));
     f.setItalic(italic);
     f.setBold(false);
