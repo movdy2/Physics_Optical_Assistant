@@ -370,8 +370,8 @@ NoticeCard::NoticeCard(QWidget* parent) : QFrame(parent) {
 }
 
 void NoticeCard::setNotice(const QString& title, const QString& body, bool error) {
-    m_title->setText(title);
-    m_body->setText(body);
+    m_title->setText(LanguageManager::instance().text(title));
+    m_body->setText(LanguageManager::instance().text(body));
     setProperty("error", error);
     style()->unpolish(this);
     style()->polish(this);
