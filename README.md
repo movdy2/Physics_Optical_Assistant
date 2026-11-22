@@ -1,7 +1,7 @@
 # PHY104 Optical Assistant
 
 
-المشروع كان اهداء الى  🦤🧢 ولكنه انقرض في ظروف غامضه  ونمتنه له كل خير 
+المشروع كان اهداء الى  🦤🧢 ولكنه انقرض في ظروف غامضه  نتمنه له كل خير 
 
 
 **An offline  free open source optics lab and study companion for PHY104.** Built with C++20 and Qt 6 for Windows and Linux. 
