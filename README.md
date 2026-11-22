@@ -1,13 +1,18 @@
 # PHY104 Optical Assistant
 
-**An offline optics lab and study companion for PHY104.** Built with C++20 and Qt 6 for Windows and Linux. The app needs no AI service, account, database, or internet connection.
+
+المشروع كان اهداء الى  🦤🧢 ولكنه انقرض في ظروف غامضه  ونمتنه له كل خير 
+
+
+**An offline  free open source optics lab and study companion for PHY104.** Built with C++20 and Qt 6 for Windows and Linux. 
 
 
 
 ## عن المشروع
 
 <div dir="rtl" align="right">
-<p>مشروع <strong>فيزياء 104</strong> أعدّه <strong>Movdy2</strong> بمساهمة <strong>أحمد سمير</strong> لمقرر فيزياء 104 في جامعة زويل للعلوم والتكنولوجيا، بإشراف علمي ومراجعة من الدكتور أشرف، مدرّس المقرر.</p>
+<p>مشروع <strong> محاكه ماده فيزياء 104</strong> أعدّه <strong>Movdy2</strong> بمساهمة <strong>أحمد سمير</strong> لمقرر فيزياء 104 في جامعة زويل للعلوم والتكنولوجيا، بإشراف علمي ومراجعة من الدكتور أشرف، مدرّس المقرر.</p>
+
 
 <p>يهدف البرنامج إلى مساعدة الطلاب والمدرّسين وأعضاء هيئة التدريس على تطبيق قوانين المقرر واستكشاف تجاربه. وهو بيئة تعليمية متكاملة، لا مجرد أداة واحدة، ويضم:</p>
 
@@ -17,7 +22,7 @@
 <li>أدوات لتدوين الملاحظات والعمل على المسائل، وملخصات أُعدّت يدويًا للمراجعة.</li>
 </ul>
 
-<p>أُعدّ التصميم باستخدام <strong>Figma AI</strong>، واستُعين بأدوات الذكاء الاصطناعي لتسريع التطوير والمساعدة في معالجة بعض المشكلات. وقد بُذل جهد كبير في إنجاز المشروع، مع بقاء التطبيق نفسه قابلًا للاستخدام دون اتصال بالإنترنت أو خدمات ذكاء اصطناعي.</p>
+
 
 <p><strong></strong></p>
 </div>
@@ -63,8 +68,7 @@ See the [v3.0.9 release page](https://github.com/movdy2/phy104-sim/releases/tag/
 - **Save and export:** calculations and notes save locally. Export measurements to CSV or Excel-compatible `.xls`, or create and print a PDF lab report.
 - **English and Arabic:** switch languages in the app, with right-to-left Arabic layout and bundled Arabic-capable fonts. Equations and numeric entry remain left-to-right.
 - **Dark and light themes:** explore interactive ray diagrams, plots, and resizable experiment pages in either theme.
-
-See the [Figma-to-code mapping](docs/FIGMA_MAPPING.md) for screen-by-screen design notes.
+- full open source run on linux suppourt arbic and engilsh 
 
 ## Screenshots
 
@@ -76,7 +80,7 @@ See the [Figma-to-code mapping](docs/FIGMA_MAPPING.md) for screen-by-screen desi
 |---|---|
 | ![Markdown notes workspace with live preview](docs/screenshots/notes_workspace.png) | ![Scientific calculator keypad](docs/screenshots/calculator_keypad.png) |
 
-More captures are in [`docs/screenshots/`](docs/screenshots/).
+More captures are in [`docs/screenshots/`](docs/screenshots/)
 
 ## Build from source
 
@@ -126,5 +130,3 @@ The built-in formulas, constants, chapters, keyboard definitions, and optics pre
 ## Project credits
 
 Created for the PHY104 course at Zewail University of Science and Technology by [**Movdy2**](https://github.com/movdy2), with a contribution from **Ahmed Samir**. Scientific supervision and review were provided by **Dr. Ashraf**, the course instructor.
-
-The interface design was prepared with Figma AI. AI tools also helped speed up development and troubleshoot issues; the app itself runs locally and does not depend on an AI service.
