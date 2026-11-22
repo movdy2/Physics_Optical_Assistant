@@ -68,4 +68,8 @@
         <file alias="minus.svg">icons/minus.svg</file>
         <file alias="square-function.svg">icons/square-function.svg</file>
     </qresource>
+    <!-- تمت الإضافة هنا -->
+    <qresource prefix="/styles">
+        <file alias="phy104.qss">styles/phy104.qss</file>
+    </qresource>
 </RCC>
