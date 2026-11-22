@@ -235,6 +235,7 @@ MainWindow::MainWindow(AppContext* ctx, QWidget* parent)
         auto& language = LanguageManager::instance();
         language.setLanguage(language.isArabic() ? UiLanguage::English : UiLanguage::Arabic);
         ThemeManager::instance().apply(*qApp, ThemeManager::instance().isDark());
+        ThemeManager::instance().setLayoutDirectionForLanguage(language.isArabic());
         refreshStatus();
         language.apply(this);
         refreshActivityLog();
