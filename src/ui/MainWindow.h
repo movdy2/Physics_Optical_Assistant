@@ -6,6 +6,7 @@
 #include <vector>
 
 class QButtonGroup;
+class QCloseEvent;
 class QLabel;
 class QListWidget;
 class QPushButton;
@@ -17,6 +18,7 @@ namespace phy104 {
 
 class AppContext;
 class BasePage;
+class ExperimentBase;
 
 /// Figma shell: sidebar (navigation and recent activity) | pages | status bar.
 class MainWindow : public QMainWindow {
@@ -44,6 +46,9 @@ public:
 
 public slots:
     void setCurrentPage(int index);
+    /// Restore the last-used page index from QSettings. Call once, after all pages
+    /// have been added to the stack (from App.cpp).
+    void restoreLastPage();
     /// Ctrl+Enter: the main action of the page that is showing ("Calculate & Simulate", "Solve", ...).
     void triggerPrimaryAction();
     /// Ctrl+P: open the PDF report mode on the unified Export page.
@@ -56,6 +61,7 @@ private:
     void addNavButton(const QString& title, const QString& icon, int pageIndex, int section);
     void installShortcuts();
     void refreshIcons();
+    void closeEvent(QCloseEvent* event) override;
     void refreshLanguageButton();
     void refreshStatus();
     void showMessage(const QString& text);

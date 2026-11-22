@@ -2,6 +2,7 @@
 #include "BasePage.h"
 #include "ExperimentReports.h"
 
+#include <QSettings>
 #include <vector>
 
 class QLabel;
@@ -25,6 +26,7 @@ class AppContext;
 ///   * bound input fields with the paused / last-valid pattern
 ///   * the right-side Results Panel and its two LCD registers
 ///   * shared logic: send-to-notes, register (LCD) text updates, apply-issues
+///   * per-module field persistence via QSettings (saveState / restoreState)
 ///
 /// Concrete modules (Refraction, Lenses, Prisms, Wave, Newton's Rings, Michelson,
 /// Thin-Film, Grating, Single-Slit, Polarization, Thick Lens) inherit from it —
@@ -34,6 +36,16 @@ class ExperimentBase : public BasePage {
 public:
     ExperimentBase(const QString& title, const QString& subtitle, const QString& experiment,
                    AppContext* context, QWidget* parent = nullptr);
+
+    /// Persist every bound input field's current value under
+    /// `ui/experimentState/<experiment>/<fieldId>`.
+    void saveState(QSettings& settings) const;
+    /// Restore every bound input field from QSettings. Only takes effect the first
+    /// time it is called for a given page instance (in-session edits are never
+    /// clobbered by a later restore).
+    void restoreState(QSettings& settings);
+    /// True once restoreState() has been applied for this instance.
+    bool stateRestored() const { return m_stateRestored; }
 
     /// The experiment name the session uses ("Thin-Film Interference", ...).
     QString experimentName() const { return m_experiment; }
@@ -61,6 +73,7 @@ protected:
     std::vector<Binding> m_bindings;
     Report m_last;
     bool m_haveLast = false;
+    bool m_stateRestored = false;   // restoreState() applied once per instance
     QPushButton *m_calc = nullptr, *m_reset = nullptr, *m_restore = nullptr;
     QLabel* m_hint = nullptr;
 

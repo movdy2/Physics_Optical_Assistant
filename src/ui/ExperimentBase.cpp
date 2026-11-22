@@ -6,6 +6,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
+#include <QSettings>
 #include <QSizePolicy>
 #include <QStringList>
 #include <QVBoxLayout>
@@ -22,6 +23,30 @@ void ExperimentBase::bind(const QString& id, UnitField* field) { m_bindings.push
 ExperimentBase::Binding* ExperimentBase::find(const QString& id) {
     for (Binding& b : m_bindings) if (b.id == id) return &b;
     return nullptr;
+}
+
+void ExperimentBase::saveState(QSettings& settings) const {
+    const QString group = QStringLiteral("ui/experimentState/%1").arg(m_experiment);
+    settings.beginGroup(group);
+    for (const Binding& b : m_bindings) {
+        bool ok = false;
+        const double v = b.field->value(&ok);
+        if (ok) settings.setValue(b.id, v);
+    }
+    settings.endGroup();
+}
+
+void ExperimentBase::restoreState(QSettings& settings) {
+    if (m_stateRestored) return;
+    const QString group = QStringLiteral("ui/experimentState/%1").arg(m_experiment);
+    settings.beginGroup(group);
+    for (Binding& b : m_bindings) {
+        const QVariant stored = settings.value(b.id);
+        if (!stored.isValid()) continue;
+        b.field->setValue(stored.toDouble(), b.field->decimals());
+    }
+    settings.endGroup();
+    m_stateRestored = true;
 }
 
 bool ExperimentBase::readFields() {
@@ -126,7 +151,11 @@ void ExperimentBase::buildButtons(QVBoxLayout* fields, const QString& hint) {
     fields->addWidget(m_hint);
     fields->addStretch();
     connect(m_calc, &QPushButton::clicked, this, [this] { apply(true); });
-    connect(m_reset, &QPushButton::clicked, this, [this] { reset(); });
+    connect(m_reset, &QPushButton::clicked, this, [this] {
+        reset();                                 // defaults for this module
+        QSettings settings(QStringLiteral("PHY104"), QStringLiteral("PHY104OpticalAssistant"));
+        saveState(settings);                     // remember the reset state
+    });
     connect(m_restore, &QPushButton::clicked, this, [this] {
         for (Binding& b : m_bindings)
             if (b.field->hasError() && b.hasValid) b.field->setValue(b.lastValid, b.field->decimals());

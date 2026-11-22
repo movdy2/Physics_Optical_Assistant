@@ -110,6 +110,8 @@ App::App(const Paths& paths) {
         m_window->setCurrentPage(index);
     });
 
+    // Restore the last-used experiment module after every page has been added to the stack.
+    m_window->restoreLastPage();
     LanguageManager::instance().apply(m_window.get());
 }
 
