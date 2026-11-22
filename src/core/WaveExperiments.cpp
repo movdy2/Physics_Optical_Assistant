@@ -105,7 +105,7 @@ ModelReport newtonRings(const NewtonInput& in, const ReportContext& ctx) {
     a.title = in.transmitted ? "TRANSMITTED DARK RING" : "REFLECTED DARK RING";
     a.lines = {std::string("rₘ² = ") + (in.transmitted ? "(m + ½)λR / n" : "mλR / n"),
                std::string(" = ") + orderExpr + std::string(" × ") + num(in.lambdaNm) + std::string("×10⁻⁹ × ") + num(in.radiusM) + std::string(" / ") + num(in.n),
-               std::string(" = ") + NF::scientific(r2, 4) + " m²", std::string("r") + ms + std::string(" = √(") + NF::scientificCompact(r2).substr(0, 0) + NF::general(r2 * 1e6, 5) + "×10⁻⁶) m"};
+               std::string(" = ") + NF::scientific(r2, 4) + " m²", std::string("r") + ms + std::string(" = √(") + NF::general(r2 * 1e6, 5) + "×10⁻⁶) m"};
     a.resultLabel = std::string("RADIUS · r") + ms;
     a.resultValue = fx(r * 1e3) + " mm";
     if (uncertain && sigmaR > 0.0) {

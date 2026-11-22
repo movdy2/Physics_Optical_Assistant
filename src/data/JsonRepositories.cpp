@@ -85,6 +85,8 @@ std::vector<PhysicsConstant> JsonConstantsRepository::loadAll() const {
         c.id = str(o, "id");
         c.symbol = str(o, "symbol");
         c.name = str(o, "name");
+        if (!o.contains("value") || !o.value("value").isDouble())
+            throw std::runtime_error(std::string("Missing or invalid key \"value\" in JSON constant ") + c.id);
         c.value = o.value("value").toDouble();          // numbers in JSON, not strings
         c.unit = str(o, "unit", false);
         c.description = str(o, "description", false);

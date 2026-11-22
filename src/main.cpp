@@ -8,7 +8,6 @@
 #include "ui/MainWindow.h"
 #include "ui/MarkdownWorkspace.h"
 #include "ui/NotesPage.h"
-#include "ui/Components.h"
 #include "ui/MathSolverPage.h"
 #include "ui/LanguageManager.h"
 #include "ui/SolverPage.h"
