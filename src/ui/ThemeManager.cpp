@@ -53,9 +53,11 @@ Theme Theme::warmDark() {
     // semantic
     t.lime = "#4ADE80";
     t.error = "#F87171";
-    t.errorBg = "rgba(248, 113, 113, 8)";
+    t.errorBg = QColor(248, 113, 113, 20);
 
     // legacy names
+    t.amber = t.accentAmber;
+    t.sage = t.accentTeal;
     t.yellow = t.accentAmber;
     t.green = "#22C55E";
     t.red = "#EF4444";
@@ -109,9 +111,11 @@ Theme Theme::paperLight() {
     // semantic
     t.lime = "#15803D";
     t.error = "#DC2626";
-    t.errorBg = "rgba(220, 38, 38, 8)";
+    t.errorBg = QColor(220, 38, 38, 20);
 
     // legacy names
+    t.amber = t.accentAmber;
+    t.sage = t.accentTeal;
     t.yellow = t.accentAmber;
     t.green = "#15803D";
     t.red = "#DC2626";
@@ -142,10 +146,10 @@ ThemeManager& ThemeManager::instance() {
 }
 
 void ThemeManager::loadFonts() {
-    for (const char* f : {\":/fonts/Inter-Regular.otf\", \":/fonts/Inter-Medium.otf\", \":/fonts/Inter-SemiBold.otf\",
-                          \":/fonts/NotoSansArabic.ttf\",
-                          \":/fonts/JetBrainsMono-Regular.ttf\", \":/fonts/JetBrainsMono-Bold.ttf\",
-                          \":/fonts/DSEG14Classic-Bold.ttf\", \":/fonts/DSEG7Classic-Bold.ttf\"})
+    for (const char* f : {":/fonts/Inter-Regular.otf", ":/fonts/Inter-Medium.otf", ":/fonts/Inter-SemiBold.otf",
+                          ":/fonts/NotoSansArabic.ttf",
+                          ":/fonts/JetBrainsMono-Regular.ttf", ":/fonts/JetBrainsMono-Bold.ttf",
+                          ":/fonts/DSEG14Classic-Bold.ttf", ":/fonts/DSEG7Classic-Bold.ttf"})
         QFontDatabase::addApplicationFont(f);
 }
 
