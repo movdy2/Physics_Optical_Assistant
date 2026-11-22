@@ -7,6 +7,7 @@
 #include <QButtonGroup>
 #include <QDialog>
 #include <QEvent>
+#include <QObject>
 #include <QHBoxLayout>
 #include <QKeyEvent>
 #include <QLabel>

@@ -9,13 +9,12 @@ class QLabel;
 class QPushButton;
 class QVBoxLayout;
 
-class Panel;
-class RegisterView;
-class UnitField;
-
 namespace phy104 {
 
 class AppContext;
+class Panel;
+class RegisterView;
+class UnitField;
 
 /// Abstract base shared by all 11 experiment modules.
 ///
