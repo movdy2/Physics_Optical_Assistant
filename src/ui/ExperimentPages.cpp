@@ -180,14 +180,14 @@ void ExperimentPage::buildButtons(QVBoxLayout* fields, const QString& hint) {
     m_hintText = hint;
     fields->addSpacing(2);
     // One shared placement for every experiment: calculate and append the latest valid result.
-    auto* send = new QPushButton("Send to\nNotes");
+    auto* send = new QPushButton("Send to Notes");
     send->setObjectName("sendToNotes");
     send->setAccessibleName("Send to Notes");
     send->setCursor(Qt::PointingHandCursor);
-    send->setMinimumHeight(34);
+    send->setMinimumHeight(32);
     send->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     send->setToolTip("Append the latest valid result to session Notes.");
-    m_calc->setText("Calculate &&\nSimulate");
+    m_calc->setText("Calculate & Simulate");
     m_calc->setMinimumHeight(34);
     m_calc->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     auto* row = new QHBoxLayout;
@@ -856,10 +856,10 @@ PrismsPage::PrismsPage(AppContext* ctx, QWidget* parent)
     m_presetHighIndex = makePreset("High index · flint", 60.0, 45.0, "flint", "air");
     f->addLayout(presetRow);
     // ---- Minimum-deviation finder (Item 17) ----
-    m_btnMinDev = new QPushButton("Set i → i_min (δmin)");
-    m_btnMinDev->setObjectName("primaryAction");
+    m_btnMinDev = new QPushButton("Set i → i_min");
+    m_btnMinDev->setObjectName("primary");
     m_btnMinDev->setCursor(Qt::PointingHandCursor);
-    m_btnMinDev->setMinimumHeight(44);
+    m_btnMinDev->setMinimumHeight(34);
     f->addWidget(m_btnMinDev);
     buildButtons(f, "SI units · angles in degrees");
 

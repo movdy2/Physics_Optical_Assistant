@@ -48,6 +48,28 @@ void text(QPainter& p, QPointF pos, const QString& s, const QColor& c, int px = 
     p.drawText(QPointF(x, pos.y() + fm.ascent() / 2 - 1), display);
 }
 
+/// Text on a semi-transparent Gruvbox background box, pinned to a canvas corner.
+/// Prevents data readouts from overlapping ray diagrams.
+void textBox(QPainter& p, QPointF pos, const QString& s, const QColor& c, int px, Qt::Alignment a, const QColor& bgColor) {
+    const QString display = LanguageManager::instance().text(s);
+    const QFont f = monoFont(px);
+    const QFontMetricsF fm(f);
+    const double w = fm.horizontalAdvance(display);
+    const double h = fm.height();
+    double x = pos.x();
+    double y = pos.y();
+    if (a & Qt::AlignRight) x -= w + 8; else if (a & Qt::AlignHCenter) x -= w / 2;
+    else x += 4;
+    if (a & Qt::AlignBottom) y -= h + 4; else y += 2;
+    QRectF rect(x - 4, y - h / 2 - 2, w + 8, h + 4);
+    p.setPen(Qt::NoPen);
+    p.setBrush(QColor(bgColor.red(), bgColor.green(), bgColor.blue(), 200));
+    p.drawRoundedRect(rect, 4, 4);
+    p.setFont(f);
+    p.setPen(c);
+    p.drawText(QPointF(x, y + fm.ascent() / 2 - 1), display);
+}
+
 QPointF unit(QPointF v) {
     const double n = std::hypot(v.x(), v.y());
     return n < 1e-9 ? QPointF(1, 0) : v / n;
@@ -300,9 +322,17 @@ void LensCanvas::paintDiagram(QPainter& p, const QRectF& a) {
         head(p, T, QPointF(0, T.y() < axisY ? -1 : 1), t.text, 8);
         text(p, QPointF(T.x(), T.y() + (T.y() < axisY ? -12 : 16)), "Image", t.text, 10, Qt::AlignHCenter);
         text(p, QPointF(T.x() + 8, a.top() + a.height() * 0.84), QString(" ") + QString::number(std::fabs(img.imageDistance), 'g', 6) + " cm", t.amber, 10);
-        text(p, QPointF(12, a.bottom() - 14), describeImage(img) + QString(" ") + num(img.magnification), t.text, 10);
+        QRectF lensBox(10, a.bottom() - 30, 220, 18);
+        p.setPen(Qt::NoPen);
+        p.setBrush(QColor(t.bg.red(), t.bg.green(), t.bg.blue(), 200));
+        p.drawRoundedRect(lensBox, 4, 4);
+        text(p, QPointF(lensBox.right() - 4, lensBox.top() + 14), describeImage(img) + QString(" ") + num(img.magnification), t.text, 10, Qt::AlignRight);
     }
-    text(p, QPointF(base.x() + 4, a.top() + a.height() * 0.84), QString(" ") + QString::number(m_in.s, 'g', 6) + " cm", t.text, 10);
+    QRectF lensObjBox(10, a.top() + a.height() * 0.82, 140, 18);
+    p.setPen(Qt::NoPen);
+    p.setBrush(QColor(t.bg.red(), t.bg.green(), t.bg.blue(), 200));
+    p.drawRoundedRect(lensObjBox, 4, 4);
+    text(p, QPointF(lensObjBox.right() - 4, lensObjBox.top() + 14), QString(" ") + QString::number(m_in.s, 'g', 6) + " cm", t.text, 10, Qt::AlignRight);
 }
 
 // ============================================================================ spherical mirror
@@ -397,8 +427,12 @@ void MirrorCanvas::paintDiagram(QPainter& p, const QRectF& a) {
             dim(std::min(ix, vx), std::max(ix, vx), y2, QString(" ") + num(di, 4) + " cm", t.sage);
         } else {
             text(p, QPointF(T.x(), T.y() + (T.y() < axisY ? -12 : 16)), "Image", t.text, 10, Qt::AlignHCenter);
-            text(p, QPointF(a.left() + 14, a.bottom() - 34), QString(" ") + QString::number(m_in.s, 'g', 6) + " cm  ·  dᵢ = " +
-                 QString::number(std::fabs(di), 'g', 6) + QString(" ") + QString::number(img.magnification, 'g', 5), t.text, 10);
+            QRectF mirBox(10, a.bottom() - 50, 260, 38);
+            p.setPen(Qt::NoPen);
+            p.setBrush(QColor(t.bg.red(), t.bg.green(), t.bg.blue(), 200));
+            p.drawRoundedRect(mirBox, 4, 4);
+            text(p, QPointF(mirBox.right() - 4, mirBox.top() + 16), QString(" ") + QString::number(m_in.s, 'g', 6) + " cm  ·  dᵢ = " +
+                 QString::number(std::fabs(di), 'g', 6) + QString(" ") + QString::number(img.magnification, 'g', 5), t.text, 10, Qt::AlignRight);
         }
     } else {
         text(p, QPointF(a.center().x(), a.top() + 60), "Image at infinity (object at F)", t.error, 10, Qt::AlignHCenter);
@@ -606,7 +640,11 @@ void WaveCanvas::paintDiagram(QPainter& p, const QRectF& a) {
 
     text(p, QPointF(a.left() + 14, cy + 105), QString(" ") + QString::number(m_in.separationMm, 'g', 4) + " mm", t.amber, 10);
     text(p, QPointF((bx + sx) / 2, cy + 128), QString(" ") + QString::number(m_in.screenM, 'f', 3) + " m", t.text, 10, Qt::AlignHCenter);
-    text(p, QPointF(a.left() + 14, a.bottom() - 14), "Constructive: Δ = mλ     Destructive: Δ = (m + ½)λ", t.muted, 9);
+    QRectF waveBox(10, a.bottom() - 30, 320, 18);
+    p.setPen(Qt::NoPen);
+    p.setBrush(QColor(t.bg.red(), t.bg.green(), t.bg.blue(), 200));
+    p.drawRoundedRect(waveBox, 4, 4);
+    text(p, QPointF(waveBox.right() - 4, waveBox.top() + 14), "Constructive: Δ = mλ     Destructive: Δ = (m + ½)λ", t.muted, 9, Qt::AlignRight);
 }
 
 
@@ -679,8 +717,12 @@ void NewtonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     text(p, QPointF(14, a.top() + a.height() * 0.62 + 36), QString(" ") + QString::number(m), t.muted, 10);
     text(p, QPointF(14, a.top() + a.height() * 0.62 + 52), QString("r") + sub + QString(" ") + num(r * 1e3, 4) + " mm", t.muted, 10);
     text(p, QPointF(14, a.top() + a.height() * 0.62 + 68), QString("D") + sub + QString(" ") + num(2 * r * 1e3, 4) + " mm", t.muted, 10);
-    text(p, QPointF(14, a.bottom() - 30), "Radius ≠ diameter.", t.muted, 10);
-    text(p, QPointF(14, a.bottom() - 14), transmitted ? "Dark rings: 2nt = (m + ½)λ." : "Dark rings: 2nt = mλ.", t.muted, 10);
+    QRectF newtBox(10, a.bottom() - 50, 220, 38);
+    p.setPen(Qt::NoPen);
+    p.setBrush(QColor(t.bg.red(), t.bg.green(), t.bg.blue(), 200));
+    p.drawRoundedRect(newtBox, 4, 4);
+    text(p, QPointF(newtBox.right() - 4, newtBox.top() + 16), "Radius ≠ diameter.", t.muted, 10, Qt::AlignRight);
+    text(p, QPointF(newtBox.right() - 4, newtBox.top() + 32), transmitted ? "Dark rings: 2nt = (m + ½)λ." : "Dark rings: 2nt = mλ.", t.muted, 10, Qt::AlignRight);
 }
 
 MichelsonCanvas::MichelsonCanvas(QWidget* parent) : GridCanvas(parent) {
@@ -855,15 +897,23 @@ void MichelsonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     text(p, QPointF(detector.x() + 12, detector.y() + 7), QString(" ") + num(intensity, 4), t.amber, 9);
 
     // Live fringe counter: ΔN = ΔOPD / λ = 2nΔx / λ — how many fringes have shifted as M2 moves.
-    // Pinned to the top-right corner so it never overlaps the optical beams.
+    // Pinned to the top-right corner inside a Gruvbox-styled overlay box so it never overlaps the beams.
     const double shift = 2 * m_in.n * dxUm * 1e3 / m_in.lambdaNm;
     const QPointF dataPos(a.right() - 14, a.top() + 18);
+    const int boxLines = 3;
+    const double lineH = 16.0;
+    const double boxW = 150.0;
+    const double boxH = lineH * boxLines + 8.0;
+    QRectF dataBox(a.right() - boxW - 10, a.top() + 10, boxW, boxH);
+    p.setPen(Qt::NoPen);
+    p.setBrush(QColor(t.bg.red(), t.bg.green(), t.bg.blue(), 200)); // gruvbox bg_hard at 80% opacity
+    p.drawRoundedRect(dataBox, 5, 5);
     text(p, QPointF(dataPos.x(), dataPos.y()),
          QString::fromStdString(std::string("ΔN = ") + (shift >= 0 ? "+" : "-") + NumberFormat::fixed(std::fabs(shift), 4) + " fringes"),
          shift >= 0 ? t.lime : t.amber, 10, Qt::AlignRight, true);
     text(p, QPointF(dataPos.x(), dataPos.y() + 16),
-QString::fromStdString(std::string("Δφ = ") + NumberFormat::signedFixed(dphi) + " rad = " +
-                               NumberFormat::signedFixed(dphi * 180.0 / std::numbers::pi) + "°"),
+         QString::fromStdString(std::string("Δφ = ") + NumberFormat::signedFixed(dphi) + " rad = " +
+                                NumberFormat::signedFixed(dphi * 180.0 / std::numbers::pi) + "°"),
          t.amber, 9, Qt::AlignRight);
     text(p, QPointF(dataPos.x(), dataPos.y() + 32),
          QString::fromStdString(std::string("I/Imax = ") + NumberFormat::fixed(intensity, 4)),
@@ -888,11 +938,15 @@ QString::fromStdString(std::string("Δφ = ") + NumberFormat::signedFixed(dphi) 
     text(p, QPointF(fringeCenter.x(), fringeCenter.y() - size / 2.0 - 10.0), "FRINGE VIEW", t.amber, 9, Qt::AlignHCenter);
 
     const double spacing = m_in.lambdaNm / (2 * m_in.n);
-    text(p, QPointF(a.left() + 14, a.bottom() - 14), QString(" ") + num(2 * m_in.n * dxUm, 4) + " µm", t.muted, 9);
-    text(p, QPointF(a.left() + 14, a.bottom() - 30), QString(" ") + num(spacing, 4) + " nm per fringe", t.muted, 9);
-    text(p, QPointF(a.left() + 14, a.bottom() - 46), m_in.fringes
+    QRectF micheBox(10, a.bottom() - 56, 200, 44);
+    p.setPen(Qt::NoPen);
+    p.setBrush(QColor(t.bg.red(), t.bg.green(), t.bg.blue(), 200));
+    p.drawRoundedRect(micheBox, 4, 4);
+    text(p, QPointF(micheBox.right() - 4, micheBox.top() + 16), QString(" ") + num(2 * m_in.n * dxUm, 4) + " µm", t.muted, 9, Qt::AlignRight);
+    text(p, QPointF(micheBox.right() - 4, micheBox.top() + 32), QString(" ") + num(spacing, 4) + " nm per fringe", t.muted, 9, Qt::AlignRight);
+    text(p, QPointF(micheBox.right() - 4, micheBox.top() + 48), m_in.fringes
              ? QString(" ") + num(vis, 2) + " · sweep ±2 µm"
-             : "Concentric fringes · schematic", t.muted, 9);
+             : "Concentric fringes · schematic", t.muted, 9, Qt::AlignRight);
 
     // ---- Detector screen interference fringes ----
     // A horizontal screen showing vertical bright/dark fringes. Fringe spacing across
@@ -981,15 +1035,19 @@ void ThinFilmCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     }
     p.setPen(QPen(t.text, 1)); p.drawLine(QPointF(right - 24, filmTop), QPointF(right - 24, filmBot));
     text(p, QPointF(right - 30, filmTop + thick / 2), QString(" ") + num(m_in.thicknessNm) + " nm", t.text, 10, Qt::AlignRight);
-    text(p, QPointF(14, a.bottom() - 46), QString(" ") + num(opd) + " nm", t.muted, 10);
+    QRectF filmBox(10, a.bottom() - 56, 200, 44);
+    p.setPen(Qt::NoPen);
+    p.setBrush(QColor(t.bg.red(), t.bg.green(), t.bg.blue(), 200));
+    p.drawRoundedRect(filmBox, 4, 4);
+    text(p, QPointF(filmBox.right() - 4, filmBox.top() + 16), QString(" ") + num(opd) + " nm", t.muted, 10, Qt::AlignRight);
     if (transmission) {
         const double trans = 1.0 - (oneReversal ? std::pow(std::sin(std::numbers::pi * opd / m_in.lambdaNm), 2) :
                                                 std::pow(std::cos(std::numbers::pi * opd / m_in.lambdaNm), 2));
-        text(p, QPointF(14, a.bottom() - 30), QString("I_t/I_t,max = ") + (oneReversal ? "sin²" : "cos²") + QString(" ") + num(trans), t.muted, 10);
-        text(p, QPointF(14, a.bottom() - 14), QString(" ") + QString(oneReversal ? "(q + ½)λ" : "qλ"), t.muted, 10);
+        text(p, QPointF(filmBox.right() - 4, filmBox.top() + 32), QString("I_t/I_t,max = ") + (oneReversal ? "sin²" : "cos²") + QString(" ") + num(trans), t.muted, 10, Qt::AlignRight);
+        text(p, QPointF(filmBox.right() - 4, filmBox.top() + 48), QString(" ") + QString(oneReversal ? "(q + ½)λ" : "qλ"), t.muted, 10, Qt::AlignRight);
     } else {
-        text(p, QPointF(14, a.bottom() - 30), QString(" ") + QString(oneReversal ? "+ π" : "") + QString("(") + (oneReversal ? "sin²" : "cos²") + ")", t.muted, 10);
-        text(p, QPointF(14, a.bottom() - 14), QString(" ") + QString(oneReversal ? "(q + ½)λ" : "qλ"), t.muted, 10);
+        text(p, QPointF(filmBox.right() - 4, filmBox.top() + 32), QString(" ") + QString(oneReversal ? "+ π" : "") + QString("(") + (oneReversal ? "sin²" : "cos²") + ")", t.muted, 10, Qt::AlignRight);
+        text(p, QPointF(filmBox.right() - 4, filmBox.top() + 48), QString(" ") + QString(oneReversal ? "(q + ½)λ" : "qλ"), t.muted, 10, Qt::AlignRight);
     }
 }
 
@@ -1082,20 +1140,29 @@ void SingleSlitCanvas::paintDiagram(QPainter& p, const QRectF& a) {
             p.drawLine(QPointF(sx - 5, g.y() - yl), QPointF(sx + 5, g.y() - yl));    // tick on the screen
             p.drawLine(QPointF(sx - 5, g.y() + yl), QPointF(sx + 5, g.y() + yl));
         }
-        text(p, QPointF(14, a.bottom() - 30),
+        QRectF geoBox(10, a.bottom() - 50, 260, 38);
+        p.setPen(Qt::NoPen);
+        p.setBrush(QColor(t.bg.red(), t.bg.green(), t.bg.blue(), 200));
+        p.drawRoundedRect(geoBox, 4, 4);
+        text(p, QPointF(geoBox.right() - 4, geoBox.top() + 16),
              QString("±") + num(m_in.screenM * std::tan(std::asin(std::min(1.0, lam / aa))) * 1e3, 4) + " mm · y₂ = ±"
-                 + num(m_in.screenM * std::tan(std::asin(std::min(1.0, 2 * lam / aa))) * 1e3, 4) + " mm", t.muted, 10);
-        text(p, QPointF(14, a.bottom() - 14),
+                 + num(m_in.screenM * std::tan(std::asin(std::min(1.0, 2 * lam / aa))) * 1e3, 4) + " mm", t.muted, 10, Qt::AlignRight);
+        text(p, QPointF(geoBox.right() - 4, geoBox.top() + 32),
              QString("±") + num(m_in.screenM * std::tan(std::asin(std::min(1.0, 3 * lam / aa))) * 1e3, 4)
                  + QString(" ") + num(m_in.exactGeometry ? 2 * m_in.screenM * std::tan(theta) * 1e3 :
                     2 * m_in.screenM * (m_in.lambdaNm * 1e-9 / (m_in.widthMm * 1e-3)) * 1e3, 5)
-                 + " mm (central lobe)", t.muted, 10);
+                 + " mm (central lobe)", t.muted, 10, Qt::AlignRight);
     } else {
         const double wExact = 2 * m_in.screenM * std::tan(theta) * 1e3;
         const double wApprox = 2 * m_in.screenM * (m_in.lambdaNm * 1e-9 / (m_in.widthMm * 1e-3)) * 1e3;
         const double wDisp = m_in.exactGeometry ? wExact : wApprox;
-        text(p, QPointF(14, a.bottom() - 30), QString("w = ") + (m_in.exactGeometry ? "2L tan θ₁" : "≈ 2L λ/a") + QString(" ") + num(wDisp, 5) + " mm", t.muted, 10);
-        text(p, QPointF(14, a.bottom() - 14), "Minima: a sin θ = mλ", t.muted, 10);
+        // Data box at bottom-left, inside a Gruvbox overlay so it never overlaps the diffraction lobe
+        QRectF slitBox(10, a.bottom() - 50, 220, 38);
+        p.setPen(Qt::NoPen);
+        p.setBrush(QColor(t.bg.red(), t.bg.green(), t.bg.blue(), 200));
+        p.drawRoundedRect(slitBox, 4, 4);
+        text(p, QPointF(slitBox.right() - 4, slitBox.top() + 16), QString("w = ") + (m_in.exactGeometry ? "2L tan θ₁" : "≈ 2L λ/a") + QString(" ") + num(wDisp, 5) + " mm", t.muted, 10, Qt::AlignRight);
+        text(p, QPointF(slitBox.right() - 4, slitBox.top() + 32), "Minima: a sin θ = mλ", t.muted, 10, Qt::AlignRight);
     }
 }
 
