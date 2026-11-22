@@ -123,13 +123,15 @@ void ModelPage::apply(bool record) {
     const ModelReport mr = compute(reportContext());
     const Report& r = mr.report;
     showRegisters(m_reg1, m_reg2, r);
+    const Notice& firstNotice = r.notices.empty() ? Notice{"", "", false} : r.notices[0];
+    const Notice& secondNotice = r.notices.size() > 1 ? r.notices[1] : firstNotice;
     if (r.paused) {                                                    // the red "paused" card replaces the interpretation
         m_interpretation->hide();
-        m_guard->setNotice(r.notices[0]);
+        m_guard->setNotice(firstNotice);
     } else {
         m_interpretation->show();
-        m_interpretation->setNotice(r.notices[0]);
-        m_guard->setNotice(r.notices.size() > 1 ? r.notices[1] : r.notices[0]);
+        m_interpretation->setNotice(firstNotice);
+        m_guard->setNotice(secondNotice);
     }
     applyIssues(r);
     if (r.paused) return;
