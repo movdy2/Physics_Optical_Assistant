@@ -67,6 +67,7 @@ private:
     QLineEdit* m_edit;
     QLabel* m_unit;
     QWidget* m_arrows;
+    QPushButton* m_pasteBtn;
     class QTimer* m_liveTimer;
     bool m_spinnerOn = false;
     bool m_plus = false;

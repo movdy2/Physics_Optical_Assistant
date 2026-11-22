@@ -16,6 +16,8 @@
 #include <QToolButton>
 #include <QWheelEvent>
 #include <QDebug>
+#include <QApplication>
+#include <QClipboard>
 #include <QPushButton>
 #include <QSizePolicy>
 #include <QStyle>
@@ -143,9 +145,28 @@ UnitField::UnitField(const QString& unit, QWidget* parent) : QFrame(parent) {
     makeArrow("spinDown", "chevron-down", -1);
     m_arrows->hide();
 
+    // Paste button: drop clipboard content straight into this field
+    m_pasteBtn = new QPushButton("📋");
+    m_pasteBtn->setFixedSize(24, 24);
+    m_pasteBtn->setToolTip("Paste from clipboard");
+    m_pasteBtn->setCursor(Qt::PointingHandCursor);
+    m_pasteBtn->setEnabled(false);
+    connect(m_pasteBtn, &QPushButton::clicked, this, [this] {
+        QClipboard* cb = QApplication::clipboard();
+        m_edit->insert(cb->text());
+        m_edit->setFocus();
+        emit edited();
+    });
+    // Enable when the clipboard has text
+    connect(QApplication::clipboard(), &QClipboard::changed, this, [this] {
+        m_pasteBtn->setEnabled(!QApplication::clipboard()->text().isEmpty());
+    });
+    m_pasteBtn->setEnabled(!QApplication::clipboard()->text().isEmpty());
+
     l->addWidget(m_edit, 1);
     l->addWidget(m_unit);
     l->addWidget(m_arrows);
+    l->addWidget(m_pasteBtn);
 
     m_liveTimer = new QTimer(this);                  // live update while typing, after a short pause
     m_liveTimer->setSingleShot(true);
