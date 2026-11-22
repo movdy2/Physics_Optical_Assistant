@@ -14,6 +14,7 @@
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QSizePolicy>
 #include <QMouseEvent>
 #include <QPalette>
 #include <QPushButton>
@@ -276,8 +277,11 @@ DashboardPage::DashboardPage(AppContext* ctx, QWidget* parent)
         l->addLayout(arrowCol);
         const int page = info.page;
         connect(card, &ClickableCard::clicked, this, [this, page] { emit openPageRequested(page); });
+        card->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         grid->addWidget(card, i / 2, i % 2);
     }
+    grid->setColumnStretch(0, 1);
+    grid->setColumnStretch(1, 1);
     cols.center->addLayout(grid, 1);
 
     // ===================================================================== right: lab notebook + export

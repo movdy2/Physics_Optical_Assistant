@@ -282,4 +282,283 @@ QPushButton#secondary {
     color: @text@;
     border: 1px solid @border@;
     font-weight: 600;
+    font-size: 12px;
+    min-height: 34px;
+    padding: 0 14px;
+}
+
+QPushButton#secondary:hover {
+    border-color: @accentCyan@;
+    background: @surfaceHover@;
+}
+
+QPushButton#outlineAmber, QPushButton#sendToNotes {
+    background: transparent;
+    color: @accentAmber@;
+    border: 1px solid @accentAmber@;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 12px;
+    min-height: 34px;
+    padding: 0 14px;
+}
+
+QPushButton#outlineAmber:hover, QPushButton#sendToNotes:hover {
+    background: rgba(251,191,36,12);
+}
+
+QPushButton#presetBtn {
+    background: @surface@;
+    color: @text@;
+    border: 1px solid @border@;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 60px;
+    min-height: 28px;
+    text-align: center;
+}
+
+QPushButton#presetBtn:hover {
+    border-color: @accentAmber@;
+    background: @surfaceHover@;
+}
+
+QPushButton#presetBtn:pressed {
+    background: @bg@;
+}
+
+/* ---------- Mode Tabs (compact) ---------- */
+QPushButton#modeTab {
+    background: @surfaceHover@;
+    color: @text@;
+    border: 1px solid @border@;
+    border-radius: 6px;
+    min-height: 30px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 0 10px;
+}
+
+QPushButton#modeTab:hover {
+    border-color: @accentCyan@;
+    color: @accentCyan@;
+}
+
+QPushButton#modeTab:checked {
+    background: @accentCyan@;
+    color: @bg@;
+    border: none;
+    font-weight: 600;
+}
+
+/* ---------- Checkboxes ---------- */
+QCheckBox {
+    color: @text@;
+    spacing: 8px;
+    font-size: 12px;
+}
+
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border: 2px solid @border@;
+    border-radius: 4px;
+    background: @surface@;
+}
+
+QCheckBox::indicator:checked {
+    background: @accentCyan@;
+    border-color: @accentCyan@;
+    image: url(:/icons/check.svg);
+}
+
+QCheckBox::indicator:hover {
+    border-color: @accentCyan@;
+}
+
+/* ---------- Sliders (compact) ---------- */
+QSlider::groove:horizontal {
+    height: 6px;
+    background: @border@;
+    border-radius: 3px;
+}
+
+QSlider::sub-page:horizontal {
+    background: @accentCyan@;
+    border-radius: 3px;
+}
+
+QSlider::handle:horizontal {
+    background: @accentCyan@;
+    width: 18px;
+    height: 18px;
+    margin: -6px 0;
+    border-radius: 9px;
+    border: 2px solid @bg@;
+}
+
+/* ---------- Calculation Register / LCD (compact) ---------- */
+QFrame#register {
+    background: @surface@;
+    border: 1px solid @border@;
+    border-radius: 8px;
+}
+
+QLabel#regBig {
+    font-family: 'JetBrains Mono';
+    font-size: 18px;
+    font-weight: 700;
+    color: @accentAmber@;
+}
+
+QLabel#regLine {
+    font-family: 'JetBrains Mono';
+    font-size: 11px;
+    color: @muted@;
+    line-height: 1.5;
+}
+
+QLabel#regCaption {
+    font-family: 'JetBrains Mono';
+    font-size: 9px;
+    color: @dim@;
+}
+
+QLabel#regFoot {
+    font-family: 'JetBrains Mono';
+    font-size: 9px;
+    color: @dim@;
+}
+
+/* ---------- Notices (compact) ---------- */
+QFrame#notice {
+    background: @surface@;
+    border: 1px solid @border@;
+    border-radius: 6px;
+    padding: 8px 12px;
+}
+
+QFrame#notice[error="true"] {
+    background: rgba(248, 113, 113, 8);
+    border: 1px solid @error@;
+}
+
+QLabel#noticeTitle {
+    font-size: 12px;
+    font-weight: 700;
+    color: @accentAmber@;
+}
+
+QFrame#notice[error="true"] QLabel#noticeTitle {
+    color: @error@;
+}
+
+QLabel#noticeBody {
+    font-size: 11px;
+    color: @muted@;
+    line-height: 1.4;
+}
+
+/* ---------- Scrollbars (compact) ---------- */
+QScrollArea {
+    background: transparent;
+    border: none;
+}
+
+QScrollBar:vertical {
+    background: transparent;
+    width: 8px;
+    margin: 0;
+}
+
+QScrollBar::handle:vertical {
+    background: @dim@;
+    border-radius: 4px;
+    min-height: 24px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: @muted@;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0;
+}
+
+QScrollBar:horizontal {
+    background: transparent;
+    height: 8px;
+    margin: 0;
+}
+
+QScrollBar::handle:horizontal {
+    background: @dim@;
+    border-radius: 4px;
+    min-width: 24px;
+}
+
+QScrollBar::handle:horizontal:hover {
+    background: @muted@;
+}
+
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+    width: 0;
+}
+
+/* ---------- Status Bar ---------- */
+QStatusBar {
+    background: @surface@;
+    color: @dim@;
+    border-top: 1px solid @border@;
+    font-size: 11px;
+}
+
+/* ---------- Dashboard card grid ---------- */
+QFrame#cardHot {
+    background: @surface@;
+    border: 1px solid @border@;
+    border-radius: 8px;
+}
+
+QFrame#cardHot:hover {
+    border-color: @accentCyan@;
+    background: @surfaceHover@;
+}
+
+QLabel#cardKicker {
+    font-size: 9px;
+    font-weight: 600;
+    color: @accentAmber@;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding-bottom: 2px;
+}
+
+QLabel#cardTitle {
+    font-size: 14px;
+    font-weight: 700;
+    color: @text@;
+    padding-bottom: 4px;
+}
+
+QLabel#cardText {
+    font-size: 11px;
+    color: @muted@;
+    line-height: 1.4;
+    padding-bottom: 6px;
+}
+
+QLabel#cardResult {
+    font-family: 'JetBrains Mono';
+    font-size: 11px;
+    font-weight: 700;
+    color: @accentAmber@;
+    padding-top: 2px;
+}
+
+/* ---------- RTL Support Hook ---------- */
+/* Arabic: app->setLayoutDirection(Qt::RightToLeft) */
+/* Numeric inputs & formulas force LTR via C++: widget->setLayoutDirection(Qt::LeftToRight) */
     

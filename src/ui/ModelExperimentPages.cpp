@@ -177,6 +177,7 @@ NewtonRingsPage::NewtonRingsPage(AppContext* ctx, QWidget* parent)
         b->setObjectName("presetBtn");
         b->setCursor(Qt::PointingHandCursor);
         b->setMinimumHeight(30);
+        b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         connect(b, &QPushButton::clicked, this, [this, lambda, radius, order, mediumIdx, viewingIdx] {
             m_syncing = true;
             m_lambda->setValue(lambda, 2);
@@ -194,6 +195,7 @@ NewtonRingsPage::NewtonRingsPage(AppContext* ctx, QWidget* parent)
     m_presetWater = makePreset("Water · m=4", 600.0, 1.0, 4, 1, 0);
     m_presetOil = makePreset("Oil · m=4", 600.0, 1.0, 4, 2, 0);
     m_presetTransmitted = makePreset("Transmitted · m=4", 600.0, 1.0, 4, 0, 1);
+    presetRow->addStretch(1);
     m_fieldLayout->addLayout(presetRow);
     m_canvas = new NewtonCanvas;
     build("Lens on plate / concentric reflected rings", m_canvas, "Dark-ring radius squared vs order", "Reflected: m = 0 is the dark contact center. Transmitted: it is bright and the dark rings sit at half orders. t ≈ r²/(2R).");
@@ -441,6 +443,7 @@ ThinFilmPage::ThinFilmPage(AppContext* ctx, QWidget* parent)
         b->setObjectName("presetBtn");
         b->setCursor(Qt::PointingHandCursor);
         b->setMinimumHeight(30);
+        b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         connect(b, &QPushButton::clicked, this, [this, lambda, n, n2, tNm, tabIdx] {
             m_syncing = true;
             m_lambda->setValue(lambda, 2);
@@ -458,6 +461,7 @@ ThinFilmPage::ThinFilmPage(AppContext* ctx, QWidget* parent)
     m_presetSoap = makePreset("Soap · n=1.333", 600.0, 1.333, 1.333, 100.0, 0);
     m_presetOil = makePreset("Oil · n=1.500", 600.0, 1.500, 1.500, 100.0, 0);
     m_presetTransmission = makePreset("Transmission", 600.0, 1.500, 1.500, 100.0, 1);
+    presetRow->addStretch(1);
     m_fieldLayout->addLayout(presetRow);
     m_swatch = new QLabel;
     m_swatch->setObjectName("colourSwatch");
@@ -529,6 +533,7 @@ GratingPage::GratingPage(AppContext* ctx, QWidget* parent)
         b->setObjectName("presetBtn");
         b->setCursor(Qt::PointingHandCursor);
         b->setMinimumHeight(30);
+        b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         connect(b, &QPushButton::clicked, this, [this, density, lambda, order, slits, tabIdx] {
             m_syncing = true;
             m_density->setValue(density, 0);
@@ -545,6 +550,7 @@ GratingPage::GratingPage(AppContext* ctx, QWidget* parent)
     m_presetStandard = makePreset("5000 /cm · m=1", 5000.0, 600.0, 1, 20, 0);
     m_presetHighDensity = makePreset("600 /mm · m=2", 6000.0, 532.0, 2, 20, 0);
     m_presetResolution = makePreset("Resolution tab", 5000.0, 600.0, 1, 20, 2);
+    presetRow->addStretch(1);
     m_fieldLayout->addLayout(presetRow);
     m_canvas = new GratingCanvas;
     build("Grating / angular observation screen", m_canvas, "Diffracted intensity vs angle", "N is line density, not slit count. Transmission: intensity fan. Orders: every peak with its angle. Resolution: R = m·M — raise M to split closer lines.");
@@ -591,6 +597,7 @@ SingleSlitPage::SingleSlitPage(AppContext* ctx, QWidget* parent)
         b->setObjectName("presetBtn");
         b->setCursor(Qt::PointingHandCursor);
         b->setMinimumHeight(30);
+        b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         connect(b, &QPushButton::clicked, this, [this, width, lambda, screen, tabIdx] {
             m_syncing = true;
             m_width->setValue(width, 4);
@@ -606,6 +613,7 @@ SingleSlitPage::SingleSlitPage(AppContext* ctx, QWidget* parent)
     m_presetStandard = makePreset("a=0.1mm · λ=500", 0.1, 500.0, 1.0, 0);
     m_presetGeometry = makePreset("Geometry tab", 0.1, 500.0, 1.0, 1);
     m_presetEnvelope = makePreset("Envelope tab", 0.1, 500.0, 1.0, 2);
+    presetRow->addStretch(1);
     m_fieldLayout->addLayout(presetRow);
     // Item 11: real-time updates are built into addField() (edited → apply(false))
     m_wave = addCombo("Incident wave", {"Plane · coherent"}, {0});
@@ -675,6 +683,7 @@ PolarizationPage::PolarizationPage(AppContext* ctx, QWidget* parent)
         b->setObjectName("presetBtn");
         b->setCursor(Qt::PointingHandCursor);
         b->setMinimumHeight(30);
+        b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         connect(b, &QPushButton::clicked, this, [this, intensity, angle, n1, n2, unpolarized, tabIdx] {
             m_syncing = true;
             m_intensity->setValue(intensity, 2);
@@ -691,6 +700,7 @@ PolarizationPage::PolarizationPage(AppContext* ctx, QWidget* parent)
     };
     m_presetMalus = makePreset("Malus · θ=60°", 100.0, 60.0, 1.0, 1.5, true, 0);
     m_presetBrewster = makePreset("Brewster · air→glass", 100.0, 0.0, 1.0, 1.5, true, 1);
+    presetRow->addStretch(1);
     m_fieldLayout->addLayout(presetRow);
     m_canvas = new PolarizationCanvas;
     build("Two polarizers / independent Brewster reference", m_canvas, "Intensity vs relative angle", "Malus: θ range 0–90°, the first polarizer transmits half of unpolarized light. Brewster: tan θB = n₂/n₁, R_p = 0 at θB.");
