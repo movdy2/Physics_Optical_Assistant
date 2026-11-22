@@ -80,6 +80,7 @@ signals:
 private:
     ThemeManager() = default;
     static QString styleSheet(const Theme& t);
+    static QString loadQssFromResource();
 
     Theme m_theme = Theme::warmDark();
 };
