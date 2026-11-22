@@ -20,20 +20,21 @@ namespace phy104 {
 Theme Theme::warmDark() {
     Theme t;
     t.dark = true;
-    t.bg = "#12161F";
-    t.sidebar = "#1A1D24";
-    t.titleBar = "#10141B";
-    t.card = "#1A1D24";
-    t.cardHover = "#232A36";
-    t.input = "#12161F";
-    t.canvas = "#10141B";
-    t.grid = "#1E2736";
-    t.border = "#2E3B4E";
-    t.surface = "#1A1D24";
-    t.surfaceHover = "#232A36";
-    t.text = "#F0F4F8";
-    t.muted = "#A3B8CC";
-    t.dim = "#6B7A8C";
+    // Gruvbox dark palette
+    t.bg = "#282828";           // dark0 — main background
+    t.sidebar = "#32302f";      // dark1 — sidebar
+    t.titleBar = "#1d2021";     // dark0_hard — title bar
+    t.card = "#32302f";         // dark1 — cards
+    t.cardHover = "#3a3735";    // dark2 — card hover
+    t.input = "#282828";        // dark0 — input fields
+    t.canvas = "#1d2021";       // dark0_hard — canvas
+    t.grid = "#32302f";         // dark1 — grid lines
+    t.border = "#3a3735";       // dark2 — borders
+    t.surface = "#32302f";      // dark1 — surfaces
+    t.surfaceHover = "#3a3735"; // dark2 — surface hover
+    t.text = "#fbf1c7";         // light0 — main text
+    t.muted = "#f2e5bc";        // light1 — muted text
+    t.dim = "#ebdbb2";          // light2 — dim text
     t.accentCyan = "#38BDF8";
     t.accentCyanHover = "#2FA3D8";
     t.accentCyanPressed = "#0E7490";
