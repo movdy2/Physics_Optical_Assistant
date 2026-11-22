@@ -187,12 +187,14 @@ ModelReport michelson(const MichelsonInput& in, const ReportContext& ctx) {
         const double count = 2 * in.n * (2 * sweepUm * 1e3) / in.lambdaNm;
         LcdRegister a;
         a.title = "FRINGE SPACING";
+        a.mode = "nm";
         a.lines = {"Δx = λ / (2n) per fringe", std::string(" = ") + num(in.lambdaNm) + std::string(" nm / (2 × ") + fx(in.n) + ")",
                    std::string(" = ") + fx(spacingNm) + " nm of mirror travel", std::string("2n/λ = ") + fx(2 * in.n / (in.lambdaNm * 1e-3)) + " fringes per µm"};
         a.resultLabel = "MIRROR MOTION PER FRINGE";
         a.resultValue = fx(spacingNm) + " nm";
         LcdRegister b;
         b.title = "COUNT ACROSS A ±2 µm SWEEP";
+        b.mode = "fringes";
         b.lines = {"N = 2nΔx / λ", std::string(" = 2 × ") + fx(in.n) + std::string(" × ") + NF::fixed(2 * sweepUm * 1e3, 1) + std::string(" nm / ") + num(in.lambdaNm) + " nm",
                    std::string("V = ") + NF::fixed(vBase, 2) + (vBase >= 1 ? "  (equal beams)" : "  (unequal beams)"),
                    "I/Imax = (1 + V cos 2πN)/(1 + V)"};
@@ -222,7 +224,7 @@ ModelReport michelson(const MichelsonInput& in, const ReportContext& ctx) {
         const double opdM = 2 * in.n * marked * 1e3 + opdPlate;
         const double vm = (in.coherenceLengthUm > 0.0) ? vBase * std::exp(-std::fabs(opdM) / 1e3 / in.coherenceLengthUm) : vBase;
         c.marker = {{marked, (1 + vm * std::cos(2 * std::numbers::pi * opdM / in.lambdaNm)) / (1 + vm)}};
-        c.legend = std::string("λ/(2n) = ") + fx(spacingNm) + " nm per fringe   ● current Δx";
+        c.legend = "Fringe Spacing   ● current Δx";
         return out;
     }
     // Item 12: explicit fringe count — integer number of full fringes crossed plus fractional part
@@ -230,6 +232,7 @@ ModelReport michelson(const MichelsonInput& in, const ReportContext& ctx) {
     const double fringeFraction = shift - std::copysign(static_cast<double>(fullFringes), shift);
     LcdRegister a;
     a.title = "ROUND-TRIP PATH CHANGE";
+    a.mode = "µm";
     std::vector<std::string> aLines = {"ΔOPD = 2nΔx", std::string(" = 2 × ") + fx(in.n) + std::string(" × ") + NF::signedFixed(in.displacementUm) + " µm", std::string(" = ") + NF::signedFixed(opd / 1e3) + " µm",
                "ΔN = ΔOPD / λ", std::string(" = ") + NF::general(opd, 6) + std::string(" nm / ") + num(in.lambdaNm) + " nm"};
     if (in.plateThicknessUm > 0.0)
@@ -241,6 +244,7 @@ ModelReport michelson(const MichelsonInput& in, const ReportContext& ctx) {
     a.resultValue = NF::signedFixed(shift);
     LcdRegister b;
     b.title = "PHASE-REFERENCED DETECTOR";
+    b.mode = "rad";
     std::vector<std::string> bLines = {std::string("Δφ = 2πΔN = ") + NF::signedFixed(phase) + " rad", "I/Imax = (1 + V cos Δφ)/(1 + V)", std::string("V = ") + NF::fixed(v, 2) + (v >= 1 ? "  (equal beams)" : "  (unequal beams)")};
     if (in.coherenceLengthUm > 0.0)
         bLines.push_back(std::string("V_eff = V · exp(−|ΔOPD|/Lc) = ") + NF::fixed(v, 4) + std::string("  (Lc = ") + num(in.coherenceLengthUm) + " µm)");
@@ -265,7 +269,7 @@ ModelReport michelson(const MichelsonInput& in, const ReportContext& ctx) {
         c.curve.push_back({x, (1 + vx * std::cos(2 * std::numbers::pi * opdX / in.lambdaNm)) / (1 + vx)});
     }
     c.marker = {{in.displacementUm, intensity}};
-    c.legend = "I/Imax = (1 + V cos 4πnΔx/λ)/(1 + V)   ● current Δx";
+        c.legend = "Theoretical Intensity   ● current Δx";
     return out;
 }
 
@@ -638,7 +642,8 @@ ModelReport singleSlit(const SingleSlitInput& in, const ReportContext& ctx) {
         return out;
     }
     LcdRegister r1;
-    r1.title = "FIRST MINIMUM / DEG";
+    r1.title = "FIRST MINIMUM";
+    r1.mode = "°";
     r1.lines = {"a sin θ₁ = λ", std::string("sin θ₁ = ") + NF::scientificCompact(lam) + std::string(" / ") + NF::scientificCompact(a), std::string("θ₁ = asin(") + NF::general(s1, 6) + ")"};
     r1.resultLabel = "FIRST DARK ANGLE · θ₁";
     r1.resultValue = fx(theta) + "°";
@@ -665,7 +670,7 @@ ModelReport singleSlit(const SingleSlitInput& in, const ReportContext& ctx) {
         c.curve.push_back({th, singleSlitIntensity(th, in.widthMm, in.lambdaNm)});
     }
     c.marker = {{theta, 0.0}};
-    c.legend = "(sin β / β)², β = π a sin θ / λ   ● first minimum";
+    c.legend = "Theoretical Intensity   ● First Minimum";
     return out;
 }
 
