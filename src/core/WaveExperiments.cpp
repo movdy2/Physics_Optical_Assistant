@@ -633,7 +633,8 @@ ModelReport singleSlit(const SingleSlitInput& in, const ReportContext& ctx) {
         return out;
     }
     LcdRegister r1;
-    r1.title = "FIRST MINIMUM / DEG";
+    r1.title = "FIRST MINIMUM";
+    r1.mode = "°";
     r1.lines = {"a sin θ₁ = λ", std::string("sin θ₁ = ") + NF::scientificCompact(lam) + std::string(" / ") + NF::scientificCompact(a), std::string("θ₁ = asin(") + NF::general(s1, 6) + ")"};
     r1.resultLabel = "FIRST DARK ANGLE · θ₁";
     r1.resultValue = fx(theta) + "°";
@@ -659,7 +660,7 @@ ModelReport singleSlit(const SingleSlitInput& in, const ReportContext& ctx) {
         c.curve.push_back({th, singleSlitIntensity(th, in.widthMm, in.lambdaNm)});
     }
     c.marker = {{theta, 0.0}};
-    c.legend = "(sin β / β)², β = π a sin θ / λ   ● first minimum";
+    c.legend = "Theoretical Intensity   ● First Minimum";
     return out;
 }
 
