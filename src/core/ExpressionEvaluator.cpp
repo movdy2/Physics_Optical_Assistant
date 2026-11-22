@@ -8,6 +8,7 @@
 #include <limits>
 #include <numbers>
 #include <stdexcept>
+#include <string>
 
 namespace phy104 {
 namespace {
@@ -144,21 +145,43 @@ private:
     }
     static double toDeg(double rad) { return rad * 180.0 / std::numbers::pi; }
 
+    // ---- math domain guards: throw on NaN/div-by-zero instead of silently returning NaN ----
+    static double guardSecCsc(double denom, const char* fn) {
+        if (std::fabs(denom) < 1e-15) throw std::runtime_error(std::string(fn) + " is undefined (division by zero)");
+        return 1.0 / denom;
+    }
+    static double guardAsinAcos(double x, const char* fn) {
+        if (x < -1.0 || x > 1.0) throw std::runtime_error(std::string(fn) + " requires argument in [-1, 1], got " + std::to_string(x));
+        return x;
+    }
+    static double guardSqrt(double x) {
+        if (x < 0.0) throw std::runtime_error("sqrt requires a non-negative argument, got " + std::to_string(x));
+        return x;
+    }
+    static double guardLog(double x, const char* fn) {
+        if (x <= 0.0) throw std::runtime_error(std::string(fn) + " requires a positive argument, got " + std::to_string(x));
+        return x;
+    }
+
     double callFunction(const std::string& f, double x) const {
         const bool deg = m_unit == AngleUnit::Degrees;
         if (f == "sin")  return deg ? sinDeg(x) : std::sin(x);
         if (f == "cos")  return deg ? cosDeg(x) : std::cos(x);
         if (f == "tan")  return deg ? tanDeg(x) : std::tan(x);
-        if (f == "sec")  return 1.0 / (deg ? cosDeg(x) : std::cos(x));
-        if (f == "csc")  return 1.0 / (deg ? sinDeg(x) : std::sin(x));
-        if (f == "cot")  return deg ? 1.0 / tanDeg(x) : 1.0 / std::tan(x);
-        if (f == "asin") return deg ? toDeg(std::asin(x)) : std::asin(x);   // NaN if |x| > 1
-        if (f == "acos") return deg ? toDeg(std::acos(x)) : std::acos(x);
+        if (f == "sec")  return guardSecCsc((deg ? cosDeg(x) : std::cos(x)), "sec");
+        if (f == "csc")  return guardSecCsc((deg ? sinDeg(x) : std::sin(x)), "csc");
+        if (f == "cot") {
+            const double t = (deg ? tanDeg(x) : std::tan(x));
+            if (std::fabs(t) < 1e-15) throw std::runtime_error("cot is undefined (division by zero)");
+            return 1.0 / t;
+        }
+        if (f == "asin") return deg ? toDeg(std::asin(guardAsinAcos(x, "asin"))) : std::asin(guardAsinAcos(x, "asin"));
+        if (f == "acos") return deg ? toDeg(std::acos(guardAsinAcos(x, "acos"))) : std::acos(guardAsinAcos(x, "acos"));
         if (f == "atan") return deg ? toDeg(std::atan(x)) : std::atan(x);
-        if (f == "sqrt") return std::sqrt(x);              // NaN if x < 0
+        if (f == "sqrt") return std::sqrt(guardSqrt(x));
         if (f == "abs")  return std::fabs(x);
-        if (f == "ln")   return std::log(x);
-        if (f == "log")  return std::log10(x);
+        if (f == "ln")   return std::log(guardLog(x, "ln"));
+        if (f == "log")  return std::log10(guardLog(x, "log"));
         if (f == "sinh") return std::sinh(x);
         if (f == "cosh") return std::cosh(x);
         if (f == "tanh") return std::tanh(x);

@@ -11,9 +11,15 @@ class GridCanvas : public QWidget {
     Q_OBJECT
 public:
     explicit GridCanvas(QWidget* parent = nullptr);
+    /// Enable/disable painter antialiasing. Disabled by default for the grid;
+    /// subclasses that need smooth lines can enable it.
+    void setAntialiased(bool on) { m_antialiased = on; }
+    bool antialiased() const { return m_antialiased; }
 protected:
     void paintEvent(QPaintEvent*) override;
     virtual void paintDiagram(class QPainter& painter, const QRectF& area) = 0;
+private:
+    bool m_antialiased = false;
 };
 
 struct ChartSeries {
@@ -52,6 +58,9 @@ public:
     void setAnnotations(const QList<ChartVLine>& vlines, const QList<ChartHLine>& hlines,
                         const QList<ChartRegion>& regions, const QList<ChartPoint>& points);
     void clearAnnotations() { setAnnotations({}, {}, {}, {}); }
+    /// Enable/disable painter antialiasing. Disabled by default; enable for smooth curves.
+    void setAntialiased(bool on) { m_antialiased = on; }
+    bool antialiased() const { return m_antialiased; }
 
 protected:
     void paintEvent(QPaintEvent*) override;
@@ -69,6 +78,7 @@ private:
     QList<ChartHLine> m_hlines;
     QList<ChartRegion> m_regions;
     QList<ChartPoint> m_points;
+    bool m_antialiased = false;
 };
 
 } // namespace phy104

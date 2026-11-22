@@ -12,6 +12,8 @@
 #include <QPushButton>
 #include <QSizePolicy>
 #include <QSlider>
+#include <QToolButton>
+#include <QTimer>
 #include <QVBoxLayout>
 #include <cmath>
 
@@ -28,6 +30,16 @@ ModelPage::ModelPage(const QString& title, const QString& subtitle, const QStrin
     m_controls = new Panel("Experiment controls");
     m_controls->body()->setSpacing(12);
     m_fieldLayout = m_controls->body();
+
+    // Slider debounce timer: coalesces rapid valueChanged calls into a single apply after 16 ms (~60 fps).
+    m_debounceTimer = new QTimer(this);
+    m_debounceTimer->setSingleShot(true);
+    m_debounceTimer->setInterval(16);
+    connect(m_debounceTimer, &QTimer::timeout, this, &ModelPage::debounceApply);
+}
+
+void ModelPage::debounceApply() {
+    apply(false);
 }
 
 UnitField* ModelPage::addField(const QString& id, const QString& label, const QString& unit, double value, int decimals, bool signedValue, bool spinner, double step) {
@@ -123,13 +135,15 @@ void ModelPage::apply(bool record) {
     const ModelReport mr = compute(reportContext());
     const Report& r = mr.report;
     showRegisters(m_reg1, m_reg2, r);
+    const Notice& firstNotice = r.notices.empty() ? Notice{"", "", false} : r.notices[0];
+    const Notice& secondNotice = r.notices.size() > 1 ? r.notices[1] : firstNotice;
     if (r.paused) {                                                    // the red "paused" card replaces the interpretation
         m_interpretation->hide();
-        m_guard->setNotice(r.notices[0]);
+        m_guard->setNotice(firstNotice);
     } else {
         m_interpretation->show();
-        m_interpretation->setNotice(r.notices[0]);
-        m_guard->setNotice(r.notices.size() > 1 ? r.notices[1] : r.notices[0]);
+        m_interpretation->setNotice(firstNotice);
+        m_guard->setNotice(secondNotice);
     }
     applyIssues(r);
     if (r.paused) return;
@@ -159,13 +173,21 @@ NewtonRingsPage::NewtonRingsPage(AppContext* ctx, QWidget* parent)
     : ModelPage("Newton's Rings", "Dark rings in a thin air film, reflected or transmitted", "Newton's Rings", ctx, parent) {
     addTabs({"Reflected", "Dark rings"});
     m_lambda = addField(QString::fromLatin1(FieldIds::wavelength), "Vacuum wavelength · λ", "nm", 600, 2);
+    m_lambda->setToolTip("Wavelength of light in nm. Ring radius r ≈ sqrt(m·λ·R/n).");
     m_radius = addField(QString::fromLatin1(FieldIds::radiusOfCurvature), "Radius of curvature · R", "m", 1.0, 4);
+    m_radius->setToolTip("Radius of curvature of the lens surface in m. Larger R = smaller rings.");
     m_order = addField(QString::fromLatin1(FieldIds::order), "Selected dark-ring order · m", "integer", 4, 0, false, true, 1);
+    m_order->setToolTip("Dark ring order m. Central spot is m=0 (dark in reflected, bright in transmitted).");
     m_sigmaLambda = addField(QString::fromLatin1(FieldIds::sigmaNewtonLambda), "σ(λ) uncertainty", "nm", 0.0, 4);
+    m_sigmaLambda->setToolTip("Standard uncertainty (1σ) on wavelength. Enter 0 to treat as exact.");
     m_sigmaRadius = addField(QString::fromLatin1(FieldIds::sigmaNewtonRadius), "σ(R) uncertainty", "m", 0.0, 4);
+    m_sigmaRadius->setToolTip("Standard uncertainty (1σ) on radius of curvature. Enter 0 to treat as exact.");
     m_sigmaN = addField(QString::fromLatin1(FieldIds::sigmaNewtonIndex), "σ(n) uncertainty", "", 0.0, 4);
+    m_sigmaN->setToolTip("Standard uncertainty (1σ) on film index. Enter 0 to treat as exact.");
     m_medium = addCombo("Film medium", {"Air · n = 1.0000", "Water · n = 1.3330", "Oil · n = 1.4000"}, {1.0, 1.333, 1.4});
+    m_medium->setToolTip("Film medium between lens and plate (affects effective wavelength).");
     m_viewing = addCombo("Viewing mode", {"Reflected light", "Transmitted light"}, {0, 1});
+    m_viewing->setToolTip("Reflected: dark contact center. Transmitted: bright contact center, dark rings at half orders.");
     // ---- Preset scenarios (Item 19) ----
     auto* presetLabel = new QLabel("Presets:");
     presetLabel->setObjectName("fieldLabel");
@@ -199,6 +221,26 @@ NewtonRingsPage::NewtonRingsPage(AppContext* ctx, QWidget* parent)
     m_fieldLayout->addLayout(presetRow);
     m_canvas = new NewtonCanvas;
     build("Lens on plate / concentric reflected rings", m_canvas, "Dark-ring radius squared vs order", "Reflected: m = 0 is the dark contact center. Transmitted: it is bright and the dark rings sit at half orders. t ≈ r²/(2R).");
+    auto* newtonHelpBtn = new QToolButton;
+    newtonHelpBtn->setText("?");
+    newtonHelpBtn->setFixedSize(24, 24);
+    newtonHelpBtn->setToolTip("How to use — Newton's Rings");
+    newtonHelpBtn->setCursor(Qt::PointingHandCursor);
+    connect(newtonHelpBtn, &QToolButton::clicked, this, [this] {
+        phy104::showHelpDialog(this, "How to use — Newton's Rings",
+            "<h3>Newton's Rings</h3>"
+            "<p><b>λ:</b> wavelength of light in nm. Ring radius satisfies r² ≈ m·λ·R/n.</p>"
+            "<p><b>R:</b> radius of curvature of the lens surface in m.</p>"
+            "<p><b>m:</b> dark ring order (m = 0 at the contact center).</p>"
+            "<p><b>Medium:</b> the film between lens and plate changes the effective wavelength.</p>"
+            "<p><b>Viewing:</b> reflected = dark center; transmitted = bright center.</p>"
+            "<p>Presets for air/water/oil media and reflected/transmitted viewing.</p>");
+    });
+    auto* newtonHelpBar = new QHBoxLayout;
+    newtonHelpBar->setContentsMargins(0, 0, 0, 0);
+    newtonHelpBar->addStretch(1);
+    newtonHelpBar->addWidget(newtonHelpBtn);
+    m_diagram->body()->addLayout(newtonHelpBar);
     reset();
 }
 ModelReport NewtonRingsPage::compute(const ReportContext& ctx) {
@@ -223,13 +265,16 @@ MichelsonPage::MichelsonPage(AppContext* ctx, QWidget* parent)
     : ModelPage("Michelson Interferometry", "Drag movable M2 to follow the fringe shift", "Michelson Interferometry", ctx, parent) {
     addTabs({"Displacement", "Fringes"});
     m_lambda = addField(QString::fromLatin1(FieldIds::wavelength), "Wavelength · λ", "nm", 632.8, 2);
+    m_lambda->setToolTip("Wavelength of light in nm. One fringe shift per λ/(2n) of mirror travel.");
 
     m_source = new QComboBox;
     for (const auto& s : ctx->presets.sources) m_source->addItem(QString::fromStdString(s.name), s.wavelengthNm);
     m_source->addItem("Custom", -1.0);
     m_fieldLayout->addWidget(labeled("Source preset", m_source));
+    m_source->setToolTip("Choose a standard light source preset, or Custom to enter λ manually.");
 
     m_dx = addField(QString::fromLatin1(FieldIds::mirrorDisplacement), "Mirror displacement · Δx", "µm", 0.75, 4, true, true, 0.05);
+    m_dx->setToolTip("Mirror displacement in µm. Moving M2 changes the optical path difference ΔOPD = 2n·Δx.");
 
     m_dxSlider = new QSlider(Qt::Horizontal);
     m_dxSlider->setObjectName("michelsonMirrorSlider");
@@ -247,6 +292,7 @@ MichelsonPage::MichelsonPage(AppContext* ctx, QWidget* parent)
     for (const auto& m : ctx->presets.media) m_medium->addItem(QString::fromStdString(m.name), m.n);
     m_medium->addItem("Custom · n = slider", -1.0);
     m_fieldLayout->addWidget(labeled("Arm medium · n", m_medium));
+    m_medium->setToolTip("Medium filling the M2 arm. ΔOPD = 2n·Δx scales with n.");
 
     m_nSlider = new QSlider(Qt::Horizontal);
     m_nSlider->setObjectName("michelsonIndexSlider");
@@ -261,9 +307,12 @@ MichelsonPage::MichelsonPage(AppContext* ctx, QWidget* parent)
     m_fieldLayout->addWidget(labeled("Index n · 1.000–2.500", m_nSlider));
 
     m_reference = addCombo("M2 drive", {"Manual micrometer", "Piezo actuator"}, {0, 1});
+    m_reference->setToolTip("Manual: move M2 by dragging/slider. Piezo: sub-nanometre actuation for fine fringes.");
     m_balance = addCombo("Beam balance", {"Equal beams · V = 1.00", "Unequal beams · V = 0.60"}, {1.0, 0.6});
+    m_balance->setToolTip("Beam balance sets fringe visibility V. Equal arms give maximum contrast.");
     // Item 13: coherence length / source linewidth
     m_coherenceLength = addField(QString::fromLatin1(FieldIds::michelsonCoherenceLength), "Coherence length · Lc", "µm", 0.0, 2, false, true, 1);
+    m_coherenceLength->setToolTip("Coherence length Lc. Fringes fade when |2·Δx| approaches Lc.");
     // Item 14: mirror tilt
     m_tiltSlider = new QSlider(Qt::Horizontal);
     m_tiltSlider->setObjectName("michelsonTiltSlider");
@@ -276,7 +325,9 @@ MichelsonPage::MichelsonPage(AppContext* ctx, QWidget* parent)
     m_fieldLayout->addWidget(labeled("Mirror tilt · mrad", m_tiltSlider));
     // Item 15: glass plate in one arm
     m_plateThickness = addField(QString::fromLatin1(FieldIds::michelsonPlateThickness), "Plate thickness · t", "µm", 0.0, 2, false, true, 1);
+    m_plateThickness->setToolTip("Plate thickness in µm inserted in one arm. Adds optical path (n_p−1)·t.");
     m_plateIndex = addField(QString::fromLatin1(FieldIds::michelsonPlateIndex), "Plate index · n_p", "", 1.5, 4, false, true, 0.01);
+    m_plateIndex->setToolTip("Refractive index of the plate material.");
     // ---- Preset scenarios (Item 19) ----
     auto* presetLabel = new QLabel("Presets:");
     presetLabel->setObjectName("fieldLabel");
@@ -343,7 +394,7 @@ MichelsonPage::MichelsonPage(AppContext* ctx, QWidget* parent)
     // Index slider: moving it sets n and re-applies; choosing a medium preset updates the slider.
     connect(m_nSlider, &QSlider::valueChanged, this, [this](int) {
         m_medium->setCurrentIndex(m_medium->count() - 1);  // "Custom"
-        apply(false);
+        debounceApply();
     });
     connect(m_medium, &QComboBox::activated, this, [this](int index) {
         const double n = m_medium->itemData(index).toDouble();
@@ -356,11 +407,31 @@ MichelsonPage::MichelsonPage(AppContext* ctx, QWidget* parent)
 
     // Item 13-15 real-time connections for new parameters
     connect(m_coherenceLength, &UnitField::edited, this, [this] { apply(false); });
-    connect(m_tiltSlider, &QSlider::valueChanged, this, [this] { apply(false); });
+    connect(m_tiltSlider, &QSlider::valueChanged, this, [this] { debounceApply(); });
     connect(m_plateThickness, &UnitField::edited, this, [this] { apply(false); });
     connect(m_plateIndex, &UnitField::edited, this, [this] { apply(false); });
 
     build("Optical bench / detector fringes", m_canvas, "Detector intensity vs mirror displacement", "Drag movable M2 or use its slider. ΔOPD = 2nΔx; one fringe per λ/(2n) of mirror travel.");
+    auto* michelsonHelpBtn = new QToolButton;
+    michelsonHelpBtn->setText("?");
+    michelsonHelpBtn->setFixedSize(24, 24);
+    michelsonHelpBtn->setToolTip("How to use — Michelson Interferometer");
+    michelsonHelpBtn->setCursor(Qt::PointingHandCursor);
+    connect(michelsonHelpBtn, &QToolButton::clicked, this, [this] {
+        phy104::showHelpDialog(this, "How to use — Michelson Interferometer",
+            "<h3>Michelson Interferometer</h3>"
+            "<p><b>λ:</b> wavelength of light in nm. One fringe shift per λ/(2n) of mirror travel.</p>"
+            "<p><b>Δx:</b> mirror displacement in µm. Changes optical path difference ΔOPD = 2n·Δx.</p>"
+            "<p><b>n:</b> refractive index of the arm medium.</p>"
+            "<p><b>Mirror tilt:</b> tilt M2 to change from straight fringes (tilt = 0) to circular bullseye fringes.</p>"
+            "<p><b>Plate:</b> inserting a glass plate adds optical path (n_p−1)·t in one arm.</p>"
+            "<p>Presets for Air/Crown/Flint media, displacement tabs, and fringes view.</p>");
+    });
+    auto* michelsonHelpBar = new QHBoxLayout;
+    michelsonHelpBar->setContentsMargins(0, 0, 0, 0);
+    michelsonHelpBar->addStretch(1);
+    michelsonHelpBar->addWidget(michelsonHelpBtn);
+    m_diagram->body()->addLayout(michelsonHelpBar);
     reset();
 }
 ModelReport MichelsonPage::compute(const ReportContext& ctx) {
@@ -379,7 +450,7 @@ void MichelsonPage::setMirrorDisplacement(double displacementUm) {
     m_dx->setValue(travel, 4);
     QSignalBlocker blocker(m_dxSlider);
     m_dxSlider->setValue(static_cast<int>(std::lround(travel * 10000.0)));
-    apply(false);
+    debounceApply();
 }
 void MichelsonPage::updateCanvas() {
     const bool fringes = m_tabs->current() == 1;
@@ -427,10 +498,15 @@ ThinFilmPage::ThinFilmPage(AppContext* ctx, QWidget* parent)
     : ModelPage("Thin-Film Interference", "Single film at normal incidence: reflection and transmission", "Thin-Film Interference", ctx, parent) {
     addTabs({"Reflection", "Transmission", "Colours"});
     m_lambda = addField(QString::fromLatin1(FieldIds::wavelength), "Vacuum wavelength · λ", "nm", 600, 2);
+    m_lambda->setToolTip("Vacuum wavelength in nm. Constructive reflection at 2nt = (q + ½)λ (one phase reversal).");
     m_n = addField(QString::fromLatin1(FieldIds::refractiveIndex), "Film index · n", "", 1.5, 4, false, true, 0.01);
+    m_n->setToolTip("Film refractive index n. Sets optical thickness nt.");
     m_n2 = addField(QString::fromLatin1(FieldIds::filmSubstrateIndex), "Substrate index · n₂", "", 1.5, 4, false, true, 0.01);
+    m_n2->setToolTip("Substrate index n₂. n > n₂ gives one phase reversal at top only.");
     m_t = addField(QString::fromLatin1(FieldIds::thickness), "Film thickness · t", "nm", 100, 2, false, true, 5);
+    m_t->setToolTip("Physical film thickness in nm. Optical path difference = 2nt.");
     m_theta = addField(QString::fromLatin1(FieldIds::filmIncidenceAngle), "Incidence angle · θ", "°", 0.0, 2, false, true, 1);
+    m_theta->setToolTip("Angle of incidence in degrees. 0° = normal incidence.");
     // ---- Preset scenarios (Item 19) ----
     auto* presetLabel = new QLabel("Presets:");
     presetLabel->setObjectName("fieldLabel");
@@ -469,6 +545,26 @@ ThinFilmPage::ThinFilmPage(AppContext* ctx, QWidget* parent)
     m_fieldLayout->addWidget(m_swatch);
     m_canvas = new ThinFilmCanvas;
     build("Film layers / two reflected rays", m_canvas, "Reflected intensity vs thickness", "Reflection: one phase reversal, bright at 2nt = (q + ½)λ. Transmission: no net reversal, bright at 2nt = qλ. Colours: the whole visible band at once.");
+    auto* thinFilmHelpBtn = new QToolButton;
+    thinFilmHelpBtn->setText("?");
+    thinFilmHelpBtn->setFixedSize(24, 24);
+    thinFilmHelpBtn->setToolTip("How to use — Thin-Film Interference");
+    thinFilmHelpBtn->setCursor(Qt::PointingHandCursor);
+    connect(thinFilmHelpBtn, &QToolButton::clicked, this, [this] {
+        phy104::showHelpDialog(this, "How to use — Thin-Film Interference",
+            "<h3>Thin-Film Interference</h3>"
+            "<p><b>λ:</b> vacuum wavelength in nm.</p>"
+            "<p><b>n:</b> film index; <b>n₂:</b> substrate index. n > n₂ gives one phase reversal at the top surface only.</p>"
+            "<p><b>t:</b> film thickness. Optical path difference = 2nt.</p>"
+            "<p><b>θ:</b> incidence angle; 0° = normal.</p>"
+            "<p>Reflection: bright at 2nt = (q + ½)λ. Transmission: bright at 2nt = qλ.</p>"
+            "<p>Presets for soap/oil films and transmission view.</p>");
+    });
+    auto* thinFilmHelpBar = new QHBoxLayout;
+    thinFilmHelpBar->setContentsMargins(0, 0, 0, 0);
+    thinFilmHelpBar->addStretch(1);
+    thinFilmHelpBar->addWidget(thinFilmHelpBtn);
+    m_diagram->body()->addLayout(thinFilmHelpBar);
     reset();
 }
 ModelReport ThinFilmPage::compute(const ReportContext& ctx) {
@@ -516,11 +612,17 @@ GratingPage::GratingPage(AppContext* ctx, QWidget* parent)
     : ModelPage("Diffraction Grating", "Principal maxima of a transmission grating", "Diffraction Grating", ctx, parent) {
     addTabs({"Transmission", "Orders", "Resolution"});
     m_density = addField(QString::fromLatin1(FieldIds::gratingDensity), "Line density · N", "lines/cm", 5000, 0, false, true, 100);
+    m_density->setToolTip("Line density in lines/cm. Grating spacing d = 1/N; maxima at d·sin θ = mλ.");
     m_lambda = addField(QString::fromLatin1(FieldIds::wavelength), "Wavelength · λ₁", "nm", 600, 2);
+    m_lambda->setToolTip("Primary wavelength λ₁ in nm. Angular spread scales with λ/d.");
     m_lambda2 = addField(QString::fromLatin1(FieldIds::gratingLambda2), "Second wavelength · λ₂ (0 = off)", "nm", 0.0, 2);
+    m_lambda2->setToolTip("Optional second wavelength λ₂ (nm). Set 0 to disable; two wavelengths show separate order fans.");
     m_order = addField(QString::fromLatin1(FieldIds::order), "Selected order · m", "order", 1, 0, true, true, 1);
+    m_order->setToolTip("Diffraction order m. Peak angle from d·sin θ = mλ.");
     m_slits = addField(QString::fromLatin1(FieldIds::illuminatedSlits), "Illuminated slit count · M", "slits", 20, 0, false, true, 1);
+    m_slits->setToolTip("Number M of illuminated slits. Resolution R = m·M; peak width ∝ 1/M.");
     m_incidence = addCombo("Incidence", {"Normal · 0.00°", "15.00°", "30.00°"}, {0, 15, 30});
+    m_incidence->setToolTip("Angle of incidence; shifts all orders via the grating equation.");
     // ---- Preset scenarios (Item 19) ----
     auto* presetLabel = new QLabel("Presets:");
     presetLabel->setObjectName("fieldLabel");
@@ -553,6 +655,25 @@ GratingPage::GratingPage(AppContext* ctx, QWidget* parent)
     m_fieldLayout->addLayout(presetRow);
     m_canvas = new GratingCanvas;
     build("Grating / angular observation screen", m_canvas, "Diffracted intensity vs angle", "N is line density, not slit count. Transmission: intensity fan. Orders: every peak with its angle. Resolution: R = m·M — raise M to split closer lines.");
+    auto* gratingHelpBtn = new QToolButton;
+    gratingHelpBtn->setText("?");
+    gratingHelpBtn->setFixedSize(24, 24);
+    gratingHelpBtn->setToolTip("How to use — Diffraction Grating");
+    gratingHelpBtn->setCursor(Qt::PointingHandCursor);
+    connect(gratingHelpBtn, &QToolButton::clicked, this, [this] {
+        phy104::showHelpDialog(this, "How to use — Diffraction Grating",
+            "<h3>Diffraction Grating</h3>"
+            "<p><b>N:</b> line density in lines/cm. Grating spacing d = 1/N; maxima at d·sin θ = mλ.</p>"
+            "<p><b>λ₁ / λ₂:</b> wavelength(s) in nm. Two wavelengths show separate order fans.</p>"
+            "<p><b>m:</b> selected diffraction order.</p>"
+            "<p><b>M:</b> illuminated slit count. Resolution R = m·M; peak width ∝ 1/M.</p>"
+            "<p>Presets for standard/high-density gratings and the resolution tab.</p>");
+    });
+    auto* gratingHelpBar = new QHBoxLayout;
+    gratingHelpBar->setContentsMargins(0, 0, 0, 0);
+    gratingHelpBar->addStretch(1);
+    gratingHelpBar->addWidget(gratingHelpBtn);
+    m_diagram->body()->addLayout(gratingHelpBar);
     reset();
 }
 ModelReport GratingPage::compute(const ReportContext& ctx) {
@@ -582,9 +703,13 @@ SingleSlitPage::SingleSlitPage(AppContext* ctx, QWidget* parent)
     : ModelPage("Single-Slit Diffraction", "First minimum and central maximum width", "Single-Slit Diffraction", ctx, parent) {
     addTabs({"Intensity", "Geometry", "Envelope"});
     m_width = addField(QString::fromLatin1(FieldIds::slitWidth), "Slit width · a", "mm", 0.1, 4, false, true, 0.01);
+    m_width->setToolTip("Slit width a in mm. First minimum at sin θ = λ/a; central width ∝ λ/a.");
     m_lambda = addField(QString::fromLatin1(FieldIds::wavelength), "Wavelength · λ", "nm", 500, 2);
+    m_lambda->setToolTip("Wavelength λ in nm. Sets fringe scale; first minimum at sin θ = λ/a.");
     m_screen = addField(QString::fromLatin1(FieldIds::screenDistance), "Screen distance · L", "m", 1.0, 4);
+    m_screen->setToolTip("Screen distance L in m. Linear fringe spacing ≈ L·λ/a.");
     m_separation = addField(QString::fromLatin1(FieldIds::slitSeparation), "Second slit · d (envelope tab)", "mm", 0.4, 4);
+    m_separation->setToolTip("Second slit separation d (envelope tab only). Fringes inside the envelope; missing orders when d/a is integer.");
     // ---- Preset scenarios (Item 19) ----
     auto* presetLabel = new QLabel("Presets:");
     presetLabel->setObjectName("fieldLabel");
@@ -615,14 +740,38 @@ SingleSlitPage::SingleSlitPage(AppContext* ctx, QWidget* parent)
     m_fieldLayout->addLayout(presetRow);
     // Item 11: real-time updates are built into addField() (edited → apply(false))
     m_wave = addCombo("Incident wave", {"Plane · coherent"}, {0});
+    m_wave->setToolTip("Incident wave type. Plane coherent wave illuminates the slit(s).");
     m_scale = addCombo("Intensity scale", {"Normalized · I/I₀"}, {0});
+    m_scale->setToolTip("Intensity scale. Normalized divides by the central maximum I₀.");
     m_exactGeom = addCombo("Geometry model", {"Exact · tan(asin(λ/a))", "Small-angle · ≈ 2Lλ/a"}, {1, 0});
+    m_exactGeom->setToolTip("Geometry model: exact sin/cos vs small-angle approximation for fringe positions.");
     m_showEnvelopeOnly = new QCheckBox("Show sinc² envelope only");
+    m_showEnvelopeOnly->setToolTip("When checked, draws just the sinc² envelope (cos² interference term = 1).");
     m_showEnvelopeOnly->setChecked(false);
     m_fieldLayout->addWidget(m_showEnvelopeOnly);
     connect(m_showEnvelopeOnly, &QCheckBox::toggled, this, [this](bool) { apply(false); });
     m_canvas = new SingleSlitCanvas;
     build("Slit / screen diffraction pattern", m_canvas, "Single-slit intensity vs angle", "Minima: a sin θ = mλ. Intensity: the envelope. Geometry: where each minimum lands. Envelope: two slits of width a — fringes inside the envelope, missing orders at d/a.");
+    auto* slitHelpBtn = new QToolButton;
+    slitHelpBtn->setText("?");
+    slitHelpBtn->setFixedSize(24, 24);
+    slitHelpBtn->setToolTip("How to use — Single-Slit Diffraction");
+    slitHelpBtn->setCursor(Qt::PointingHandCursor);
+    connect(slitHelpBtn, &QToolButton::clicked, this, [this] {
+        phy104::showHelpDialog(this, "How to use — Single-Slit Diffraction",
+            "<h3>Single-Slit Diffraction</h3>"
+            "<p><b>a:</b> slit width in mm. First minimum at sin θ = λ/a; central width ∝ λ/a.</p>"
+            "<p><b>λ:</b> wavelength in nm.</p>"
+            "<p><b>L:</b> screen distance in m. Linear spacing ≈ L·λ/a.</p>"
+            "<p><b>d:</b> second slit separation (envelope tab). Missing orders when d/a is integer.</p>"
+            "<p>Tabs: Intensity, Geometry, Envelope (two-slit finite-width).</p>"
+            "<p>Presets for standard/geometry/envelope views.</p>");
+    });
+    auto* slitHelpBar = new QHBoxLayout;
+    slitHelpBar->setContentsMargins(0, 0, 0, 0);
+    slitHelpBar->addStretch(1);
+    slitHelpBar->addWidget(slitHelpBtn);
+    m_diagram->body()->addLayout(slitHelpBar);
     reset();
 }
 ModelReport SingleSlitPage::compute(const ReportContext& ctx) {
@@ -666,10 +815,15 @@ PolarizationPage::PolarizationPage(AppContext* ctx, QWidget* parent)
     : ModelPage("Polarization (Malus & Brewster)", "Polarizers and the Brewster angle", "Polarization (Malus & Brewster)", ctx, parent) {
     addTabs({"Malus", "Brewster"});
     m_beam = addCombo("Incident beam", {"Unpolarized", "Polarized"}, {1, 0});
+    m_beam->setToolTip("Incident beam: unpolarized (half intensity through first polarizer) or already polarized.");
     m_intensity = addField(QString::fromLatin1(FieldIds::incidentIntensity), "Before polarizer · Iᵢₙ", "W/m²", 100, 2);
+    m_intensity->setToolTip("Incident intensity I_in in W/m² before the first polarizer.");
     m_angle = addField(QString::fromLatin1(FieldIds::relativeAngle), "Relative axis angle · θ", "°", 60, 2, false, true, 1);
+    m_angle->setToolTip("Relative angle θ between polarizer axes in °. Malus: I = I₀·cos²θ for polarized input.");
     m_n1 = addField(QString::fromLatin1(FieldIds::refractiveIndex1), "Incident index · n₁ (air)", "", 1.0, 4, false, true, 0.01);
+    m_n1->setToolTip("Incident medium index n₁ (air ≈ 1.0). Brewster: tan θ_B = n₂/n₁.");
     m_n2 = addField(QString::fromLatin1(FieldIds::refractiveIndex2), "Transmitted index · n₂", "", 1.5, 4, false, true, 0.01);
+    m_n2->setToolTip("Transmitted medium index n₂. Brewster angle θ_B = atan(n₂/n₁), where R_p = 0.");
     // ---- Preset scenarios (Item 19) ----
     auto* presetLabel = new QLabel("Presets:");
     presetLabel->setObjectName("fieldLabel");
@@ -702,6 +856,26 @@ PolarizationPage::PolarizationPage(AppContext* ctx, QWidget* parent)
     m_fieldLayout->addLayout(presetRow);
     m_canvas = new PolarizationCanvas;
     build("Two polarizers / independent Brewster reference", m_canvas, "Intensity vs relative angle", "Malus: θ range 0–90°, the first polarizer transmits half of unpolarized light. Brewster: tan θB = n₂/n₁, R_p = 0 at θB.");
+    auto* polHelpBtn = new QToolButton;
+    polHelpBtn->setText("?");
+    polHelpBtn->setFixedSize(24, 24);
+    polHelpBtn->setToolTip("How to use — Polarization");
+    polHelpBtn->setCursor(Qt::PointingHandCursor);
+    connect(polHelpBtn, &QToolButton::clicked, this, [this] {
+        phy104::showHelpDialog(this, "How to use — Polarization",
+            "<h3>Polarization (Malus &amp; Brewster)</h3>"
+            "<p><b>Beam:</b> unpolarized (half through first polarizer) or polarized.</p>"
+            "<p><b>I_in:</b> incident intensity in W/m² before the first polarizer.</p>"
+            "<p><b>θ:</b> relative axis angle in °. Malus: I = I₀·cos²θ for polarized input.</p>"
+            "<p><b>n₁ / n₂:</b> incident and transmitted indices. Brewster: tan θ_B = n₂/n₁, R_p = 0 at θ_B.</p>"
+            "<p>Tabs: Malus law, Brewster interface.</p>"
+            "<p>Presets for Malus θ=60° and Brewster air→glass.</p>");
+    });
+    auto* polHelpBar = new QHBoxLayout;
+    polHelpBar->setContentsMargins(0, 0, 0, 0);
+    polHelpBar->addStretch(1);
+    polHelpBar->addWidget(polHelpBtn);
+    m_diagram->body()->addLayout(polHelpBar);
     reset();
 }
 ModelReport PolarizationPage::compute(const ReportContext& ctx) {

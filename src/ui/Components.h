@@ -67,6 +67,7 @@ private:
     QLineEdit* m_edit;
     QLabel* m_unit;
     QWidget* m_arrows;
+    QPushButton* m_pasteBtn;
     class QTimer* m_liveTimer;
     bool m_spinnerOn = false;
     bool m_plus = false;
@@ -130,5 +131,8 @@ QWidget* labeled(const QString& label, QWidget* field);
 
 /// Removes and deletes every child item of a layout.
 void clearLayout(QLayout* layout);
+
+/// Show a modal "How to use" help dialog with rich-text content.
+void showHelpDialog(QWidget* parent, const QString& title, const QString& html);
 
 } // namespace phy104

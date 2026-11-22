@@ -7,6 +7,7 @@
 
 class QLabel;
 class QPlainTextEdit;
+class QPushButton;
 class QTableWidget;
 class QTimer;
 class QToolButton;
@@ -14,6 +15,7 @@ class QToolButton;
 namespace phy104 {
 
 class LatexWidget;
+class LineChart;
 class Panel;
 class ScientificKeyboard;
 
@@ -33,6 +35,7 @@ public:
 
 public slots:
     void evaluate();
+    void onCopyResult();
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
@@ -48,6 +51,8 @@ private:
     QPlainTextEdit* m_source;
     LatexWidget* m_rendered;
     LatexWidget* m_result;
+    QPushButton* m_copyBtn;
+    LineChart* m_plot;
     QLabel *m_position, *m_parse, *m_substitution;
     Panel *m_sourcePanel, *m_renderPanel, *m_varsPanel;
     QTableWidget* m_vars;

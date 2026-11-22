@@ -18,10 +18,14 @@ class MathSolverPage : public BasePage {
 public:
     explicit MathSolverPage(AppContext* context, QWidget* parent = nullptr);
 
+    /// The current result as plain text, e.g. "0.5236" or "1.5708"
+    QString resultText() const;
+
 private slots:
     void calculate();
     void clearAll();
     void toggleAngleMode(bool degrees);
+    void onCopyResult();
 
 private:
     MathCalculator m_calc;
@@ -29,6 +33,7 @@ private:
     QLabel* m_result = nullptr;
     QLabel* m_status = nullptr;
     QPushButton* m_angleButton = nullptr;
+    QPushButton* m_copyBtn = nullptr;
     CalculatorKeypad* m_keypad = nullptr;
 };
 

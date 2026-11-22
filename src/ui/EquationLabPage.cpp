@@ -5,22 +5,28 @@
 #include "ExpressionEvaluator.h"
 #include "LatexFormatter.h"
 #include "LatexRenderer.h"
+#include "Plots.h"
 #include "ScientificKeyboard.h"
 #include "SolverEngine.h"
 #include "ThemeManager.h"
 #include "Units.h"
 
+#include <QApplication>
+#include <QClipboard>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
 #include <QMenu>
 #include <QPlainTextEdit>
+#include <QPushButton>
 #include <QTableWidget>
 #include <QTextBlock>
 #include <QTimer>
 #include <QToolButton>
 #include <QVBoxLayout>
+
 #include <cmath>
+#include <numbers>
 
 namespace phy104 {
 namespace {
@@ -122,9 +128,28 @@ EquationLabPage::EquationLabPage(AppContext* ctx, std::vector<ScientificPage> ke
     m_result = new LatexWidget;
     m_result->setLcdStyle(true);
     m_result->setPointSize(28);
+
+    m_copyBtn = new QPushButton("📋");
+    m_copyBtn->setFixedSize(28, 28);
+    m_copyBtn->setToolTip("Copy result to clipboard");
+    m_copyBtn->setEnabled(false);
+
+    auto* resultRow = new QHBoxLayout;
+    resultRow->setContentsMargins(0, 0, 0, 0);
+    resultRow->setSpacing(4);
+    resultRow->addWidget(m_result, 1);
+    resultRow->addWidget(m_copyBtn);
+
     m_renderPanel->body()->addWidget(m_rendered);
     m_renderPanel->body()->addWidget(m_substitution);
-    m_renderPanel->body()->addWidget(m_result);
+    m_renderPanel->body()->addLayout(resultRow);
+
+    // Optional graph: plotted when the active line is a bare expression in one variable
+    m_plot = new LineChart;
+    m_plot->setMinimumHeight(150);
+    m_plot->setAntialiased(true);
+    m_plot->hide();
+    m_renderPanel->body()->addWidget(m_plot);
     right->addWidget(m_renderPanel);
 
     m_varsPanel = new Panel("Extracted variables", "");
@@ -160,6 +185,7 @@ EquationLabPage::EquationLabPage(AppContext* ctx, std::vector<ScientificPage> ke
     connect(m_keyboardToggle, &QToolButton::toggled, this, &EquationLabPage::showKeyboard);
     connect(m_keyboard, &ScientificKeyboard::closeRequested, this, [this] { m_keyboardToggle->setChecked(false); });
     connect(m_source, &QPlainTextEdit::textChanged, this, [this] { saveEquations(); });
+    connect(m_copyBtn, &QPushButton::clicked, this, &EquationLabPage::onCopyResult);
     evaluate();
 }
 
@@ -224,6 +250,8 @@ void EquationLabPage::evaluate() {
     m_result->setLatex({});
     m_substitution->clear();
     m_resultText.clear();
+    m_copyBtn->setEnabled(false);
+    m_plot->hide();
     m_parsedOk = false;
 
     std::string expr;
@@ -259,6 +287,43 @@ void EquationLabPage::evaluate() {
             const double v = ExpressionEvaluator::evaluate(expr, vars);
             m_result->setLatex(QString("=") + shownNumber(v));
             m_resultText = QString(" ") + shownNumber(v);
+            m_copyBtn->setEnabled(true);
+
+            // Plot a single-variable expression (e.g. sin(x)/x)
+            if (ids.size() == 1) {
+                const std::string& varName = ids[0];
+                const auto& vs = m_values[varName];
+                const bool isAngle = (vs.unit == "deg" || varName.find("theta") != std::string::npos ||
+                                      varName.find("phi") != std::string::npos ||
+                                      varName.find("alpha") != std::string::npos ||
+                                      varName.find("beta") != std::string::npos);
+                const int n = 400;
+                QList<ChartSeries> series;
+                ChartSeries s;
+                s.line = true;
+                s.color = ThemeManager::instance().theme().amber;
+                s.points.reserve(n + 1);
+                double xMin = 0, xMax = 10;
+                if (isAngle) { xMin = 0; xMax = 360; }
+                for (int k = 0; k <= n; ++k) {
+                    double x = xMin + (xMax - xMin) * k / n;
+                    constexpr double kDegToRad = std::numbers::pi / 180.0;
+                    VariableMap cv = vars;
+                    cv[varName] = isAngle ? x * kDegToRad : x;
+                    try {
+                        double y = ExpressionEvaluator::evaluate(expr, cv);
+                        if (std::isfinite(y)) s.points.append({x, y});
+                    } catch (...) {}
+                }
+                series.append(s);
+                m_plot->setSeries(series);
+                m_plot->setAxes(xMin, xMax, 6, isAngle ? 0 : 2,
+                                QString::fromStdString(varName) + (isAngle ? " (°)" : ""),
+                                -10, 10, 4, 2, "y");
+                m_plot->show();
+            } else {
+                m_plot->hide();
+            }
             return;
         }
         if (output.empty()) { m_substitution->setText("Leave one value empty (or write  y = …) to choose the output."); return; }
@@ -286,6 +351,7 @@ void EquationLabPage::evaluate() {
         try { symbol = QString::fromStdString(EquationText::expressionToLatex(output)); } catch (...) { symbol = QString::fromStdString(output); }
         m_result->setLatex(symbol + QString("=") + shownNumber(shown) + (unit.empty() ? "" : QString("{") + QString::fromStdString(unit) + "}"));
         m_resultText = QString("%1 = %2%3").arg(QString::fromStdString(output), shownNumber(shown), unit.empty() ? "" : QString(" ") + QString::fromStdString(unit));
+        m_copyBtn->setEnabled(true);
     } catch (const std::exception& e) {
         m_substitution->setText(QString(" ") + QString::fromStdString(e.what()));
         m_renderPanel->setMeta("NO RESULT");
@@ -299,6 +365,16 @@ void EquationLabPage::showKeyboard(bool visible) {
 
 void EquationLabPage::placeKeyboard() { m_keyboard->move(24, std::max(60, height() - m_keyboard->height() - 16)); }
 void EquationLabPage::resizeEvent(QResizeEvent* e) { BasePage::resizeEvent(e); if (m_keyboard->isVisible()) placeKeyboard(); }
+
+void EquationLabPage::onCopyResult() {
+    if (m_resultText.isEmpty()) return;
+    QApplication::clipboard()->setText(m_resultText);
+    const QString original = m_copyBtn->text();
+    m_copyBtn->setText("Copied!");
+    QTimer::singleShot(1200, this, [this, original] {
+        m_copyBtn->setText(original);
+    });
+}
 
 
 } // namespace phy104
