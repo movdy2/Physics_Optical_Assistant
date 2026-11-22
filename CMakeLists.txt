@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(PHY104OpticalAssistant VERSION 3.0.9 LANGUAGES CXX)
+project(PHY104OpticalAssistant VERSION 3.0.10 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -13,7 +13,7 @@ option(PHY104_BUILD_TESTS "Build unit tests"                  ON)
 # ------------------------------------------------------------------
 set(PHY104_VERSION_MAJOR 3)
 set(PHY104_VERSION_MINOR 0)
-set(PHY104_VERSION_PATCH 0)
+set(PHY104_VERSION_PATCH 10)
 
 # Git commit hash (empty if not a git repo or no commits)
 set(PHY104_GIT_COMMIT "unknown")
