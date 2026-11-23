@@ -13,6 +13,39 @@ namespace {
 QString displayText(const QString& source) {
     return LanguageManager::instance().text(source);
 }
+
+void drawIsolatedText(QPainter& painter, const QPointF& baseline, const QString& value) {
+    bool containsArabic = false;
+    for (const QChar ch : value) {
+        const ushort code = ch.unicode();
+        if ((code >= 0x0600 && code <= 0x08FF) || (code >= 0xFB50 && code <= 0xFEFF)) {
+            containsArabic = true;
+            break;
+        }
+    }
+    if (containsArabic) {
+        QString isolated;
+        bool inLtrRun = false;
+        for (const QChar ch : value) {
+            const ushort code = ch.unicode();
+            const bool isArabic = (code >= 0x0600 && code <= 0x08FF) || (code >= 0xFB50 && code <= 0xFEFF);
+            if (!isArabic && !inLtrRun) {
+                isolated.append(QChar(ushort(0x2066))); // LRI: keep Latin/math runs ordered inside RTL labels
+                inLtrRun = true;
+            } else if (isArabic && inLtrRun) {
+                isolated.append(QChar(ushort(0x2069))); // PDI
+                inLtrRun = false;
+            }
+            isolated.append(ch);
+        }
+        if (inLtrRun) isolated.append(QChar(ushort(0x2069)));
+        painter.drawText(baseline, isolated);
+        return;
+    }
+    const QFontMetricsF fm(painter.font());
+    const QRectF bounds(baseline.x(), baseline.y() - fm.ascent(), fm.horizontalAdvance(value) + 2.0, fm.height() + 1.0);
+    painter.drawText(bounds, Qt::AlignLeft | Qt::AlignVCenter | Qt::TextSingleLine | Qt::TextForceLeftToRight, value);
+}
 } // namespace
 
 GridCanvas::GridCanvas(QWidget* parent) : QWidget(parent) {
@@ -25,9 +58,6 @@ void GridCanvas::paintEvent(QPaintEvent*) {
     if (m_antialiased)
         p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
     p.fillRect(rect(), t.canvas);
-    p.setPen(QPen(t.grid, 1));
-    for (int x = 0; x < width(); x += 36) p.drawLine(x, 0, x, height());
-    for (int y = 0; y < height(); y += 36) p.drawLine(0, y, width(), y);
     p.save();
     paintDiagram(p, QRectF(rect()));
     p.restore();
@@ -35,7 +65,7 @@ void GridCanvas::paintEvent(QPaintEvent*) {
 
 // ---------------------------------------------------------------------------------- LineChart
 LineChart::LineChart(QWidget* parent) : QWidget(parent) {
-    setMinimumHeight(170);
+    setMinimumHeight(132);
     connect(&ThemeManager::instance(), &ThemeManager::themeChanged, this, [this] { update(); });
 }
 
@@ -75,41 +105,67 @@ void LineChart::paintEvent(QPaintEvent*) {
     p.setFont(mono);
     const QFontMetricsF fm(mono);
 
-    const QRectF plot(46, 24, width() - 46 - 18, height() - 24 - 44);
+    struct LegendDrawItem { QString label; bool marker = false; int row = 0; double x = 0.0; };
+    QList<LegendDrawItem> legendItems;
+    const double legendLeft = 46.0;
+    const double legendRight = std::max(legendLeft + 1.0, double(width()) - 10.0);
+    const double legendWidth = std::max(1.0, legendRight - legendLeft);
+    double legendX = legendLeft;
+    int legendRow = 0;
+    auto placeLegendItem = [&](const QString& source, bool marker) {
+        if (source.isEmpty()) return;
+        QString label = displayText(source);
+        const double markerWidth = marker ? 24.0 : 0.0;
+        const double maxTextWidth = std::max(1.0, legendWidth - markerWidth);
+        label = fm.elidedText(label, Qt::ElideRight, static_cast<int>(std::floor(maxTextWidth)));
+        double itemWidth = markerWidth + fm.horizontalAdvance(label) + 10.0;
+        if (legendX > legendLeft && legendX + itemWidth > legendRight && legendRow == 0) {
+            legendRow = 1;
+            legendX = legendLeft;
+        }
+        const double remaining = std::max(1.0, legendRight - legendX - markerWidth - 8.0);
+        if (legendX + itemWidth > legendRight) {
+            label = fm.elidedText(label, Qt::ElideRight, static_cast<int>(std::floor(remaining)));
+            itemWidth = markerWidth + fm.horizontalAdvance(label) + 8.0;
+        }
+        legendItems.push_back({label, marker, legendRow, legendX});
+        legendX = std::min(legendRight, legendX + itemWidth + 8.0);
+    };
+    for (const QString& item : m_legend) placeLegendItem(item, true);
+    if (!m_caption.isEmpty()) placeLegendItem(m_caption, false);
+    const int legendRows = legendItems.isEmpty() ? 0 : legendRow + 1;
+    const double lowerReserve = legendRows == 0 ? 42.0 : (legendRows == 1 ? 54.0 : 68.0);
+    const QRectF plot(46, 24, std::max(1, width() - 64), std::max(1, height() - 24 - lowerReserve));
     auto X = [&](double x) { return plot.left() + (x - m_xMin) / (m_xMax - m_xMin) * plot.width(); };
     auto Y = [&](double y) { return plot.bottom() - (y - m_yMin) / (m_yMax - m_yMin) * plot.height(); };
 
-    const QString yLabel = displayText(m_yLabel);
-    const QString xLabel = displayText(m_xLabel);
+    const QString yLabel = fm.elidedText(displayText(m_yLabel), Qt::ElideRight, 38);
+    const QString xLabel = fm.elidedText(displayText(m_xLabel), Qt::ElideRight, std::max(1, static_cast<int>(plot.width())));
     p.setPen(t.dim);
-    p.drawText(QPointF(8, 14), yLabel);
-    p.drawText(QPointF(plot.right() - fm.horizontalAdvance(xLabel), plot.bottom() + 36), xLabel);
+    drawIsolatedText(p, QPointF(8, 14), yLabel);
+    drawIsolatedText(p, QPointF(plot.right() - fm.horizontalAdvance(xLabel), plot.bottom() + 30), xLabel);
 
-    for (const ChartRegion& r : m_regions) {                              // shaded regions first (under the grid)
+    for (const ChartRegion& r : m_regions) {                              // shaded regions behind the data
         QColor fill = r.color.isValid() ? r.color : t.amber;
         fill.setAlpha(34);
         p.fillRect(QRectF(X(r.x0), plot.top(), X(r.x1) - X(r.x0), plot.height()), fill);
         if (!r.label.isEmpty()) {
             p.setPen(r.color.isValid() ? r.color : t.amber);
-            p.drawText(QPointF(X(r.x0) + 8, plot.top() + 28), displayText(r.label));
+            drawIsolatedText(p, QPointF(X(r.x0) + 8, plot.top() + 28), displayText(r.label));
         }
     }
     p.setPen(QPen(t.border, 1));
-    for (int i = 0; i <= m_xTicks; ++i) {                                 // vertical grid + x tick labels
+    for (int i = 0; i <= m_xTicks; ++i) {                                 // x tick labels
         const double v = m_xMin + (m_xMax - m_xMin) * i / m_xTicks;
-        p.setPen(QPen(t.grid.lighter(115), 1));
-        p.drawLine(QPointF(X(v), plot.top()), QPointF(X(v), plot.bottom()));
         p.setPen(t.dim);
         const QString s = QString::number(v, 'f', m_xDec);
-        p.drawText(QPointF(X(v) - fm.horizontalAdvance(s) / 2, plot.bottom() + 14), s);
+        drawIsolatedText(p, QPointF(X(v) - fm.horizontalAdvance(s) / 2, plot.bottom() + 14), s);
     }
-    for (int i = 0; i <= m_yTicks; ++i) {                                 // horizontal grid + y tick labels
+    for (int i = 0; i <= m_yTicks; ++i) {                                 // y tick labels
         const double v = m_yMin + (m_yMax - m_yMin) * i / m_yTicks;
-        p.setPen(QPen(t.grid.lighter(115), 1));
-        p.drawLine(QPointF(plot.left(), Y(v)), QPointF(plot.right(), Y(v)));
         p.setPen(t.dim);
         const QString s = QString::number(v, 'f', m_yDec);
-        p.drawText(QPointF(plot.left() - 6 - fm.horizontalAdvance(s), Y(v) + 3), s);
+        drawIsolatedText(p, QPointF(plot.left() - 6 - fm.horizontalAdvance(s), Y(v) + 3), s);
     }
     p.setPen(QPen(t.border, 1));
     p.setBrush(Qt::NoBrush);
@@ -126,7 +182,7 @@ void LineChart::paintEvent(QPaintEvent*) {
         p.drawLine(QPointF(plot.left(), Y(h.y)), QPointF(plot.right(), Y(h.y)));
         p.setPen(t.muted);
         const QString label = displayText(h.label);
-        p.drawText(QPointF(plot.right() - 8 - fm.horizontalAdvance(label), Y(h.y) - 6), label);
+        drawIsolatedText(p, QPointF(plot.right() - 8 - fm.horizontalAdvance(label), Y(h.y) - 6), label);
     }
     for (const ChartVLine& v : m_vlines) {
         p.setPen(QPen(v.color.isValid() ? v.color : t.text, 1.4, Qt::DashLine));
@@ -176,7 +232,7 @@ void LineChart::paintEvent(QPaintEvent*) {
         p.setPen(v.color.isValid() ? v.color : t.text);
         const QString label = displayText(v.label);
         const double lw = fm.horizontalAdvance(label);
-        p.drawText(QPointF(std::min(plot.right() - lw, std::max(plot.left(), X(v.x) - lw / 2)), v.labelAtTop ? plot.top() - 6 : plot.bottom() - 18), label);
+        drawIsolatedText(p, QPointF(std::min(plot.right() - lw, std::max(plot.left(), X(v.x) - lw / 2)), v.labelAtTop ? plot.top() - 6 : plot.bottom() - 18), label);
     }
     for (const ChartPoint& pt : m_points) {
         const QColor col = pt.color.isValid() ? pt.color : t.sage;
@@ -210,24 +266,22 @@ void LineChart::paintEvent(QPaintEvent*) {
             p.setPen(t.text);
             const QString label = displayText(pt.label);
             const double lw = fm.horizontalAdvance(label);
-            p.drawText(QPointF(std::min(plot.right() - lw - 4, X(pt.x) + 10), Y(pt.y) - 8), label);
+            drawIsolatedText(p, QPointF(std::min(plot.right() - lw - 4, X(pt.x) + 10), Y(pt.y) - 8), label);
         }
     }
 
-    // legend
-    double x = plot.left();
-    const double y = height() - 8;
-    for (const QString& item : m_legend) {
-        const QString label = displayText(item);
-        p.setPen(Qt::NoPen);
-        p.setBrush(t.sage);
-        p.drawEllipse(QPointF(x + 3, y - 3), 3, 3);
+    // Legend gets its own reserved rows below the x-axis title. Long labels are elided
+    // inside their assigned space; wrapping to a second row avoids collisions at narrow widths.
+    for (const LegendDrawItem& item : legendItems) {
+        const double y = height() - 8.0 - (legendRows - 1 - item.row) * 14.0;
+        if (item.marker) {
+            p.setPen(Qt::NoPen);
+            p.setBrush(t.sage);
+            p.drawEllipse(QPointF(item.x + 3.0, y - 3.0), 3.0, 3.0);
+        }
         p.setPen(t.muted);
-        p.drawText(QPointF(x + 12, y), label);
-        x += 18 + fm.horizontalAdvance(label) + 14;
+        drawIsolatedText(p, QPointF(item.x + (item.marker ? 12.0 : 0.0), y), item.label);
     }
-    p.setPen(t.muted);
-    p.drawText(QPointF(x, y), displayText(m_caption));
 }
 
 } // namespace phy104

@@ -26,7 +26,6 @@ private slots:
     void calculate();
     void clearAll();
     void toggleAngleMode(bool degrees);
-    void onCopyResult();
     void refreshHistory();
 
 private:
@@ -36,7 +35,6 @@ private:
     QLabel* m_status = nullptr;
     QLabel* m_historyEmpty = nullptr;
     QPushButton* m_angleButton = nullptr;
-    QPushButton* m_copyBtn = nullptr;
     QPushButton* m_historyClear = nullptr;
     QListWidget* m_historyList = nullptr;
     CalculatorKeypad* m_keypad = nullptr;

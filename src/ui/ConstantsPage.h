@@ -9,7 +9,7 @@ class QTableWidget;
 
 namespace phy104 {
 
-/// Page 4: physical constants with search, description and "copy" button.
+/// Page 4: physical constants with search, description.
 class ConstantsPage : public QWidget {
     Q_OBJECT
 public:
@@ -18,7 +18,6 @@ public:
 private slots:
     void applyFilter(const QString& text);
     void onSelectionChanged();
-    void copySelected();
 
 private:
     int selectedIndex() const;

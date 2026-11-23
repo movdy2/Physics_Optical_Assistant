@@ -126,7 +126,7 @@ private:
 class NewtonCanvas : public GridCanvas {
     Q_OBJECT
 public:
-    explicit NewtonCanvas(QWidget* p = nullptr) : GridCanvas(p) { setMinimumSize(300, 330); }
+    explicit NewtonCanvas(QWidget* p = nullptr) : GridCanvas(p) { setMinimumSize(220, 230); }
     void setInput(const NewtonInput& in) { m_in = in; update(); }
 protected:
     void paintDiagram(QPainter& p, const QRectF& area) override;
@@ -139,9 +139,9 @@ public:
     static constexpr double kMaxInteractiveTravelUm = 2.0;
 
     explicit MichelsonCanvas(QWidget* p = nullptr);
-    void setInput(const MichelsonInput& in) { m_in = in; update(); }
-    /// Local position of the draggable M2 mirror (the movable mirror in the project convention), also used
-    /// by the interaction test.
+    void setDisplayData(const MichelsonDisplayData& data) { m_display = data; update(); }
+    void setMirrorMovable(bool movable) { m_mirrorMovable = movable; setCursor(movable ? Qt::OpenHandCursor : Qt::ArrowCursor); }
+    /// Local position of the actively movable mirror (M2 in legacy tabs, M1 in wavelength mode).
     QPointF movableMirrorCenter() const;
 
 private:
@@ -159,14 +159,16 @@ protected:
 private:
     bool isNearMovableMirror(const QPointF& point) const;
 
-    MichelsonInput m_in;
-    bool m_draggingM2 = false;
+    MichelsonDisplayData m_display;
+    bool m_draggingMirror = false;
+    bool m_mirrorMovable = true;
     double m_dragOffsetX = 0.0;
+    double m_dragOffsetY = 0.0;
 };
 class ThinFilmCanvas : public GridCanvas {
     Q_OBJECT
 public:
-    explicit ThinFilmCanvas(QWidget* p = nullptr) : GridCanvas(p) { setMinimumSize(300, 330); }
+    explicit ThinFilmCanvas(QWidget* p = nullptr) : GridCanvas(p) { setMinimumSize(220, 230); }
     void setInput(const ThinFilmInput& in) { m_in = in; update(); }
 protected:
     void paintDiagram(QPainter& p, const QRectF& area) override;
@@ -176,7 +178,7 @@ private:
 class GratingCanvas : public GridCanvas {
     Q_OBJECT
 public:
-    explicit GratingCanvas(QWidget* p = nullptr) : GridCanvas(p) { setMinimumSize(300, 330); }
+    explicit GratingCanvas(QWidget* p = nullptr) : GridCanvas(p) { setMinimumSize(220, 230); }
     void setInput(const GratingInput& in) { m_in = in; update(); }
 protected:
     void paintDiagram(QPainter& p, const QRectF& area) override;
@@ -186,7 +188,7 @@ private:
 class SingleSlitCanvas : public GridCanvas {
     Q_OBJECT
 public:
-    explicit SingleSlitCanvas(QWidget* p = nullptr) : GridCanvas(p) { setMinimumSize(300, 330); }
+    explicit SingleSlitCanvas(QWidget* p = nullptr) : GridCanvas(p) { setMinimumSize(220, 230); }
     void setInput(const SingleSlitInput& in) { m_in = in; update(); }
 protected:
     void paintDiagram(QPainter& p, const QRectF& area) override;
@@ -196,7 +198,7 @@ private:
 class PolarizationCanvas : public GridCanvas {
     Q_OBJECT
 public:
-    explicit PolarizationCanvas(QWidget* p = nullptr) : GridCanvas(p) { setMinimumSize(300, 330); }
+    explicit PolarizationCanvas(QWidget* p = nullptr) : GridCanvas(p) { setMinimumSize(220, 230); }
     void setInput(const PolarizationInput& in) { m_in = in; update(); }
 protected:
     void paintDiagram(QPainter& p, const QRectF& area) override;
@@ -209,7 +211,7 @@ private:
 class ThickLensCanvas : public GridCanvas {
     Q_OBJECT
 public:
-    explicit ThickLensCanvas(QWidget* p = nullptr) : GridCanvas(p) { setMinimumSize(300, 330); }
+    explicit ThickLensCanvas(QWidget* p = nullptr) : GridCanvas(p) { setMinimumSize(220, 230); }
     void setInput(const ThickLensInput& in) { m_in = in; update(); }
 protected:
     void paintDiagram(QPainter& p, const QRectF& area) override;

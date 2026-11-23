@@ -6,6 +6,7 @@ class QSlider;
 class QTimer;
 
 namespace phy104 {
+class ResultCard;
 
 /// Shared body of the six screens of the second Figma batch (header with Save / Export, tabs + fields on the
 /// left, diagram + chart in the middle, two LCD registers + Interpretation / Input guard on the right).
@@ -23,6 +24,8 @@ protected:
     void build(const QString& diagramTitle, QWidget* canvas, const QString& chartTitle, const QString& hint);
     /// Re-captions the diagram and chart panels (the second tabs show a different picture).
     void retitle(const QString& diagramTitle, const QString& chartTitle);
+    /// Use native-theme result cards instead of legacy calculation-register styling.
+    void useNativeResultCards();
 
     virtual ModelReport compute(const ReportContext& ctx) = 0;
     virtual void updateCanvas() = 0;
@@ -45,7 +48,9 @@ private:
     Panel *m_controls, *m_chartPanel, *m_results;
     LineChart* m_chart;
     RegisterView *m_reg1, *m_reg2;
+    ResultCard *m_resultCard1, *m_resultCard2;
     NoticeCard *m_interpretation, *m_guard;
+    bool m_useNativeResultCards = false;
     QString m_diagramTitle;
     QList<QWidget*> m_pending;                 // controls added before build()
     QTimer* m_debounceTimer = nullptr;         // 16 ms slider debounce
@@ -80,8 +85,11 @@ protected:
     QString runDescription() const override;
 private:
     void setMirrorDisplacement(double displacementUm);
+    MichelsonInput currentInput() const;
 
     UnitField *m_lambda, *m_dx, *m_coherenceLength, *m_plateThickness, *m_plateIndex;
+    UnitField *m_fringeCount, *m_viewAngle;
+    QComboBox* m_solveFor;
     QSlider* m_dxSlider;
     QSlider* m_nSlider;
     QSlider* m_tiltSlider;

@@ -11,8 +11,6 @@
 #include "ThemeManager.h"
 #include "Units.h"
 
-#include <QApplication>
-#include <QClipboard>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
@@ -21,7 +19,6 @@
 #include <QPushButton>
 #include <QTableWidget>
 #include <QTextBlock>
-#include <QTimer>
 #include <QToolButton>
 #include <QVBoxLayout>
 
@@ -129,16 +126,11 @@ EquationLabPage::EquationLabPage(AppContext* ctx, std::vector<ScientificPage> ke
     m_result->setCardStyle(true);
     m_result->setPointSize(28);
 
-    m_copyBtn = new QPushButton("📋");
-    m_copyBtn->setFixedSize(28, 28);
-    m_copyBtn->setToolTip("Copy result to clipboard");
-    m_copyBtn->setEnabled(false);
 
     auto* resultRow = new QHBoxLayout;
     resultRow->setContentsMargins(0, 0, 0, 0);
     resultRow->setSpacing(4);
     resultRow->addWidget(m_result, 1);
-    resultRow->addWidget(m_copyBtn);
 
     m_renderPanel->body()->addWidget(m_rendered);
     m_renderPanel->body()->addWidget(m_substitution);
@@ -185,7 +177,6 @@ EquationLabPage::EquationLabPage(AppContext* ctx, std::vector<ScientificPage> ke
     connect(m_keyboardToggle, &QToolButton::toggled, this, &EquationLabPage::showKeyboard);
     connect(m_keyboard, &ScientificKeyboard::closeRequested, this, [this] { m_keyboardToggle->setChecked(false); });
     connect(m_source, &QPlainTextEdit::textChanged, this, [this] { saveEquations(); });
-    connect(m_copyBtn, &QPushButton::clicked, this, &EquationLabPage::onCopyResult);
     evaluate();
 }
 
@@ -250,7 +241,6 @@ void EquationLabPage::evaluate() {
     m_result->setLatex({});
     m_substitution->clear();
     m_resultText.clear();
-    m_copyBtn->setEnabled(false);
     m_plot->hide();
     m_parsedOk = false;
 
@@ -287,7 +277,6 @@ void EquationLabPage::evaluate() {
             const double v = ExpressionEvaluator::evaluate(expr, vars);
             m_result->setLatex(QString("=") + shownNumber(v));
             m_resultText = QString(" ") + shownNumber(v);
-            m_copyBtn->setEnabled(true);
 
             // Plot a single-variable expression (e.g. sin(x)/x)
             if (ids.size() == 1) {
@@ -351,7 +340,6 @@ void EquationLabPage::evaluate() {
         try { symbol = QString::fromStdString(EquationText::expressionToLatex(output)); } catch (...) { symbol = QString::fromStdString(output); }
         m_result->setLatex(symbol + QString("=") + shownNumber(shown) + (unit.empty() ? "" : QString("{") + QString::fromStdString(unit) + "}"));
         m_resultText = QString("%1 = %2%3").arg(QString::fromStdString(output), shownNumber(shown), unit.empty() ? "" : QString(" ") + QString::fromStdString(unit));
-        m_copyBtn->setEnabled(true);
     } catch (const std::exception& e) {
         m_substitution->setText(QString(" ") + QString::fromStdString(e.what()));
         m_renderPanel->setMeta("NO RESULT");
@@ -365,16 +353,6 @@ void EquationLabPage::showKeyboard(bool visible) {
 
 void EquationLabPage::placeKeyboard() { m_keyboard->move(24, std::max(60, height() - m_keyboard->height() - 16)); }
 void EquationLabPage::resizeEvent(QResizeEvent* e) { BasePage::resizeEvent(e); if (m_keyboard->isVisible()) placeKeyboard(); }
-
-void EquationLabPage::onCopyResult() {
-    if (m_resultText.isEmpty()) return;
-    QApplication::clipboard()->setText(m_resultText);
-    const QString original = m_copyBtn->text();
-    m_copyBtn->setText("Copied!");
-    QTimer::singleShot(1200, this, [this, original] {
-        m_copyBtn->setText(original);
-    });
-}
 
 
 } // namespace phy104

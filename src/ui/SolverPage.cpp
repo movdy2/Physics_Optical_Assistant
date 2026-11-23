@@ -5,10 +5,7 @@
 
 #include "ThemeManager.h"
 
-#include <QApplication>
-#include <QClipboard>
 #include <QComboBox>
-#include <QTimer>
 #include <QFormLayout>
 #include <QFrame>
 #include <QHBoxLayout>
@@ -133,13 +130,9 @@ SolverPage::SolverPage(std::shared_ptr<FormulaEngine> engine, std::shared_ptr<Fo
     auto* solveBtn = new QPushButton("Solve");
     solveBtn->setObjectName("primary");
     auto* clearBtn = new QPushButton("Clear");
-    m_copyBtn = new QPushButton("Copy result");
-    m_copyBtn->setObjectName("flat");
-    m_copyBtn->setEnabled(false);
     auto* buttons = new QHBoxLayout;
     buttons->addWidget(solveBtn);
     buttons->addWidget(clearBtn);
-    buttons->addWidget(m_copyBtn);
     buttons->addStretch();
 
     m_status = new QLabel;
@@ -190,7 +183,6 @@ SolverPage::SolverPage(std::shared_ptr<FormulaEngine> engine, std::shared_ptr<Fo
     connect(m_next, &QPushButton::clicked, this, &SolverPage::nextPage);
     connect(solveBtn, &QPushButton::clicked, this, &SolverPage::onSolve);
     connect(clearBtn, &QPushButton::clicked, this, &SolverPage::onClear);
-    connect(m_copyBtn, &QPushButton::clicked, this, &SolverPage::onCopyResult);
 
     refreshChapterCombo();
     refreshList(true);
@@ -375,7 +367,6 @@ void SolverPage::showFormula(const Formula& formula) {
     }
     setStatus("", "");
     m_answer->hide();
-    m_copyBtn->setEnabled(false);
 }
 
 void SolverPage::setStatus(const QString& kind, const QString& text) {
@@ -394,7 +385,6 @@ void SolverPage::onSolve() {
 
     const SolveResult r = m_solver->solve(*m_current, inputs);
     m_answer->hide();
-    m_copyBtn->setEnabled(false);
     if (!r.ok) {
         const QString message = QString::fromStdString(r.error);
         if (r.physical) {                                         // physics warning: orange
@@ -411,26 +401,10 @@ void SolverPage::onSolve() {
     m_answer->setInkColor(ThemeManager::instance().theme().lime);
     m_answer->show();
 
-    m_lastAnswerLatex = QString::fromStdString(r.answerLatex);
-    m_copyBtn->setEnabled(true);
 }
 
 void SolverPage::onClear() {
     if (m_current) showFormula(*m_current);
-}
-
-void SolverPage::onCopyResult() {
-    if (m_lastAnswerLatex.isEmpty()) return;
-    QClipboard* cb = QApplication::clipboard();
-    cb->setText(m_lastAnswerLatex);
-    // Brief visual confirmation on the copy button.
-    const QString original = m_copyBtn->text();
-    m_copyBtn->setText("Copied!");
-    m_copyBtn->setEnabled(false);
-    QTimer::singleShot(1200, this, [this, original] {
-        m_copyBtn->setText(original);
-        m_copyBtn->setEnabled(true);
-    });
 }
 
 } // namespace phy104

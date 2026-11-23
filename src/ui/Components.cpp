@@ -25,6 +25,7 @@
 #include <QPushButton>
 #include <QSizePolicy>
 #include <QStyle>
+#include <QStringList>
 #include <QVBoxLayout>
 #include <cmath>
 
@@ -293,8 +294,8 @@ void ModeTabs::setCurrent(int index) {
 RegisterView::RegisterView(QWidget* parent) : QFrame(parent) {
     setObjectName("register");
     m_layout = new QVBoxLayout(this);
-    m_layout->setContentsMargins(10, 8, 10, 8);
-    m_layout->setSpacing(4);
+    m_layout->setContentsMargins(8, 5, 8, 5);
+    m_layout->setSpacing(2);
 }
 
 void RegisterView::updateTextAlignment() {
@@ -308,7 +309,7 @@ void RegisterView::updateTextAlignment() {
                 ? (rtl ? Qt::AlignLeft : Qt::AlignRight)
                 : (rtl ? Qt::AlignRight : Qt::AlignLeft);
             label->setAlignment(horizontal | Qt::AlignVCenter);
-        } else if (name == "regLine" || name == "regCaption" || name == "regBig" || name == "regFoot") {
+        } else if (name == "regLine" || name == "regCaption" || name == "regBig" || name == "lcdBig" || name == "regFoot") {
             label->setAlignment((rtl ? Qt::AlignRight : Qt::AlignLeft) | Qt::AlignTop);
         }
     }
@@ -351,7 +352,7 @@ void RegisterView::setRegister(const LcdRegister& reg) {
         m_layout->addWidget(d);
     };
     addDivider();
-    m_layout->addSpacing(2);
+    m_layout->addSpacing(1);
 
     for (const std::string& line : reg.lines) {
         auto* l = new QLabel(QString::fromStdString(line));
@@ -365,14 +366,14 @@ void RegisterView::setRegister(const LcdRegister& reg) {
         cap->setObjectName("regCaption");
         prepareText(cap);
         auto* big = new QLabel(QString::fromStdString(reg.resultValue));
-        big->setObjectName("regBig");
+        big->setObjectName("lcdBig");
         big->setWordWrap(true);
         big->setMinimumWidth(0);
         big->setTextFormat(Qt::PlainText);
         m_layout->addWidget(cap);
         m_layout->addWidget(big);
     }
-    m_layout->addSpacing(4);
+    m_layout->addSpacing(2);
     addDivider(125);
     auto* foot = new QLabel(QString::fromStdString(reg.footer));
     foot->setObjectName("regFoot");
@@ -381,12 +382,56 @@ void RegisterView::setRegister(const LcdRegister& reg) {
     updateTextAlignment();
 }
 
+// ---------------------------------------------------------------------------- ResultCard
+ResultCard::ResultCard(QWidget* parent) : QFrame(parent) {
+    setObjectName("resultCard");
+    auto* layout = new QVBoxLayout(this);
+    layout->setContentsMargins(12, 10, 12, 10);
+    layout->setSpacing(4);
+
+    m_title = new QLabel;
+    m_title->setObjectName("resultCardTitle");
+    m_title->setWordWrap(true);
+    m_title->setLayoutDirection(Qt::LeftToRight);
+    m_caption = new QLabel;
+    m_caption->setObjectName("resultCardCaption");
+    m_caption->setWordWrap(true);
+    m_caption->setLayoutDirection(Qt::LeftToRight);
+    m_value = new QLabel;
+    m_value->setObjectName("lcdBig"); // retained semantic selector used by interaction tests
+    m_value->setWordWrap(true);
+    m_value->setMinimumWidth(0);
+    m_value->setLayoutDirection(Qt::LeftToRight);
+    m_details = new QLabel;
+    m_details->setObjectName("resultCardDetails");
+    m_details->setWordWrap(true);
+    m_details->setMinimumWidth(0);
+    m_details->setLayoutDirection(Qt::LeftToRight);
+
+    layout->addWidget(m_title);
+    layout->addWidget(m_caption);
+    layout->addWidget(m_value);
+    layout->addWidget(m_details);
+}
+
+void ResultCard::setRegister(const LcdRegister& result) {
+    m_title->setText(QString::fromStdString(result.title));
+    m_caption->setText(QString::fromStdString(result.resultLabel));
+    m_value->setText(QString::fromStdString(result.resultValue));
+    QStringList details;
+    for (const auto& line : result.lines) details << QString::fromStdString(line);
+    for (const auto& line : result.extraLines) details << QString::fromStdString(line);
+    m_details->setText(details.join(QLatin1Char('\n')));
+    m_caption->setVisible(!result.resultLabel.empty());
+    m_details->setVisible(!details.isEmpty());
+}
+
 // ---------------------------------------------------------------------------- NoticeCard
 NoticeCard::NoticeCard(QWidget* parent) : QFrame(parent) {
     setObjectName("notice");
     auto* l = new QVBoxLayout(this);
-    l->setContentsMargins(12, 10, 12, 10);
-    l->setSpacing(4);
+    l->setContentsMargins(8, 6, 8, 6);
+    l->setSpacing(3);
     m_title = new QLabel;
     m_title->setObjectName("noticeTitle");
     m_title->setWordWrap(true);

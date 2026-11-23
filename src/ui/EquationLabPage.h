@@ -35,7 +35,6 @@ public:
 
 public slots:
     void evaluate();
-    void onCopyResult();
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
@@ -51,7 +50,6 @@ private:
     QPlainTextEdit* m_source;
     LatexWidget* m_rendered;
     LatexWidget* m_result;
-    QPushButton* m_copyBtn;
     LineChart* m_plot;
     QLabel *m_position, *m_parse, *m_substitution;
     Panel *m_sourcePanel, *m_renderPanel, *m_varsPanel;
@@ -60,7 +58,6 @@ private:
     ScientificKeyboard* m_keyboard;
     QTimer* m_timer;
     std::map<std::string, VarState> m_values;
-    QString m_resultText;
     bool m_parsedOk = false;
     bool m_updatingTable = false;
 };

@@ -3,7 +3,6 @@
 #include "AppContext.h"
 #include "Components.h"
 
-#include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
 #include <QSettings>
@@ -142,11 +141,8 @@ void ExperimentBase::buildButtons(QVBoxLayout* fields, const QString& hint) {
     m_calc->setText("Calculate & Simulate");
     m_calc->setMinimumHeight(34);
     m_calc->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    auto* row = new QHBoxLayout;
-    row->setSpacing(6);
-    row->addWidget(m_calc);
-    row->addWidget(send);
-    fields->addLayout(row);
+    fields->addWidget(m_calc);
+    fields->addWidget(send);
     connect(send, &QPushButton::clicked, this, [this] { sendToNotes(); });
     fields->addWidget(m_reset);
     fields->addWidget(m_restore);
