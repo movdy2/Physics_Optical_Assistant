@@ -71,22 +71,25 @@ Theme Theme::gruvboxLight() {
     t.input = "#f9f5d7";
     t.canvas = "#f2e5bc";
     t.grid = "#ebdbb2";
-    t.border = "#d5c4a1";
+    // Darken borders against cream surfaces; the classic light border is too faint at 1px.
+    t.border = "#a89984";
     t.surface = "#f9f5d7";
     t.surfaceHover = "#ebdbb2";
     t.text = "#282828";
     t.muted = "#504945";
-    t.dim = "#7c6f64";
-    t.accentPrimary = "#b57614";
-    t.accentPrimaryHover = "#d79921";
-    t.accentPrimaryPressed = "#8f5b0a";
-    t.accentPrimaryTint = QColor(181, 118, 20, 34);
-    t.accentAmber = "#b57614";
-    t.accentAmberHover = "#d79921";
-    t.accentAmberPressed = "#8f5b0a";
+    t.dim = "#665c54";
+    // Use a deeper amber for cream-text buttons and small accent text; keep classic
+    // #b57614 Gruvbox amber in the translucent accent tint, with distinct hover/pressed states.
+    t.accentPrimary = "#8f5b0a";
+    t.accentPrimaryHover = "#754a0a";
+    t.accentPrimaryPressed = "#684109";
+    t.accentPrimaryTint = QColor(143, 91, 10, 34);
+    t.accentAmber = "#8f5b0a";
+    t.accentAmberHover = "#754a0a";
+    t.accentAmberPressed = "#684109";
     t.accentAmberTint = QColor(181, 118, 20, 34);
-    t.accentTeal = "#689d6a";
-    t.accentTealHover = "#427b58";
+    t.accentTeal = "#076678";
+    t.accentTealHover = "#055160";
     t.lime = "#79740e";
     t.error = "#9d0006";
     t.errorBg = QColor(157, 0, 6, 16);
@@ -94,8 +97,8 @@ Theme Theme::gruvboxLight() {
     t.green = "#79740e";
     t.red = "#9d0006";
     t.orange = "#af3a03";
-    t.blue = "#689d6a";
-    t.aqua = "#689d6a";
+    t.blue = "#076678";
+    t.aqua = "#076678";
     t.amber = t.accentAmber;
     t.sage = t.accentTeal;
     return t;

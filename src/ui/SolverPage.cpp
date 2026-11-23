@@ -18,6 +18,15 @@
 #include <QVBoxLayout>
 
 namespace phy104 {
+namespace {
+QString formulaLabelWithTheme(QString html, const Theme& theme) {
+    html.replace("@primary@", theme.text.name());
+    html.replace("@metadata@", theme.muted.name());
+    html.replace("@error@", theme.error.name());
+    html.replace("@aqua@", theme.accentTeal.name());
+    return html;
+}
+} // namespace
 
 SolverPage::SolverPage(std::shared_ptr<FormulaEngine> engine, std::shared_ptr<FormulaManager> manager,
                        std::shared_ptr<SolverEngine> solver, AppContext* context, QWidget* parent)
@@ -183,6 +192,15 @@ SolverPage::SolverPage(std::shared_ptr<FormulaEngine> engine, std::shared_ptr<Fo
     connect(m_next, &QPushButton::clicked, this, &SolverPage::nextPage);
     connect(solveBtn, &QPushButton::clicked, this, &SolverPage::onSolve);
     connect(clearBtn, &QPushButton::clicked, this, &SolverPage::onClear);
+    connect(&ThemeManager::instance(), &ThemeManager::themeChanged, this, [this] {
+        const Theme& theme = ThemeManager::instance().theme();
+        for (int row = 0; row < m_form->rowCount(); ++row) {
+            auto* label = qobject_cast<QLabel*>(m_form->itemAt(row, QFormLayout::LabelRole)
+                                                   ? m_form->itemAt(row, QFormLayout::LabelRole)->widget() : nullptr);
+            if (label)
+                label->setText(formulaLabelWithTheme(label->property("formulaLabelTemplate").toString(), theme));
+        }
+    });
 
     refreshChapterCombo();
     refreshList(true);
@@ -346,21 +364,22 @@ void SolverPage::showFormula(const Formula& formula) {
         connect(edit, &QLineEdit::returnPressed, this, &SolverPage::onSolve);
         m_edits[var.id] = edit;
 
-        // Label: symbol (name) + optional required/optional tag + unit chip
+        // Keep the source markup tokenized so inline semantic colors can follow theme changes
+        // without rebuilding the form or discarding the user's inputs/result.
         const bool optional = !var.defaultValue.empty();
-        QString tag;
-        if (optional)
-            tag = " <span style='color:#8a94a6;font-size:8pt;'>(optional)</span>";
-        else
-            tag = " <span style='color:#fb4934;font-size:8pt;'>(required)</span>";
+        QString tag = optional
+            ? " <span style='color:@metadata@;font-size:8pt;'>(optional)</span>"
+            : " <span style='color:@error@;font-size:8pt;'>(required)</span>";
         QString unitChip;
         if (!unit.empty()) {
-            unitChip = QString(" <span style='color:#d79921;font-size:8pt;'>[")
-                       + QString::fromStdString(unit) + "]</span>";
+            unitChip = QString(" <span style='color:@aqua@;font-size:8pt;'>[<bdi dir='ltr'>")
+                       + QString::fromStdString(unit).toHtmlEscaped() + "</bdi>]</span>";
         }
-        QString labelText = QString::fromStdString(var.display) + "  <span style='color:gray'>";
-        labelText += QString::fromStdString(var.name).toHtmlEscaped() + QString(">") + tag + unitChip;
-        auto* label = new QLabel(labelText);
+        QString labelTemplate = QString("<span style='color:@primary@'><bdi dir='ltr'>%1</bdi></span>  <span style='color:@metadata@'>")
+                                    .arg(QString::fromStdString(var.display).toHtmlEscaped());
+        labelTemplate += QString::fromStdString(var.name).toHtmlEscaped() + QString(">") + tag + unitChip;
+        auto* label = new QLabel(formulaLabelWithTheme(labelTemplate, ThemeManager::instance().theme()));
+        label->setProperty("formulaLabelTemplate", labelTemplate);
         label->setTextFormat(Qt::RichText);
         label->setToolTip(QString::fromStdString(var.name + (var.description.empty() ? "" : std::string(" ") + var.description)));
         m_form->addRow(label, edit);
