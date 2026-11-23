@@ -4,15 +4,20 @@
 #include "Components.h"
 #include "ThemeManager.h"
 
+#include <QAbstractItemView>
 #include <QApplication>
 #include <QClipboard>
 #include <QColor>
 #include <QHBoxLayout>
-#include <QTimer>
 #include <QLabel>
 #include <QLineEdit>
+#include <QListWidget>
+#include <QListWidgetItem>
 #include <QPalette>
 #include <QPushButton>
+#include <QSize>
+#include <QSizePolicy>
+#include <QTimer>
 #include <QVBoxLayout>
 
 namespace phy104 {
@@ -22,9 +27,14 @@ MathSolverPage::MathSolverPage(AppContext* context, QWidget* parent)
     setObjectName("calcPage");
 
     auto* columns = new QHBoxLayout;
+    columns->setContentsMargins(0, 0, 0, 0);
     columns->setSpacing(12);
+    columns->addStretch(1);
 
     auto* calculatorPanel = new Panel("Expression");
+    calculatorPanel->setMinimumWidth(440);
+    calculatorPanel->setMaximumWidth(820);
+    calculatorPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     auto* modeRow = new QHBoxLayout;
     m_angleButton = new QPushButton("DEG");
     m_angleButton->setObjectName("calcMode");
@@ -55,6 +65,7 @@ MathSolverPage::MathSolverPage(AppContext* context, QWidget* parent)
     m_result->setMinimumHeight(64);
 
     m_copyBtn = new QPushButton("📋");
+    m_copyBtn->setObjectName("calcCopy");
     m_copyBtn->setFixedSize(28, 28);
     m_copyBtn->setToolTip("Copy result to clipboard");
     m_copyBtn->setEnabled(false);
@@ -74,8 +85,40 @@ MathSolverPage::MathSolverPage(AppContext* context, QWidget* parent)
 
     m_keypad = new CalculatorKeypad;
     m_keypad->setObjectName("calculatorKeypad");
-    calculatorPanel->body()->addWidget(m_keypad, 1);
+    m_keypad->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    calculatorPanel->body()->addWidget(m_keypad);
     columns->addWidget(calculatorPanel, 3);
+
+    auto* historyPanel = new Panel("Recent calculations", "ANS");
+    historyPanel->setMinimumWidth(230);
+    historyPanel->setMaximumWidth(300);
+    historyPanel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    auto* historyHint = new QLabel("Click an entry to reuse its expression. Ans keeps the last successful result.");
+    historyHint->setObjectName("calcHint");
+    historyHint->setWordWrap(true);
+    historyPanel->body()->addWidget(historyHint);
+
+    m_historyEmpty = new QLabel("No calculations yet");
+    m_historyEmpty->setObjectName("calcHistoryEmpty");
+    m_historyEmpty->setAlignment(Qt::AlignCenter);
+    m_historyEmpty->setWordWrap(true);
+    historyPanel->body()->addWidget(m_historyEmpty, 1);
+
+    m_historyList = new QListWidget;
+    m_historyList->setObjectName("calcHistory");
+    m_historyList->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_historyList->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_historyList->setWordWrap(true);
+    historyPanel->body()->addWidget(m_historyList, 1);
+
+    m_historyClear = new QPushButton("Clear history");
+    m_historyClear->setObjectName("calcHistoryClear");
+    m_historyClear->setToolTip("Clear recent calculations; keep Ans");
+    m_historyClear->setEnabled(false);
+    historyPanel->body()->addWidget(m_historyClear);
+
+    columns->addWidget(historyPanel, 1);
+    columns->addStretch(1);
     content()->addLayout(columns, 1);
 
     connect(m_input, &QLineEdit::returnPressed, this, &MathSolverPage::calculate);
@@ -83,11 +126,47 @@ MathSolverPage::MathSolverPage(AppContext* context, QWidget* parent)
     connect(m_keypad, &CalculatorKeypad::clearAll, this, &MathSolverPage::clearAll);
     connect(m_keypad, &CalculatorKeypad::backspace, this, [this] { m_input->backspace(); m_input->setFocus(); });
     connect(m_keypad, &CalculatorKeypad::insertText, this, [this](const QString& text) {
-        m_input->insert(text);
+        const QString selected = m_input->selectedText();
+        const bool unit = text == "nm" || text == "um" || text == "mm" || text == "cm";
+        if (!selected.isEmpty() && (text == "^2" || text == "^3")) {
+            m_input->insert(QString("(%1)%2").arg(selected, text));
+        } else if (!selected.isEmpty() && text == "1/(") {
+            m_input->insert(QString("1/(%1)").arg(selected));
+        } else if (text == "1/(") {
+            const QString expression = m_input->text();
+            if (!expression.trimmed().isEmpty() && m_input->cursorPosition() == expression.size())
+                m_input->setText(QString("1/(%1)").arg(expression));
+            else
+                m_input->insert(text);
+        } else if (unit && !selected.isEmpty()) {
+            m_input->insert(selected + QString("*") + text);
+        } else if (unit) {
+            const QString expression = m_input->text();
+            int cursor = m_input->cursorPosition();
+            while (cursor > 0 && expression.at(cursor - 1).isSpace()) --cursor;
+            const bool followsOperand = cursor > 0 &&
+                (expression.at(cursor - 1).isLetterOrNumber() || expression.at(cursor - 1) == ')' ||
+                 expression.at(cursor - 1) == '.');
+            m_input->insert(followsOperand ? QString("*") + text : text);
+        } else {
+            m_input->insert(text);
+        }
         m_input->setFocus();
     });
     connect(m_angleButton, &QPushButton::toggled, this, &MathSolverPage::toggleAngleMode);
     connect(m_copyBtn, &QPushButton::clicked, this, &MathSolverPage::onCopyResult);
+    connect(m_historyList, &QListWidget::itemClicked, this, [this](QListWidgetItem* item) {
+        m_input->setText(item->data(Qt::UserRole).toString());
+        m_input->setFocus();
+        m_input->selectAll();
+        m_status->hide();
+    });
+    connect(m_historyClear, &QPushButton::clicked, this, [this] {
+        m_calc.clearHistoryEntries();
+        refreshHistory();
+        m_input->setFocus();
+    });
+    refreshHistory();
 }
 
 void MathSolverPage::calculate() {
@@ -106,15 +185,36 @@ void MathSolverPage::calculate() {
         m_status->show();
         m_copyBtn->setEnabled(false);
     }
+    refreshHistory();
 }
 
 void MathSolverPage::clearAll() {
     m_calc.clearHistory();
+    refreshHistory();
     m_input->clear();
     m_result->setText("0");
     m_status->hide();
     m_copyBtn->setEnabled(false);
     m_input->setFocus();
+}
+
+void MathSolverPage::refreshHistory() {
+    if (!m_historyList) return;
+    m_historyList->clear();
+    const auto& entries = m_calc.history();
+    for (auto it = entries.rbegin(); it != entries.rend(); ++it) {
+        const QString expression = QString::fromStdString(it->expression);
+        const QString result = it->ok ? QString("= %1").arg(QString::fromStdString(it->result))
+                                      : QString("Error: %1").arg(QString::fromStdString(it->error));
+        auto* item = new QListWidgetItem(expression + QString("\n") + result, m_historyList);
+        item->setData(Qt::UserRole, expression);
+        item->setToolTip(expression + QString("\n") + result);
+        item->setSizeHint(QSize(0, 48));
+    }
+    const bool empty = m_historyList->count() == 0;
+    m_historyEmpty->setVisible(empty);
+    m_historyList->setVisible(!empty);
+    m_historyClear->setEnabled(!empty);
 }
 
 QString MathSolverPage::resultText() const { return m_result->text(); }
@@ -123,9 +223,11 @@ void MathSolverPage::onCopyResult() {
     if (m_result->text() == "ERROR" || m_result->text() == "0") return;
     QApplication::clipboard()->setText(m_result->text());
     const QString original = m_copyBtn->text();
-    m_copyBtn->setText("Copied!");
+    m_copyBtn->setText("✓");
+    m_copyBtn->setToolTip("Copied to clipboard");
     QTimer::singleShot(1200, this, [this, original] {
         m_copyBtn->setText(original);
+        m_copyBtn->setToolTip("Copy result to clipboard");
     });
 }
 

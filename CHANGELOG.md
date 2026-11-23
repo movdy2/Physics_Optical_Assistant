@@ -4,7 +4,8 @@
 
 - Version bumped to 3.0.9 (CMakeLists.txt, version.json).
 - Michelson Interferometry improvements: fringe count register (full + fractional), coherence-length decay V_eff = V·exp(−|ΔOPD|/Lc), mirror tilt control (0–10 mrad), glass plate OPD ΔOPD_plate = 2(n_plate−1)t, detector screen fringe visualization, phase difference readout (rad + degrees).
-- Regression tests added for fringe count register, V<1 contrast, coherence decay, plate OPD, and NaN/Infinity guard.
+- Calculator refresh: compact 52-key scientific keypad, advanced functions and optics units, selectable calculation history, and an Ans memory workflow.
+- Regression tests added for fringe count register, V<1 contrast, coherence decay, plate OPD, NaN/Infinity guard, and the compact calculator interactions.
 
 ## [v3.0.0] — 2026-11-13
 

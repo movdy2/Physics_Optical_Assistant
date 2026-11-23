@@ -1727,11 +1727,12 @@ private slots:
         QFile::remove(m_app->studyHub->notesFilePath());      // keep this isolated test from affecting later cases
     }
 
-    void calculatorKeepsTheUsefulMathKeypadOnly() {
+    void calculatorHasACompactScientificKeypadAndHistory() {
         goTo(m_app->calculator);
         auto* input = m_app->calculator->findChild<QLineEdit*>("lcdInput");
         QVERIFY(input);
-        QVERIFY(m_app->calculator->findChild<QLabel*>("lcdResult"));
+        auto* result = m_app->calculator->findChild<QLabel*>("lcdResult");
+        QVERIFY(result);
         const QColor expectedPlaceholder = ThemeManager::instance().theme().dark
                                                ? QColor(Qt::white) : ThemeManager::instance().theme().text;
         QCOMPARE(input->palette().color(QPalette::PlaceholderText), expectedPlaceholder);
@@ -1742,22 +1743,55 @@ private slots:
         click(angle);
         QCOMPARE(angle->text(), QString("DEG"));
         QVERIFY2(!m_app->calculator->findChild<QComboBox*>("keysCombo"), "the extra physics-symbol browser is still on Calculator");
-        QVERIFY2(findButton(m_app->calculator, "sin") && findButton(m_app->calculator, "π") &&
-                 findButton(m_app->calculator, "Ans") && findButton(m_app->calculator, "=") &&
-                 findButton(m_app->calculator, "AC") && findButton(m_app->calculator, "DEL"),
-                 "a required math key is missing");
-        QVERIFY2(!findButton(m_app->calculator, "abs") && !findButton(m_app->calculator, "x²"),
-                 "redundant or rarely used keypad keys were not removed");
+        QVERIFY2(findButton(m_app->calculator, "sin") && findButton(m_app->calculator, "sec") &&
+                 findButton(m_app->calculator, "abs") && findButton(m_app->calculator, "exp") &&
+                 findButton(m_app->calculator, "x²") && findButton(m_app->calculator, "1/x") &&
+                 findButton(m_app->calculator, "nm") && findButton(m_app->calculator, "cm") &&
+                 findButton(m_app->calculator, "mm") && findButton(m_app->calculator, "µm") &&
+                 findButton(m_app->calculator, "Ans") &&
+                 findButton(m_app->calculator, "=") && findButton(m_app->calculator, "AC") &&
+                 findButton(m_app->calculator, "DEL"), "an advanced math key is missing");
         auto* keypad = m_app->calculator->findChild<CalculatorKeypad*>("calculatorKeypad");
         QVERIFY(keypad);
-        QCOMPARE(keypad->findChildren<QPushButton*>().size(), 33);
-        const QString labels = allLabelTexts(m_app->calculator).join(" ");
-        QVERIFY(!labels.contains("SCIENTIFIC KEYS") && !labels.contains("History lines"));
+        QCOMPARE(keypad->findChildren<QPushButton*>().size(), 52);
+        for (QPushButton* key : keypad->findChildren<QPushButton*>())
+            QVERIFY2(key->maximumHeight() <= 36, qPrintable("calculator key is still oversized: " + key->text()));
+
+        auto* history = m_app->calculator->findChild<QListWidget*>("calcHistory");
+        auto* historyEmpty = m_app->calculator->findChild<QLabel*>("calcHistoryEmpty");
+        QVERIFY(history && historyEmpty && historyEmpty->isVisibleTo(&win()));
+        input->setText("5");
+        input->selectAll();
+        click(findButton(m_app->calculator, "x²"));
+        QCOMPARE(input->text(), QString("(5)^2"));
+        input->setText("4");
+        click(findButton(m_app->calculator, "1/x"));
+        QCOMPARE(input->text(), QString("1/(4)"));
         input->clear();
         click(findButton(m_app->calculator, "sin"));
         QVERIFY2(input->text().startsWith("sin("), "the math key did not insert a plain-text function");
         QVERIFY2(input->text().indexOf('$') < 0 && !input->text().contains('\\'), "the calculator must insert plain text, not LaTeX");
-        input->clear();
+        input->setText("632");
+        click(findButton(m_app->calculator, "nm"));
+        QCOMPARE(input->text(), QString("632*nm"));
+
+        input->setText("2+3");
+        QTest::keyClick(input, Qt::Key_Return);
+        QCOMPARE(result->text(), QString("5"));
+        QCOMPARE(history->count(), 1);
+        QCOMPARE(history->item(0)->data(Qt::UserRole).toString(), QString("2+3"));
+        const QRect firstEntry = history->visualItemRect(history->item(0));
+        QTest::mouseClick(history->viewport(), Qt::LeftButton, Qt::NoModifier, firstEntry.center());
+        QCOMPARE(input->text(), QString("2+3"));
+
+        auto* clearHistory = m_app->calculator->findChild<QPushButton*>("calcHistoryClear");
+        QVERIFY(clearHistory);
+        click(clearHistory);
+        QCOMPARE(history->count(), 0);
+        QVERIFY(historyEmpty->isVisibleTo(&win()));
+        input->setText("Ans+1");
+        QTest::keyClick(input, Qt::Key_Return);
+        QCOMPARE(result->text(), QString("6"));                         // clearing history preserves Ans = 5
     }
 
     void notesPageHasTheScientificKeyboard() {

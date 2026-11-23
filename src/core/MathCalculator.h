@@ -28,7 +28,8 @@ public:
     void setHistoryLimit(std::size_t limit);
     std::size_t historyLimit() const { return m_limit; }
     const std::deque<CalcEntry>& history() const { return m_history; }
-    void clearHistory();
+    void clearHistory();                     // clear entries and reset Ans (AC behavior)
+    void clearHistoryEntries();               // clear visible entries while preserving Ans
 
     double ans() const { return m_ans; }
 

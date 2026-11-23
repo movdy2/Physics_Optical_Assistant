@@ -281,6 +281,172 @@ QComboBox QAbstractItemView::item:selected {
     color: @bg@;
 }
 
+/* ---------- Compact scientific calculator ---------- */
+QWidget#calculatorKeypad {
+    background: transparent;
+}
+
+QLineEdit#lcdInput {
+    background: @bg@;
+    color: @text@;
+    border: 1px solid @border@;
+    border-radius: 6px;
+    padding: 6px 10px;
+    min-height: 32px;
+    font-family: 'JetBrains Mono';
+    font-size: 14px;
+}
+
+QLineEdit#lcdInput:focus {
+    border: 1px solid @accentPrimary@;
+}
+
+QLabel#lcdResult {
+    background: transparent;
+    color: @accentAmber@;
+    font-family: 'JetBrains Mono';
+    font-size: 28px;
+    font-weight: 700;
+}
+
+QPushButton#calcMode {
+    background: @surfaceHover@;
+    color: @accentAmber@;
+    border: 1px solid @border@;
+    border-radius: 5px;
+    padding: 2px 10px;
+    min-height: 26px;
+    max-height: 30px;
+    font-family: 'JetBrains Mono';
+    font-size: 10px;
+    font-weight: 700;
+}
+
+QPushButton#calcMode:checked {
+    background: @accentAmberTint@;
+    border-color: @accentAmber@;
+}
+
+QPushButton#calcCopy {
+    background: transparent;
+    border: 1px solid @border@;
+    border-radius: 5px;
+    padding: 0;
+    min-height: 28px;
+    max-height: 28px;
+    min-width: 28px;
+    max-width: 28px;
+}
+
+QPushButton#calcScientific,
+QPushButton#calcNumber,
+QPushButton#calcOperator,
+QPushButton#calcAction,
+QPushButton#calcEquals {
+    border-radius: 5px;
+    padding: 1px 4px;
+    min-height: 30px;
+    max-height: 36px;
+    font-size: 11px;
+}
+
+QPushButton#calcScientific {
+    background: @surface@;
+    color: @muted@;
+    font-weight: 500;
+}
+
+QPushButton#calcNumber {
+    background: @surfaceHover@;
+    color: @text@;
+    font-family: 'JetBrains Mono';
+    font-size: 12px;
+}
+
+QPushButton#calcOperator {
+    background: @surface@;
+    color: @accentAmber@;
+    font-size: 13px;
+}
+
+QPushButton#calcAction {
+    background: @bg@;
+    color: @error@;
+    font-size: 10px;
+}
+
+QPushButton#calcEquals {
+    background: @accentPrimary@;
+    color: @bg@;
+    border-color: @accentPrimary@;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+QPushButton#calcScientific:hover,
+QPushButton#calcNumber:hover,
+QPushButton#calcOperator:hover,
+QPushButton#calcAction:hover {
+    background: @surfaceHover@;
+    border-color: @accentPrimary@;
+}
+
+QPushButton#calcEquals:hover {
+    background: @accentPrimaryHover@;
+}
+
+QListWidget#calcHistory {
+    background: @bg@;
+    color: @text@;
+    border: 1px solid @border@;
+    border-radius: 6px;
+    padding: 4px;
+    outline: none;
+}
+
+QListWidget#calcHistory::item {
+    padding: 6px 7px;
+    border-bottom: 1px solid @border@;
+    border-radius: 4px;
+}
+
+QListWidget#calcHistory::item:selected {
+    background: @accentPrimaryTint@;
+    color: @text@;
+}
+
+QLabel#calcHint,
+QLabel#calcHistoryEmpty {
+    color: @dim@;
+    font-size: 10px;
+}
+
+QLabel#statusError {
+    color: @error@;
+    background: @errorBg@;
+    border: 1px solid @error@;
+    border-radius: 5px;
+    padding: 5px 8px;
+    font-size: 10px;
+}
+
+QPushButton#calcHistoryClear {
+    background: transparent;
+    color: @muted@;
+    border: 1px solid @border@;
+    border-radius: 5px;
+    padding: 2px 8px;
+    min-height: 28px;
+    max-height: 30px;
+    font-size: 10px;
+}
+
+QPushButton#calcHistoryClear:hover {
+    color: @accentAmber@;
+    border-color: @accentAmber@;
+    background: @accentAmberTint@;
+}
+
 /* ---------- Buttons (compact, no clipping) ---------- */
 QPushButton {
     background: @surface@;
