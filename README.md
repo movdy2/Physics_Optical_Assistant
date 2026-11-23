@@ -130,3 +130,4 @@ The built-in formulas, constants, chapters, keyboard definitions, and optics pre
 ## Project credits
 
 Created for the PHY104 course at Zewail University of Science and Technology by [**Movdy2**](https://github.com/movdy2), with a contribution from **Ahmed Samir**. Scientific supervision and review were provided by **Dr. Ashraf**, the course instructor.
+the linux  nix support by Ag1O1
