@@ -76,7 +76,7 @@ private:
     int m_decimals = 4;
 };
 
-/// On-screen scientific keypad for the Calculator page, styled with the active Gruvbox theme.
+/// Compact 52-key scientific keypad for the Calculator page, styled with the active Gruvbox theme.
 class CalculatorKeypad : public QWidget {
     Q_OBJECT
 public:

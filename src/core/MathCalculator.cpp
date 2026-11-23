@@ -37,8 +37,12 @@ void MathCalculator::setHistoryLimit(std::size_t limit) {
 }
 
 void MathCalculator::clearHistory() {
-    m_history.clear();
+    clearHistoryEntries();
     m_ans = 0.0;
+}
+
+void MathCalculator::clearHistoryEntries() {
+    m_history.clear();
 }
 
 void MathCalculator::trim() {

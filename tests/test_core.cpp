@@ -199,6 +199,8 @@ int main() {
     CHECK(near(calc.ans(), 2));                                                    // errors do not change Ans
     calc.setHistoryLimit(1);
     CHECK(calc.history().size() == 1);
+    calc.clearHistoryEntries();
+    CHECK(calc.history().empty() && calc.ans() == 2.0);                                // history clear preserves Ans
     calc.clearHistory();
     CHECK(calc.history().empty() && calc.ans() == 0.0);
     CHECK(MathCalculator::formatResult(-0.0) == "0");

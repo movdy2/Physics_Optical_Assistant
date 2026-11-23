@@ -6,13 +6,14 @@
 
 class QLabel;
 class QLineEdit;
+class QListWidget;
 class QPushButton;
 
 namespace phy104 {
 class AppContext;
 class CalculatorKeypad;
 
-/// Clean, free-math mode: enter an expression, get a result, and reuse recent answers with Ans.
+/// Compact scientific calculator with advanced functions, optics units, and reusable Ans/history.
 class MathSolverPage : public BasePage {
     Q_OBJECT
 public:
@@ -26,14 +27,18 @@ private slots:
     void clearAll();
     void toggleAngleMode(bool degrees);
     void onCopyResult();
+    void refreshHistory();
 
 private:
     MathCalculator m_calc;
     QLineEdit* m_input = nullptr;
     QLabel* m_result = nullptr;
     QLabel* m_status = nullptr;
+    QLabel* m_historyEmpty = nullptr;
     QPushButton* m_angleButton = nullptr;
     QPushButton* m_copyBtn = nullptr;
+    QPushButton* m_historyClear = nullptr;
+    QListWidget* m_historyList = nullptr;
     CalculatorKeypad* m_keypad = nullptr;
 };
 

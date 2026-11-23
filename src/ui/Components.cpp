@@ -412,26 +412,46 @@ void NoticeCard::setNotice(const Notice& n) {
 CalculatorKeypad::CalculatorKeypad(QWidget* parent) : QWidget(parent) {
     auto* grid = new QGridLayout(this);
     grid->setContentsMargins(0, 0, 0, 0);
-    grid->setSpacing(6);
+    grid->setSpacing(5);
 
-    struct Key { const char* label; const char* insert; const char* kind; };   // insert: text to type, or "" for special keys
-    const Key rows[6][6] = {
-        {{"sin", "sin(", "keyFn"}, {"cos", "cos(", "keyFn"}, {"tan", "tan(", "keyFn"}, {"ln", "ln(", "keyFn"}, {"log", "log(", "keyFn"}, {"√", "√(", "keyFn"}},
-        {{"asin", "asin(", "keyFn"}, {"acos", "acos(", "keyFn"}, {"atan", "atan(", "keyFn"}, {"^", "^", "keyFn"}, {"π", "π", "keyFn"}, {"e", "e", "keyFn"}},
-        {{"7", "7", "key"}, {"8", "8", "key"}, {"9", "9", "key"}, {"÷", "÷", "keyOp"}, {"DEL", "", "keyOp"}, {"AC", "", "keyOp"}},
-        {{"4", "4", "key"}, {"5", "5", "key"}, {"6", "6", "key"}, {"×", "×", "keyOp"}, {"(", "(", "keyOp"}, {")", ")", "keyOp"}},
-        {{"1", "1", "key"}, {"2", "2", "key"}, {"3", "3", "key"}, {"−", "-", "keyOp"}, {"Ans", "Ans", "keyFn"}, {"", "", ""}},
-        {{"0", "0", "key"}, {".", ".", "key"}, {"", "", ""}, {"+", "+", "keyOp"}, {"=", "", "keyEq"}, {"", "", ""}}};
-    for (int r = 0; r < 6; ++r) {
-        for (int c = 0; c < 6; ++c) {
+    struct Key {
+        const char* label;
+        const char* insert;
+        const char* kind;
+        int span = 1;
+    }; // insert: text to type, or "" for special keys
+    const Key rows[7][8] = {
+        {{"sin", "sin(", "calcScientific"}, {"cos", "cos(", "calcScientific"}, {"tan", "tan(", "calcScientific"},
+         {"sec", "sec(", "calcScientific"}, {"csc", "csc(", "calcScientific"}, {"cot", "cot(", "calcScientific"},
+         {"asin", "asin(", "calcScientific"}, {"acos", "acos(", "calcScientific"}},
+        {{"atan", "atan(", "calcScientific"}, {"√", "sqrt(", "calcScientific"}, {"abs", "abs(", "calcScientific"},
+         {"ln", "ln(", "calcScientific"}, {"log", "log(", "calcScientific"}, {"sinh", "sinh(", "calcScientific"},
+         {"cosh", "cosh(", "calcScientific"}, {"tanh", "tanh(", "calcScientific"}},
+        {{"exp", "exp(", "calcScientific"}, {"floor", "floor(", "calcScientific"}, {"ceil", "ceil(", "calcScientific"},
+         {"round", "round(", "calcScientific"}, {"sgn", "sgn(", "calcScientific"}, {"x²", "^2", "calcScientific"},
+         {"x³", "^3", "calcScientific"}, {"1/x", "1/(", "calcScientific"}},
+        {{"7", "7", "calcNumber"}, {"8", "8", "calcNumber"}, {"9", "9", "calcNumber"}, {"÷", "÷", "calcOperator"},
+         {"(", "(", "calcOperator"}, {")", ")", "calcOperator"}, {"DEL", "", "calcAction"}, {"AC", "", "calcAction"}},
+        {{"4", "4", "calcNumber"}, {"5", "5", "calcNumber"}, {"6", "6", "calcNumber"}, {"×", "×", "calcOperator"},
+         {"π", "π", "calcScientific"}, {"e", "e", "calcScientific"}, {"Ans", "Ans", "calcScientific"},
+         {"nm", "nm", "calcScientific"}},
+        {{"1", "1", "calcNumber"}, {"2", "2", "calcNumber"}, {"3", "3", "calcNumber"}, {"−", "-", "calcOperator"},
+         {"cm", "cm", "calcScientific"}, {"mm", "mm", "calcScientific"}, {"µm", "um", "calcScientific"},
+         {"^", "^", "calcOperator"}},
+        {{"0", "0", "calcNumber", 2}, {"", "", "", 1}, {".", ".", "calcNumber", 2}, {"", "", "", 1},
+         {"+", "+", "calcOperator", 2}, {"", "", "", 1}, {"=", "", "calcEquals", 2}, {"", "", "", 1}}};
+
+    for (int r = 0; r < 7; ++r) {
+        for (int c = 0; c < 8; ++c) {
             const Key& k = rows[r][c];
             if (!*k.label) continue;
             auto* b = new QPushButton(k.label);
             b->setObjectName(k.kind);
             b->setFocusPolicy(Qt::NoFocus);                       // the LCD input keeps the cursor
             b->setCursor(Qt::PointingHandCursor);
-            b->setMinimumSize(54, 38);
-            b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+            b->setMinimumSize(0, 30);
+            b->setMaximumHeight(36);
+            b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
             const QString label = k.label, text = k.insert;
             connect(b, &QPushButton::clicked, this, [this, label, text] {
                 if (label == "DEL") emit backspace();
@@ -439,11 +459,10 @@ CalculatorKeypad::CalculatorKeypad(QWidget* parent) : QWidget(parent) {
                 else if (label == "=") emit equals();
                 else emit insertText(text);
             });
-            if (label == "=") grid->addWidget(b, r, c, 1, 2);     // wide equals key
-            else grid->addWidget(b, r, c);
+            grid->addWidget(b, r, c, 1, k.span);
         }
     }
-    for (int c = 0; c < 6; ++c) grid->setColumnStretch(c, 1);
+    for (int c = 0; c < 8; ++c) grid->setColumnStretch(c, 1);
 }
 
 void showHelpDialog(QWidget* parent, const QString& title, const QString& html) {
