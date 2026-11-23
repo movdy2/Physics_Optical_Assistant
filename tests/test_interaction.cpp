@@ -1095,21 +1095,24 @@ private slots:
         QVERIFY(win().activityLog()->item(0)->text().contains("فُتحت صفحة"));
 
         bool hasArabicTirResult = false;
-        int checkedLcdLabels = 0;
+        int checkedRegisterLabels = 0;
         for (QLabel* label : m_app->refraction->findChildren<QLabel*>()) {
             const QString objectName = label->objectName();
-            if (!(objectName == "lcdTitle" || objectName == "lcdLine" || objectName == "lcdCaption" ||
-                  objectName == "lcdBig" || objectName == "lcdFoot") || !label->isVisibleTo(m_app->refraction)) continue;
-            ++checkedLcdLabels;
-            QVERIFY2(label->wordWrap(), qPrintable("LCD label does not wrap: " + label->text()));
-            QCOMPARE(label->font().families(), englishLcdFontStack);
-            if (objectName != "lcdTitle") QVERIFY(label->alignment().testFlag(Qt::AlignRight));
+            if (!(objectName == "regTitle" || objectName == "regLine" || objectName == "regCaption" ||
+                  objectName == "regBig" || objectName == "regFoot") || !label->isVisibleTo(m_app->refraction)) continue;
+            ++checkedRegisterLabels;
+            QVERIFY2(label->wordWrap(), qPrintable("Register label does not wrap: " + label->text()));
+            if (objectName == "regTitle")
+                QCOMPARE(label->font().families(), englishUiFontStack);
+            else
+                QVERIFY(label->font().families().contains("JetBrains Mono"));
+            if (objectName != "regTitle") QVERIFY(label->alignment().testFlag(Qt::AlignRight));
             if (label->text().contains("الانعكاس الكلي الداخلي")) hasArabicTirResult = true;
             if (label->hasHeightForWidth())
-                QVERIFY2(label->height() >= label->heightForWidth(label->width()), qPrintable("clipped LCD label: " + label->text()));
+                QVERIFY2(label->height() >= label->heightForWidth(label->width()), qPrintable("clipped register label: " + label->text()));
         }
-        QVERIFY(checkedLcdLabels > 0);
-        QVERIFY2(hasArabicTirResult, "the Arabic TIR result is missing from the LCD registers");
+        QVERIFY(checkedRegisterLabels > 0);
+        QVERIFY2(hasArabicTirResult, "the Arabic TIR result is missing from the calculation registers");
 
         go(0);
         click(language);

@@ -20,6 +20,8 @@ using namespace phy104;
 using namespace phy104::PhysicsCalculator;
 using namespace phy104::WaveExperiments;
 
+constexpr double kPi = 3.14159265358979323846;
+
 static int g_failures = 0;
 #define CHECK(cond) do { if (!(cond)) { ++g_failures; \
     std::cerr << "FAIL line " << __LINE__ << ": " #cond "\n"; } } while (0)
@@ -414,7 +416,7 @@ static void testThinFilm() {
 
     // n0 < n < n2 → two reversals → cos²
     {
-        double phase = M_PI * 2.0 * n * t / lambda;  // = 2π*1.5*100/600 = π/2
+        double phase = kPi * 2.0 * n * t / lambda;  // = 2π*1.5*100/600 = π/2
         double expected = std::pow(std::cos(phase), 2);  // cos²(π/2) = 0
         double R = thinFilmReflectance(t, n0, n, n2, lambda, theta);
         CHECK(near(R, expected, 1e-6));
@@ -423,7 +425,7 @@ static void testThinFilm() {
     // n0 < n > n2 → one reversal → sin²
     {
         double n2b = 1.0;  // n > n2
-        double phase = M_PI * 2.0 * n * t / lambda;  // = π/2
+        double phase = kPi * 2.0 * n * t / lambda;  // = π/2
         double expected = std::pow(std::sin(phase), 2);  // sin²(π/2) = 1
         double R = thinFilmReflectance(t, n0, n, n2b, lambda, theta);
         CHECK(near(R, expected, 1e-6));
