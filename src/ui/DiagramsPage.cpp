@@ -45,33 +45,51 @@ const QList<DiagramInfo>& diagrams() {
              "For a spherical mirror, the paraxial focal length is half the radius of curvature.",
              {"\\frac{1}{s}+\\frac{1}{s'}=\\frac{1}{f}", "f=\\frac{R}{2}", "m=-\\frac{s'}{s}"}}
         }},
-        {"Prisms", {{"Prism & Deviation", ":/diagrams/prism.svg",
+        {"Prisms", {
+            {"Prism & Deviation", ":/diagrams/prism.svg",
              "The ray bends at both prism faces. At minimum deviation, the path is symmetric and the refractive index follows from A and δmin.",
-             {"\\delta=\\theta_1+\\theta_2-A", "n=\\frac{\\sin((A+\\delta_{min})/2)}{\\sin(A/2)}"}}},
-        {"Wave Interference (Double-Slit)", {{"Young Double Slit", ":/diagrams/double_slit.svg",
+             {"\\delta=\\theta_1+\\theta_2-A", "n=\\frac{\\sin((A+\\delta_{min})/2)}{\\sin(A/2)}"}}
+        }},
+        {"Wave Interference (Double-Slit)", {
+            {"Young Double Slit", ":/diagrams/double_slit.svg",
              "Light from the two slits overlaps on the screen. Bright fringes occur when the path difference is an integer number of wavelengths.",
-             {"d\\sin\\theta=m\\lambda", "\\Delta y=\\frac{\\lambda L}{d}"}}},
-        {"Polarization (Malus & Brewster)", {{"Polarizers & Brewster Angle", ":/diagrams/polarization.svg",
+             {"d\\sin\\theta=m\\lambda", "\\Delta y=\\frac{\\lambda L}{d}"}}
+        }},
+        {"Polarization (Malus & Brewster)", {
+            {"Polarizers & Brewster Angle", ":/diagrams/polarization.svg",
              "Malus’s law gives transmission through two polarizers. At Brewster’s angle, the reflected and refracted rays are perpendicular.",
-             {"I=I_0\\cos^2\\theta", "\\tan\\theta_B=\\frac{n_2}{n_1}", "\\theta_B+\\theta_t=90^\\circ"}}},
-        {"Single-Slit Diffraction", {{"Single-Slit Pattern", ":/diagrams/single_slit.svg",
+             {"I=I_0\\cos^2\\theta", "\\tan\\theta_B=\\frac{n_2}{n_1}", "\\theta_B+\\theta_t=90^\\circ"}}
+        }},
+        {"Single-Slit Diffraction", {
+            {"Single-Slit Pattern", ":/diagrams/single_slit.svg",
              "The central maximum is twice the width of each adjacent maximum. Minima occur at a sin θ = mλ.",
-             {"a\\sin\\theta=m\\lambda", "w_0\\approx\\frac{2L\\lambda}{a}"}}},
-        {"Diffraction Grating", {{"Grating Orders", ":/diagrams/grating.svg",
+             {"a\\sin\\theta=m\\lambda", "w_0\\approx\\frac{2L\\lambda}{a}"}}
+        }},
+        {"Diffraction Grating", {
+            {"Grating Orders", ":/diagrams/grating.svg",
              "A grating produces bright orders when the path difference between adjacent slits is an integer wavelength.",
-             {"d\\sin\\theta_m=m\\lambda", "d=\\frac{1}{N}"}}},
-        {"Thin-Film Interference", {{"Thin-Film Reflections", ":/diagrams/thin_film.svg",
+             {"d\\sin\\theta_m=m\\lambda", "d=\\frac{1}{N}"}}
+        }},
+        {"Thin-Film Interference", {
+            {"Thin-Film Reflections", ":/diagrams/thin_film.svg",
              "Reflections from the two film surfaces interfere. With one phase reversal, the reflected constructive condition is shifted by half a wavelength.",
-             {"\\Delta=2nt\\cos\\theta_t", "2nt\\cos\\theta_t=(q+\\frac{1}{2})\\lambda"}}},
-        {"Michelson Interferometry", {{"Michelson Interferometer", ":/diagrams/michelson.svg",
+             {"\\Delta=2nt\\cos\\theta_t", "2nt\\cos\\theta_t=(q+\\frac{1}{2})\\lambda"}}
+        }},
+        {"Michelson Interferometry", {
+            {"Michelson Interferometer", ":/diagrams/michelson.svg",
              "The beam splitter sends light down perpendicular arms. Moving M2 changes the round-trip optical path difference and shifts the fringes.",
-             {"\\Delta\\mathrm{OPD}=2n\\Delta x", "m=\\frac{2n\\Delta x}{\\lambda}"}}},
-        {"Newton's Rings", {{"Newton’s Rings", ":/diagrams/newton_rings.svg",
+             {"\\Delta\\mathrm{OPD}=2n\\Delta x", "m=\\frac{2n\\Delta x}{\\lambda}"}}
+        }},
+        {"Newton's Rings", {
+            {"Newton’s Rings", ":/diagrams/newton_rings.svg",
              "A curved lens on a flat plate creates a radially varying thin film. In reflected light, dark-ring radius squared is proportional to order.",
-             {"r_m^2=\\frac{m\\lambda R}{n}", "t(r)\\approx\\frac{r^2}{2R}"}}},
-        {"Thick Lens & Aberration", {{"Thick Lens & Spherical Aberration", ":/diagrams/thick_lens.svg",
+             {"r_m^2=\\frac{m\\lambda R}{n}", "t(r)\\approx\\frac{r^2}{2R}"}}
+        }},
+        {"Thick Lens & Aberration", {
+            {"Thick Lens & Spherical Aberration", ":/diagrams/thick_lens.svg",
              "A thick lens has separated principal planes. Marginal and paraxial rays may focus at different points, producing spherical aberration.",
-             {"\\frac{1}{f}=(n-1)\\left(\\frac{1}{R_1}-\\frac{1}{R_2}+\\frac{(n-1)d}{nR_1R_2}\\right)"}}}
+             {"\\frac{1}{f}=(n-1)\\left(\\frac{1}{R_1}-\\frac{1}{R_2}+\\frac{(n-1)d}{nR_1R_2}\\right)"}}
+        }}
     };
     return list;
 }
