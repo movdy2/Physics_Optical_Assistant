@@ -779,4 +779,59 @@ QLabel#cardResult {
 /* ---------- RTL Support Hook ---------- */
 /* Arabic: app->setLayoutDirection(Qt::RightToLeft) */
 /* Numeric inputs & formulas force LTR via C++: widget->setLayoutDirection(Qt::LeftToRight) */
-    
+
+/* ---------- Guided Refraction lab ---------- */
+QDialog#guidedLabDialog { background: @bg@; }
+QLabel#guidedLabIntro { color: @muted@; font-size: 12px; }
+QLabel#guidedLabProgress {
+    color: @accentAmber@;
+    font-family: 'JetBrains Mono';
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 2px;
+}
+QWidget#guidedLabStep {
+    background: @surface@;
+    border: 1px solid @border@;
+    border-radius: 9px;
+}
+QLabel#guidedLabHeading { color: @text@; font-size: 16px; font-weight: 700; }
+QLabel#guidedLabDetail { color: @muted@; font-size: 12px; line-height: 1.5; }
+QLabel#guidedLabFormula {
+    color: @accentAmberHover@;
+    background: @bg@;
+    border: 1px solid @border@;
+    border-radius: 6px;
+    padding: 12px;
+    font-family: 'JetBrains Mono';
+    font-size: 17px;
+    font-weight: 700;
+}
+QLabel#guidedLabResult {
+    color: @lime@;
+    background: @bg@;
+    border: 1px solid @border@;
+    border-radius: 6px;
+    padding: 10px;
+    font-family: 'JetBrains Mono';
+    font-size: 13px;
+    font-weight: 600;
+}
+QPlainTextEdit#guidedLabPrediction, QPlainTextEdit#guidedLabReflection {
+    color: @text@;
+    background: @bg@;
+    border: 1px solid @border@;
+    border-radius: 6px;
+    padding: 8px;
+    selection-background-color: @accentPrimary@;
+}
+QPlainTextEdit#guidedLabPrediction:focus, QPlainTextEdit#guidedLabReflection:focus { border-color: @accentAmber@; }
+QLabel#guidedLabSavedStatus { color: @lime@; font-size: 11px; }
+QPushButton#guidedLabLaunch {
+    color: @accentAmber@;
+    background: @accentPrimaryTint@;
+    border: 1px solid @accentPrimary@;
+    min-height: 36px;
+}
+QPushButton#guidedLabLaunch:hover { background: @surfaceHover@; }
+

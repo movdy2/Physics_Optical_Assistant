@@ -6,6 +6,7 @@
 #include "ui/DashboardPage.h"
 #include "ui/DiagramsPage.h"
 #include "ui/ExperimentPages.h"
+#include "ui/GuidedLabDialog.h"
 #include "ui/MainWindow.h"
 #include "ui/EquationLabPage.h"
 #include "ui/ExportPage.h"
@@ -239,6 +240,25 @@ private slots:
         click(findControl(m_app->refraction, "calculate"));
         QTRY_VERIFY_WITH_TIMEOUT(activity->item(0)->text().contains("#"), 1500);
         QTRY_COMPARE_WITH_TIMEOUT(savedRunCount->text().toInt(), countBefore + 1, 1500);
+    }
+    void guidedRefractionLabAppliesItsSuggestedSetup() {
+        goTo(m_app->refraction);
+        auto* launch = findButton(m_app->refraction, "Start guided lab");
+        QVERIFY(launch);
+        click(launch);
+        auto* guide = m_app->refraction->findChild<GuidedLabDialog*>("guidedLabDialog");
+        QVERIFY(guide);
+        QVERIFY(!guide->isModal());
+        click(findButton(guide, "Next →"));
+        auto* applyValues = findButton(guide, "Use suggested values · air → glass · 30°");
+        QVERIFY(applyValues);
+        click(applyValues);
+        const auto fields = m_app->refraction->findChildren<UnitField*>();
+        QVERIFY(fields.size() >= 3);
+        QCOMPARE(fields[0]->value(), 1.0);
+        QCOMPARE(fields[1]->value(), 1.5);
+        QCOMPARE(fields[2]->value(), 30.0);
+        guide->close();
     }
     void dashboardCardsAndButtonsNavigate() {
         go(0);

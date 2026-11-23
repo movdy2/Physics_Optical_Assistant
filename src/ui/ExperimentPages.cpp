@@ -1,4 +1,5 @@
 #include "ExperimentPages.h"
+#include "GuidedLabDialog.h"
 #include "FieldIds.h"
 #include "AppContext.h"
 #include "Components.h"
@@ -112,6 +113,11 @@ RefractionPage::RefractionPage(AppContext* ctx, QWidget* parent)
     auto* f = controls->body();
     f->addWidget(m_mode);
     m_mode->setToolTip("Refraction: Snell's law with two media.  TIR: total internal reflection (requires n₁ > n₂).");
+    auto* guidedLab = new QPushButton("Start guided lab");
+    guidedLab->setObjectName("guidedLabLaunch");
+    guidedLab->setCursor(Qt::PointingHandCursor);
+    guidedLab->setToolTip("Follow a short prediction, simulation and reflection activity.");
+    f->addWidget(guidedLab);
     f->addWidget(labeled("Incident medium", m_med1));
     m_med1->setToolTip("Choose the incident medium preset, or Custom to enter n₁ manually.");
     f->addWidget(labeled("Refractive index · n₁", m_n1));
@@ -200,6 +206,25 @@ RefractionPage::RefractionPage(AppContext* ctx, QWidget* parent)
     cols.right->addWidget(m_notice);
     cols.right->addStretch();
     setPanels(m_diagram, m_chartPanel, m_results, "LIVE · 1:1", "");
+
+    connect(guidedLab, &QPushButton::clicked, this, [this, ctx] {
+        auto* guide = new GuidedLabDialog(ctx, [this] {
+            m_mode->setCurrent(0);
+            m_med1->setCurrentIndex(m_med1->findData(QStringLiteral("air")));
+            m_med2->setCurrentIndex(m_med2->findData(QStringLiteral("crown")));
+            m_n1->setValue(1.0, 2);
+            m_n2->setValue(1.5, 2);
+            m_theta->setValue(30.0, 2);
+            m_sigmaN1->setValue(0.0, 3);
+            m_sigmaN2->setValue(0.0, 3);
+            m_sigmaTheta->setValue(0.0, 2);
+            apply(false);
+        }, this);
+        guide->setAttribute(Qt::WA_DeleteOnClose);
+        guide->show();
+        guide->raise();
+        guide->activateWindow();
+    });
 
     connect(m_med1, &QComboBox::activated, this, [this] { onMediumChosen(m_med1, m_n1); });
     connect(m_med2, &QComboBox::activated, this, [this] { onMediumChosen(m_med2, m_n2); });
