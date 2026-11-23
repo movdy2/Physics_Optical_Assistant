@@ -7,6 +7,9 @@
 #include <QCheckBox>
 #include <QComboBox>
 #include <QHBoxLayout>
+#include <QGridLayout>
+#include <QFrame>
+#include <QScrollArea>
 #include <QSignalBlocker>
 #include <QLabel>
 #include <QPushButton>
@@ -28,8 +31,20 @@ ModelPage::ModelPage(const QString& title, const QString& subtitle, const QStrin
     : ExperimentPage(title, subtitle, experiment, ctx, parent) {
     useSaveExportHeader();
     m_controls = new Panel("Experiment controls");
-    m_controls->body()->setSpacing(12);
-    m_fieldLayout = m_controls->body();
+    m_controls->body()->setContentsMargins(8, 4, 8, 8);
+    m_controls->body()->setSpacing(0);
+    auto* controlsScroll = new QScrollArea;
+    controlsScroll->setObjectName("modelControlsScroll");
+    controlsScroll->setFrameShape(QFrame::NoFrame);
+    controlsScroll->setWidgetResizable(true);
+    controlsScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    controlsScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    auto* controlsContent = new QWidget;
+    m_fieldLayout = new QVBoxLayout(controlsContent);
+    m_fieldLayout->setContentsMargins(2, 2, 8, 2);
+    m_fieldLayout->setSpacing(9);
+    controlsScroll->setWidget(controlsContent);
+    m_controls->body()->addWidget(controlsScroll, 1);
 
     // Slider debounce timer: coalesces rapid valueChanged calls into a single apply after 16 ms (~60 fps).
     m_debounceTimer = new QTimer(this);
@@ -84,15 +99,30 @@ void ModelPage::build(const QString& diagramTitle, QWidget* canvas, const QStrin
     cols.center->addWidget(m_chartPanel, 2);
 
     m_results = new Panel(QString("Results · %1").arg(m_experiment), "");
+    m_results->body()->setContentsMargins(8, 4, 8, 8);
+    m_results->body()->setSpacing(0);
+    auto* resultsScroll = new QScrollArea;
+    resultsScroll->setObjectName("modelResultsScroll");
+    resultsScroll->setFrameShape(QFrame::NoFrame);
+    resultsScroll->setWidgetResizable(true);
+    resultsScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    resultsScroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    auto* resultsContent = new QWidget;
+    auto* resultsLayout = new QVBoxLayout(resultsContent);
+    resultsLayout->setContentsMargins(2, 2, 8, 2);
+    resultsLayout->setSpacing(10);
     m_reg1 = new RegisterView;
     m_reg2 = new RegisterView;
     m_interpretation = new NoticeCard;
     m_guard = new NoticeCard;
-    m_results->body()->addWidget(m_reg1);
-    m_results->body()->addWidget(m_reg2);
-    m_results->body()->addWidget(m_interpretation);
-    m_results->body()->addWidget(m_guard);
-    cols.right->addWidget(m_results);
+    resultsLayout->addWidget(m_reg1);
+    resultsLayout->addWidget(m_reg2);
+    resultsLayout->addWidget(m_interpretation);
+    resultsLayout->addWidget(m_guard);
+    resultsLayout->addStretch();
+    resultsScroll->setWidget(resultsContent);
+    m_results->body()->addWidget(resultsScroll, 1);
+    cols.right->addWidget(m_results, 1);
     cols.right->addStretch();
     setPanels(m_diagram, m_chartPanel, m_results, "", "");
 }
@@ -192,11 +222,15 @@ NewtonRingsPage::NewtonRingsPage(AppContext* ctx, QWidget* parent)
     auto* presetLabel = new QLabel("Presets:");
     presetLabel->setObjectName("fieldLabel");
     m_fieldLayout->addWidget(presetLabel);
-    auto* presetRow = new QHBoxLayout;
-    presetRow->setSpacing(4);
+    auto* presetGrid = new QGridLayout;
+    presetGrid->setHorizontalSpacing(6);
+    presetGrid->setVerticalSpacing(6);
+    presetGrid->setColumnStretch(0, 1);
+    int presetIndex = 0;
     auto makePreset = [&](const QString& label, double lambda, double radius, int order, int mediumIdx, int viewingIdx) {
         auto* b = new QPushButton(label);
         b->setObjectName("presetBtn");
+        b->setToolTip(label);
         b->setCursor(Qt::PointingHandCursor);
         b->setMinimumHeight(30);
         b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -210,15 +244,15 @@ NewtonRingsPage::NewtonRingsPage(AppContext* ctx, QWidget* parent)
             m_syncing = false;
             apply(false);
         });
-        presetRow->addWidget(b);
+        presetGrid->addWidget(b, presetIndex, 0);
+        ++presetIndex;
         return b;
     };
     m_presetAir = makePreset("Air · m=4", 600.0, 1.0, 4, 0, 0);
     m_presetWater = makePreset("Water · m=4", 600.0, 1.0, 4, 1, 0);
     m_presetOil = makePreset("Oil · m=4", 600.0, 1.0, 4, 2, 0);
     m_presetTransmitted = makePreset("Transmitted · m=4", 600.0, 1.0, 4, 0, 1);
-    presetRow->addStretch(1);
-    m_fieldLayout->addLayout(presetRow);
+    m_fieldLayout->addLayout(presetGrid);
     m_canvas = new NewtonCanvas;
     build("Lens on plate / concentric reflected rings", m_canvas, "Dark-ring radius squared vs order", "Reflected: m = 0 is the dark contact center. Transmitted: it is bright and the dark rings sit at half orders. t ≈ r²/(2R).");
     auto* newtonHelpBtn = new QToolButton;
@@ -332,11 +366,15 @@ MichelsonPage::MichelsonPage(AppContext* ctx, QWidget* parent)
     auto* presetLabel = new QLabel("Presets:");
     presetLabel->setObjectName("fieldLabel");
     m_fieldLayout->addWidget(presetLabel);
-    auto* presetRow = new QHBoxLayout;
-    presetRow->setSpacing(4);
+    auto* presetGrid = new QGridLayout;
+    presetGrid->setHorizontalSpacing(6);
+    presetGrid->setVerticalSpacing(6);
+    presetGrid->setColumnStretch(0, 1);
+    int presetIndex = 0;
     auto makePreset = [&](const QString& label, double lambda, double dxUm, double nIdx, bool fringes) {
         auto* b = new QPushButton(label);
         b->setObjectName("presetBtn");
+        b->setToolTip(label);
         b->setCursor(Qt::PointingHandCursor);
         b->setMinimumHeight(32);
         b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -349,14 +387,15 @@ MichelsonPage::MichelsonPage(AppContext* ctx, QWidget* parent)
             m_syncing = false;
             apply(false);
         });
-        presetRow->addWidget(b, 1);
+        presetGrid->addWidget(b, presetIndex, 0);
+        ++presetIndex;
         return b;
     };
     m_presetAir = makePreset("Air · Δx 0.75", 632.8, 0.75, 0, false);
     m_presetCrown = makePreset("Crown · Δx 0.75", 632.8, 0.75, 1, false);
     m_presetFlint = makePreset("Flint · Δx 0.75", 632.8, 0.75, 2, false);
     m_presetFringes = makePreset("Fringes tab", 632.8, 0.75, 0, true);
-    m_fieldLayout->addLayout(presetRow);
+    m_fieldLayout->addLayout(presetGrid);
     m_canvas = new MichelsonCanvas;
     m_canvas->setObjectName("michelsonCanvas");
     connect(m_dxSlider, &QSlider::valueChanged, this, [this](int value) {
@@ -422,6 +461,7 @@ MichelsonPage::MichelsonPage(AppContext* ctx, QWidget* parent)
             "<h3>Michelson Interferometer</h3>"
             "<p><b>λ:</b> wavelength of light in nm. One fringe shift per λ/(2n) of mirror travel.</p>"
             "<p><b>Δx:</b> mirror displacement in µm. Changes optical path difference ΔOPD = 2n·Δx.</p>"
+            "<p><b>Optical bench:</b> M1 and M2 mirror faces are perpendicular to their arms; M2 moves along the horizontal arm.</p>"
             "<p><b>n:</b> refractive index of the arm medium.</p>"
             "<p><b>Mirror tilt:</b> tilt M2 to change from straight fringes (tilt = 0) to circular bullseye fringes.</p>"
             "<p><b>Plate:</b> inserting a glass plate adds optical path (n_p−1)·t in one arm.</p>"
@@ -511,11 +551,15 @@ ThinFilmPage::ThinFilmPage(AppContext* ctx, QWidget* parent)
     auto* presetLabel = new QLabel("Presets:");
     presetLabel->setObjectName("fieldLabel");
     m_fieldLayout->addWidget(presetLabel);
-    auto* presetRow = new QHBoxLayout;
-    presetRow->setSpacing(4);
+    auto* presetGrid = new QGridLayout;
+    presetGrid->setHorizontalSpacing(6);
+    presetGrid->setVerticalSpacing(6);
+    presetGrid->setColumnStretch(0, 1);
+    int presetIndex = 0;
     auto makePreset = [&](const QString& label, double lambda, double n, double n2, double tNm, int tabIdx) {
         auto* b = new QPushButton(label);
         b->setObjectName("presetBtn");
+        b->setToolTip(label);
         b->setCursor(Qt::PointingHandCursor);
         b->setMinimumHeight(30);
         b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -530,14 +574,14 @@ ThinFilmPage::ThinFilmPage(AppContext* ctx, QWidget* parent)
             m_syncing = false;
             apply(false);
         });
-        presetRow->addWidget(b);
+        presetGrid->addWidget(b, presetIndex, 0);
+        ++presetIndex;
         return b;
     };
     m_presetSoap = makePreset("Soap · n=1.333", 600.0, 1.333, 1.333, 100.0, 0);
     m_presetOil = makePreset("Oil · n=1.500", 600.0, 1.500, 1.500, 100.0, 0);
     m_presetTransmission = makePreset("Transmission", 600.0, 1.500, 1.500, 100.0, 1);
-    presetRow->addStretch(1);
-    m_fieldLayout->addLayout(presetRow);
+    m_fieldLayout->addLayout(presetGrid);
     m_swatch = new QLabel;
     m_swatch->setObjectName("colourSwatch");
     m_swatch->setFixedHeight(34);
@@ -627,11 +671,15 @@ GratingPage::GratingPage(AppContext* ctx, QWidget* parent)
     auto* presetLabel = new QLabel("Presets:");
     presetLabel->setObjectName("fieldLabel");
     m_fieldLayout->addWidget(presetLabel);
-    auto* presetRow = new QHBoxLayout;
-    presetRow->setSpacing(4);
+    auto* presetGrid = new QGridLayout;
+    presetGrid->setHorizontalSpacing(6);
+    presetGrid->setVerticalSpacing(6);
+    presetGrid->setColumnStretch(0, 1);
+    int presetIndex = 0;
     auto makePreset = [&](const QString& label, double density, double lambda, int order, int slits, int tabIdx) {
         auto* b = new QPushButton(label);
         b->setObjectName("presetBtn");
+        b->setToolTip(label);
         b->setCursor(Qt::PointingHandCursor);
         b->setMinimumHeight(30);
         b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -645,14 +693,14 @@ GratingPage::GratingPage(AppContext* ctx, QWidget* parent)
             m_syncing = false;
             apply(false);
         });
-        presetRow->addWidget(b);
+        presetGrid->addWidget(b, presetIndex, 0);
+        ++presetIndex;
         return b;
     };
     m_presetStandard = makePreset("5000 /cm · m=1", 5000.0, 600.0, 1, 20, 0);
     m_presetHighDensity = makePreset("600 /mm · m=2", 6000.0, 532.0, 2, 20, 0);
     m_presetResolution = makePreset("Resolution tab", 5000.0, 600.0, 1, 20, 2);
-    presetRow->addStretch(1);
-    m_fieldLayout->addLayout(presetRow);
+    m_fieldLayout->addLayout(presetGrid);
     m_canvas = new GratingCanvas;
     build("Grating / angular observation screen", m_canvas, "Diffracted intensity vs angle", "N is line density, not slit count. Transmission: intensity fan. Orders: every peak with its angle. Resolution: R = m·M — raise M to split closer lines.");
     auto* gratingHelpBtn = new QToolButton;
@@ -714,11 +762,15 @@ SingleSlitPage::SingleSlitPage(AppContext* ctx, QWidget* parent)
     auto* presetLabel = new QLabel("Presets:");
     presetLabel->setObjectName("fieldLabel");
     m_fieldLayout->addWidget(presetLabel);
-    auto* presetRow = new QHBoxLayout;
-    presetRow->setSpacing(4);
+    auto* presetGrid = new QGridLayout;
+    presetGrid->setHorizontalSpacing(6);
+    presetGrid->setVerticalSpacing(6);
+    presetGrid->setColumnStretch(0, 1);
+    int presetIndex = 0;
     auto makePreset = [&](const QString& label, double width, double lambda, double screen, int tabIdx) {
         auto* b = new QPushButton(label);
         b->setObjectName("presetBtn");
+        b->setToolTip(label);
         b->setCursor(Qt::PointingHandCursor);
         b->setMinimumHeight(32);
         b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -731,13 +783,14 @@ SingleSlitPage::SingleSlitPage(AppContext* ctx, QWidget* parent)
             m_syncing = false;
             apply(false);
         });
-        presetRow->addWidget(b, 1);
+        presetGrid->addWidget(b, presetIndex, 0);
+        ++presetIndex;
         return b;
     };
     m_presetStandard = makePreset("a = 0.1 mm", 0.1, 500.0, 1.0, 0);
     m_presetGeometry = makePreset("Geometry", 0.1, 500.0, 1.0, 1);
     m_presetEnvelope = makePreset("Envelope", 0.1, 500.0, 1.0, 2);
-    m_fieldLayout->addLayout(presetRow);
+    m_fieldLayout->addLayout(presetGrid);
     // Item 11: real-time updates are built into addField() (edited → apply(false))
     m_wave = addCombo("Incident wave", {"Plane · coherent"}, {0});
     m_wave->setToolTip("Incident wave type. Plane coherent wave illuminates the slit(s).");
@@ -828,11 +881,15 @@ PolarizationPage::PolarizationPage(AppContext* ctx, QWidget* parent)
     auto* presetLabel = new QLabel("Presets:");
     presetLabel->setObjectName("fieldLabel");
     m_fieldLayout->addWidget(presetLabel);
-    auto* presetRow = new QHBoxLayout;
-    presetRow->setSpacing(4);
+    auto* presetGrid = new QGridLayout;
+    presetGrid->setHorizontalSpacing(6);
+    presetGrid->setVerticalSpacing(6);
+    presetGrid->setColumnStretch(0, 1);
+    int presetIndex = 0;
     auto makePreset = [&](const QString& label, double intensity, double angle, double n1, double n2, bool unpolarized, int tabIdx) {
         auto* b = new QPushButton(label);
         b->setObjectName("presetBtn");
+        b->setToolTip(label);
         b->setCursor(Qt::PointingHandCursor);
         b->setMinimumHeight(30);
         b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -847,13 +904,13 @@ PolarizationPage::PolarizationPage(AppContext* ctx, QWidget* parent)
             m_syncing = false;
             apply(false);
         });
-        presetRow->addWidget(b);
+        presetGrid->addWidget(b, presetIndex, 0);
+        ++presetIndex;
         return b;
     };
     m_presetMalus = makePreset("Malus · θ=60°", 100.0, 60.0, 1.0, 1.5, true, 0);
     m_presetBrewster = makePreset("Brewster · air→glass", 100.0, 0.0, 1.0, 1.5, true, 1);
-    presetRow->addStretch(1);
-    m_fieldLayout->addLayout(presetRow);
+    m_fieldLayout->addLayout(presetGrid);
     m_canvas = new PolarizationCanvas;
     build("Two polarizers / independent Brewster reference", m_canvas, "Intensity vs relative angle", "Malus: θ range 0–90°, the first polarizer transmits half of unpolarized light. Brewster: tan θB = n₂/n₁, R_p = 0 at θB.");
     auto* polHelpBtn = new QToolButton;

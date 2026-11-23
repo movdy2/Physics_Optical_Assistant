@@ -38,4 +38,4 @@ This conflict was **not** silently resolved or obscured. The app deliberately ad
 
 ## Bundled fonts & icons
 
-Font and icon notices are in `assets/fonts/LICENSES.txt` and alongside the bundled Noto Sans Arabic font. The Casio-style LCD face uses the bundled `CASIO-Calculator-Font` with `DSEG14 Classic` and the system sans stack as per-glyph fallbacks (including Arabic glyphs).
+Font and icon notices are in `assets/fonts/LICENSES.txt` and alongside the bundled Noto Sans Arabic font. The interface uses the bundled Inter, JetBrains Mono, and Noto Sans Arabic families; calculator and result views follow the same Gruvbox typography as the rest of the app.

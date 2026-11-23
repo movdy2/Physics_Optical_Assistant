@@ -518,8 +518,8 @@ LatexWidget::LatexWidget(QWidget* parent) : QWidget(parent), m_baseFont(QWidget:
 
 void LatexWidget::setLatex(const QString& latex) { m_latex = latex; m_cacheValid = false; updateGeometry(); update(); }
 void LatexWidget::setPointSize(qreal points)    { m_points = points; m_cacheValid = false; updateGeometry(); update(); }
-void LatexWidget::setLcdStyle(bool lcd) {
-    m_lcd = lcd;
+void LatexWidget::setCardStyle(bool card) {
+    m_card = card;
     m_cacheValid = false;
     setFont(m_baseFont);
     updateGeometry();
@@ -538,14 +538,14 @@ void LatexWidget::refreshCachedPixmap() {
 QColor LatexWidget::ink() const {
     if (m_inkOverride.isValid()) return m_inkOverride;
     const Theme& t = ThemeManager::instance().theme();
-    return m_lcd ? t.amber : t.text;
+    return t.text;
 }
 
 QSize LatexWidget::sizeHint() const {
     QFont f = font(); f.setPointSizeF(m_points);
     const QSizeF s = LatexRenderer::measure(m_latex, f);
-    const int pad = m_lcd ? 14 : 4;
-    return QSize(qCeil(s.width()) + 2 * pad, qMax(qCeil(s.height()) + 2 * pad, m_lcd ? 56 : 32));
+    const int pad = m_card ? 14 : 4;
+    return QSize(qCeil(s.width()) + 2 * pad, qMax(qCeil(s.height()) + 2 * pad, m_card ? 56 : 32));
 }
 QSize LatexWidget::minimumSizeHint() const { return sizeHint(); }
 
@@ -553,7 +553,7 @@ void LatexWidget::paintEvent(QPaintEvent*) {
     QPainter p(this);
     p.setRenderHint(QPainter::Antialiasing);
     const Theme& t = ThemeManager::instance().theme();
-    if (m_lcd) {
+    if (m_card) {
         p.setPen(QPen(t.border, 2));
         p.setBrush(t.card);
         p.drawRoundedRect(QRectF(rect()).adjusted(1.5, 1.5, -1.5, -1.5), 6, 6);
@@ -563,7 +563,7 @@ void LatexWidget::paintEvent(QPaintEvent*) {
     if (m_cachedPixmap.isNull()) return;
     const QSizeF logical = m_cachedPixmap.deviceIndependentSize();
     p.setRenderHint(QPainter::SmoothPixmapTransform);
-    const double x = m_left ? (m_lcd ? 14.0 : 2.0) : (width() - logical.width()) / 2;
+    const double x = m_left ? (m_card ? 14.0 : 2.0) : (width() - logical.width()) / 2;
     p.drawPixmap(QPointF(x, (height() - logical.height()) / 2), m_cachedPixmap);
 }
 

@@ -119,7 +119,7 @@ SolverPage::SolverPage(std::shared_ptr<FormulaEngine> engine, std::shared_ptr<Fo
     m_formulaChapter = new QLabel;
     m_formulaChapter->setObjectName("muted");
     m_formulaLatex = new LatexWidget;
-    m_formulaLatex->setLcdStyle(true);                             // formula on a highlighted card
+    m_formulaLatex->setCardStyle(true);                             // formula on a highlighted card
     m_formulaLatex->setPointSize(24);
 
     auto* hint = new QLabel("Fill in the known values and leave exactly <b>one</b> field empty. "
@@ -147,7 +147,7 @@ SolverPage::SolverPage(std::shared_ptr<FormulaEngine> engine, std::shared_ptr<Fo
     m_status->hide();
 
     m_answer = new LatexWidget;
-    m_answer->setLcdStyle(true);
+    m_answer->setCardStyle(true);
     m_answer->setPointSize(26);
     m_answer->hide();
 

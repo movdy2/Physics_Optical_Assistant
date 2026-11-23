@@ -126,7 +126,7 @@ EquationLabPage::EquationLabPage(AppContext* ctx, std::vector<ScientificPage> ke
     m_substitution->setObjectName("mono");
     m_substitution->setWordWrap(true);
     m_result = new LatexWidget;
-    m_result->setLcdStyle(true);
+    m_result->setCardStyle(true);
     m_result->setPointSize(28);
 
     m_copyBtn = new QPushButton("📋");

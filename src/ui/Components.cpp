@@ -45,7 +45,9 @@ QWidget* labeled(const QString& label, QWidget* field) {
     l->setSpacing(4);
     auto* cap = new QLabel(label);
     cap->setObjectName("fieldLabel");
+    cap->setMinimumWidth(0);
     cap->setMinimumHeight(0);
+    cap->setWordWrap(true);
     l->addWidget(cap);
     l->addWidget(field);
     if (auto* unitField = qobject_cast<UnitField*>(field)) {           // inline error text under the field

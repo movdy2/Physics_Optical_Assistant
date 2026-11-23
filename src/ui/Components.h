@@ -76,7 +76,7 @@ private:
     int m_decimals = 4;
 };
 
-/// Casio-style on-screen keypad for the Calculator page (same theme as the rest of the app).
+/// On-screen scientific keypad for the Calculator page, styled with the active Gruvbox theme.
 class CalculatorKeypad : public QWidget {
     Q_OBJECT
 public:

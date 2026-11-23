@@ -10,8 +10,7 @@ class QWidget;
 
 namespace phy104 {
 
-/// All colours of one theme. The dark theme is a warm slate/charcoal palette
-/// designed for long study sessions; the light theme is a paper-like cream.
+/// Gruvbox theme colors shared by the application.
 struct Theme {
     bool dark = true;
 
@@ -34,16 +33,8 @@ struct Theme {
     // older names still used by the SVG diagrams, LaTeX, Plots and OpticsCanvases
     QColor yellow, green, red, orange, blue, aqua, amber, sage;
 
-    // Casio-style LCD colours
-    QColor lcdBg, lcdText, lcdFrame, lcdDivider;
-
-    static Theme warmDark();     // NEW: deep slate/charcoal for long sessions
-    static Theme paperLight();   // NEW: warm cream paper-like light mode
-    static Theme figmaDark();    // legacy, kept for backward compatibility
-    static Theme figmaLight();   // legacy, kept for backward compatibility
-
-    static Theme gruvboxDark() { return warmDark(); }
-    static Theme gruvboxLight() { return paperLight(); }
+    static Theme gruvboxDark();
+    static Theme gruvboxLight();
 };
 
 /// Loads the bundled UI, Arabic fallback, and mono fonts, applies palette + style sheet,
@@ -58,10 +49,9 @@ public:
     /// Shared sans-serif and glyph fallback order for English, Arabic and custom-painted UI text.
     static QStringList uiFontFamilies() { return {uiFont(), "Noto Sans Arabic", "DejaVu Sans", "Segoe UI", "Arial"}; }
     static QString monoFont() { return "JetBrains Mono"; }
-    static QFont lcdFont() { return QFont("DSEG14 Classic"); }
 
     /// Apply a theme to the application.
-    /// @param dark true = warm dark mode, false = paper-like light mode
+    /// @param dark true = Gruvbox dark, false = Gruvbox light
     void apply(QApplication& app, bool dark);
 
     /// Set the application layout direction based on the active language.
@@ -82,7 +72,7 @@ private:
     static QString styleSheet(const Theme& t);
     static QString loadQssFromResource();
 
-    Theme m_theme = Theme::warmDark();
+    Theme m_theme = Theme::gruvboxDark();
 };
 
 } // namespace phy104

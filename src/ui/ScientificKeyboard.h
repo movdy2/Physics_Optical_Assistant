@@ -14,7 +14,7 @@ namespace phy104 {
 
 class ModeTabs;
 
-/// The "Scientific input" keyboard of the design: raised Casio-style keys in categories (Greek symbols / Math operators /
+/// The "Scientific input" keyboard: raised keys in categories (Greek symbols / Math operators /
 /// Functions / Variables). A key adds a LaTeX token to the pending buffer shown on the LCD; INSERT / ENTER commits the buffer
 /// into the source editor at the caret (replacing the selection) and puts the caret inside the first {} or ().
 ///  ← / → move the SOURCE caret, ⌫ deletes the last pending token (or the selection / previous character of the source),

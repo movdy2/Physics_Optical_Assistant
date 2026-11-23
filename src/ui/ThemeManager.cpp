@@ -14,98 +14,92 @@
 namespace phy104 {
 
 // ============================================================================
-// Theme Definitions (Warm Dark + Paper Light)
+// Theme Definitions (Gruvbox Dark + Gruvbox Light)
 // ============================================================================
 
-Theme Theme::warmDark() {
+Theme Theme::gruvboxDark() {
     Theme t;
     t.dark = true;
-    // Gruvbox dark palette
-    t.bg = "#282828";           // dark0 — main background
-    t.sidebar = "#32302f";      // dark1 — sidebar
-    t.titleBar = "#1d2021";     // dark0_hard — title bar
-    t.card = "#32302f";         // dark1 — cards
-    t.cardHover = "#3a3735";    // dark2 — card hover
-    t.input = "#282828";        // dark0 — input fields
-    t.canvas = "#1d2021";       // dark0_hard — canvas
-    t.grid = "#32302f";         // dark1 — grid lines
-    t.border = "#3a3735";       // dark2 — borders
-    t.surface = "#32302f";      // dark1 — surfaces
-    t.surfaceHover = "#3a3735"; // dark2 — surface hover
-    t.text = "#fbf1c7";         // light0 — main text
-    t.muted = "#f2e5bc";        // light1 — muted text
-    t.dim = "#ebdbb2";          // light2 — dim text
-    t.accentCyan = "#38BDF8";
-    t.accentCyanHover = "#2FA3D8";
-    t.accentCyanPressed = "#0E7490";
-    t.accentCyanTint = QColor(56, 189, 248, 36);
-    t.accentAmber = "#FBBF24";
-    t.accentAmberHover = "#F59E0B";
-    t.accentAmberPressed = "#B45309";
-    t.accentAmberTint = QColor(251, 191, 36, 36);
-    t.accentTeal = "#22D3EE";
-    t.accentTealHover = "#0891B2";
-    t.lime = "#4ADE80";
-    t.error = "#F87171";
-    t.errorBg = "rgba(248, 113, 113, 8)";
+    // Classic Gruvbox dark: warm charcoal surfaces, parchment text, yellow + aqua accents.
+    t.bg = "#282828";
+    t.sidebar = "#3c3836";
+    t.titleBar = "#1d2021";
+    t.card = "#3c3836";
+    t.cardHover = "#504945";
+    t.input = "#282828";
+    t.canvas = "#1d2021";
+    t.grid = "#3c3836";
+    t.border = "#504945";
+    t.surface = "#3c3836";
+    t.surfaceHover = "#504945";
+    t.text = "#ebdbb2";
+    t.muted = "#d5c4a1";
+    t.dim = "#bdae93";
+    t.accentCyan = "#83a598";
+    t.accentCyanHover = "#8ec07c";
+    t.accentCyanPressed = "#689d6a";
+    t.accentCyanTint = QColor(131, 165, 152, 36);
+    t.accentAmber = "#d79921";
+    t.accentAmberHover = "#fabd2f";
+    t.accentAmberPressed = "#b57614";
+    t.accentAmberTint = QColor(215, 153, 33, 36);
+    t.accentTeal = "#8ec07c";
+    t.accentTealHover = "#689d6a";
+    t.lime = "#b8bb26";
+    t.error = "#fb4934";
+    t.errorBg = QColor(251, 73, 52, 20);
     t.yellow = t.accentAmber;
-    t.green = "#22C55E";
-    t.red = "#EF4444";
-    t.orange = "#F97316";
-    t.blue = "#3B82F6";
-    t.aqua = "#22D3EE";
-    t.lcdBg = "#9bb094";
-    t.lcdText = "#0b1c08";
-    t.lcdFrame = "#171e15";
-    t.lcdDivider = "#708369";
+    t.green = "#b8bb26";
+    t.red = "#fb4934";
+    t.orange = "#fe8019";
+    t.blue = "#83a598";
+    t.aqua = "#8ec07c";
+    t.amber = t.accentAmber;
+    t.sage = t.accentTeal;
     return t;
 }
 
-Theme Theme::paperLight() {
+Theme Theme::gruvboxLight() {
     Theme t;
     t.dark = false;
-    t.bg = "#F4F1EA";
-    t.sidebar = "#EAE5D8";
-    t.titleBar = "#EFE9DD";
-    t.card = "#FFFFFF";
-    t.cardHover = "#F0EBE0";
-    t.input = "#FFFFFF";
-    t.canvas = "#EFE9DD";
-    t.grid = "#E2D8C8";
-    t.border = "#D8D0C2";
-    t.surface = "#FFFFFF";
-    t.surfaceHover = "#F0EBE0";
-    t.text = "#1A1D24";
-    t.muted = "#6B7280";
-    t.dim = "#9CA3AF";
-    t.accentCyan = "#0E7490";
-    t.accentCyanHover = "#0B6E84";
-    t.accentCyanPressed = "#085F75";
-    t.accentCyanTint = QColor(14, 116, 144, 34);
-    t.accentAmber = "#B45309";
-    t.accentAmberHover = "#D97706";
-    t.accentAmberPressed = "#92400E";
-    t.accentAmberTint = QColor(181, 83, 9, 34);
-    t.accentTeal = "#0891B2";
-    t.accentTealHover = "#0C85A8";
-    t.lime = "#15803D";
-    t.error = "#DC2626";
-    t.errorBg = "rgba(220, 38, 38, 8)";
+    // Gruvbox light keeps the same recognizable yellow/aqua semantics and clear contrast.
+    t.bg = "#fbf1c7";
+    t.sidebar = "#ebdbb2";
+    t.titleBar = "#f2e5bc";
+    t.card = "#f9f5d7";
+    t.cardHover = "#ebdbb2";
+    t.input = "#f9f5d7";
+    t.canvas = "#f2e5bc";
+    t.grid = "#ebdbb2";
+    t.border = "#d5c4a1";
+    t.surface = "#f9f5d7";
+    t.surfaceHover = "#ebdbb2";
+    t.text = "#282828";
+    t.muted = "#504945";
+    t.dim = "#7c6f64";
+    t.accentCyan = "#427b58";
+    t.accentCyanHover = "#689d6a";
+    t.accentCyanPressed = "#3c6c4b";
+    t.accentCyanTint = QColor(66, 123, 88, 34);
+    t.accentAmber = "#b57614";
+    t.accentAmberHover = "#d79921";
+    t.accentAmberPressed = "#8f5b0a";
+    t.accentAmberTint = QColor(181, 118, 20, 34);
+    t.accentTeal = "#689d6a";
+    t.accentTealHover = "#427b58";
+    t.lime = "#79740e";
+    t.error = "#9d0006";
+    t.errorBg = QColor(157, 0, 6, 16);
     t.yellow = t.accentAmber;
-    t.green = "#15803D";
-    t.red = "#DC2626";
-    t.orange = "#EA580C";
-    t.blue = "#2563EB";
-    t.aqua = "#0891B2";
-    t.lcdBg = "#9bb094";
-    t.lcdText = "#0b1c08";
-    t.lcdFrame = "#171e15";
-    t.lcdDivider = "#708369";
+    t.green = "#79740e";
+    t.red = "#9d0006";
+    t.orange = "#af3a03";
+    t.blue = "#427b58";
+    t.aqua = "#689d6a";
+    t.amber = t.accentAmber;
+    t.sage = t.accentTeal;
     return t;
 }
-
-Theme Theme::figmaDark() { return warmDark(); }
-Theme Theme::figmaLight() { return paperLight(); }
 
 // ============================================================================
 // ThemeManager
@@ -119,8 +113,7 @@ ThemeManager& ThemeManager::instance() {
 void ThemeManager::loadFonts() {
    for (const char* f : {":/fonts/Inter-Regular.otf", ":/fonts/Inter-Medium.otf", ":/fonts/Inter-SemiBold.otf",
                           ":/fonts/NotoSansArabic.ttf",
-                          ":/fonts/JetBrainsMono-Regular.ttf", ":/fonts/JetBrainsMono-Bold.ttf",
-                          ":/fonts/DSEG14Classic-Bold.ttf", ":/fonts/DSEG7Classic-Bold.ttf"})
+                          ":/fonts/JetBrainsMono-Regular.ttf", ":/fonts/JetBrainsMono-Bold.ttf"})
         QFontDatabase::addApplicationFont(f);
 }
 
@@ -148,7 +141,7 @@ QString ThemeManager::loadQssFromResource() {
 
 void ThemeManager::apply(QApplication& app, bool dark) {
     settingsScope()->setValue("ui/dark", dark);
-    m_theme = dark ? Theme::warmDark() : Theme::paperLight();
+    m_theme = dark ? Theme::gruvboxDark() : Theme::gruvboxLight();
     const Theme& t = m_theme;
 
     app.setStyle(QStyleFactory::create("Fusion"));
@@ -183,16 +176,20 @@ void ThemeManager::apply(QApplication& app, bool dark) {
         {"@dim@", t.dim},
         {"@accentCyan@", t.accentCyan}, {"@accentCyanHover@", t.accentCyanHover},
         {"@accentCyanPressed@", t.accentCyanPressed},
-        {"@accentCyanTint@", t.accentCyanTint},
         {"@accentAmber@", t.accentAmber}, {"@accentAmberHover@", t.accentAmberHover},
         {"@accentAmberPressed@", t.accentAmberPressed},
-        {"@accentAmberTint@", t.accentAmberTint},
         {"@accentTeal@", t.accentTeal}, {"@accentTealHover@", t.accentTealHover},
-        {"@lime@", t.lime}, {"@error@", t.error}, {"@errorBg@", t.errorBg},
+        {"@lime@", t.lime}, {"@error@", t.error},
         {"@canvas@", t.canvas},
         {"@calcDim@", t.dark ? QColor(Qt::white) : t.text}};
     for (const auto& [token, color] : tokens) qss.replace(token, color.name());
 
+    qss.replace("@errorBg@",
+                QString("rgba(%1,%2,%3,%4)")
+                    .arg(t.errorBg.red())
+                    .arg(t.errorBg.green())
+                    .arg(t.errorBg.blue())
+                    .arg(t.errorBg.alpha()));
     qss.replace("@accentCyanTint@",
                 QString("rgba(%1,%2,%3,%4)")
                     .arg(t.accentCyanTint.red())
