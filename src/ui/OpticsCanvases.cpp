@@ -712,7 +712,7 @@ bool MichelsonCanvas::isNearMovableMirror(const QPointF& point) const {
 void MichelsonCanvas::mousePressEvent(QMouseEvent* event) {
     if (event->button() == Qt::LeftButton && isNearMovableMirror(event->position())) {
         m_draggingM2 = true;
-        m_dragOffsetY = event->position().x() - movableMirrorCenter().x();
+        m_dragOffsetX = event->position().x() - movableMirrorCenter().x();
         setCursor(Qt::ClosedHandCursor);
         event->accept();
         return;
@@ -725,7 +725,7 @@ void MichelsonCanvas::mouseMoveEvent(QMouseEvent* event) {
         const double splitterX = width() * 0.38;
         const double m2x = width() - 70.0;
         const double armLength = m2x - splitterX;
-        const double centerX = event->position().x() - m_dragOffsetY;
+        const double centerX = event->position().x() - m_dragOffsetX;
         const double travel = (centerX - splitterX - armLength) / kMichelsonPixelsPerUm;
         const double bounded = std::clamp(travel, -kMaxInteractiveTravelUm, kMaxInteractiveTravelUm);
         emit mirrorDisplacementChanged(std::round(bounded * 1000.0) / 1000.0);
@@ -751,7 +751,6 @@ void MichelsonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     const QPointF bs(a.left() + a.width() * 0.38, a.top() + a.height() * 0.43);
     const QPointF m1(bs.x(), bs.y() - 84.0);          // M1 fixed, top arm
     const double m2xHome = a.right() - 70.0;           // M2 home (zero travel) position
-    const double armLength = m2xHome - bs.x();         // geometric arm length, without travel
     const double m2x = movableMirrorCenter().x();      // M2 current position (includes travel)
     const QPointF source(a.left() + 24.0, bs.y());
     const QPointF detector(bs.x(), a.bottom() - 116.0);
@@ -768,9 +767,9 @@ void MichelsonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
         cell.setAlpha(45);
         p.setPen(QPen(t.blue, 1, Qt::DashLine));
         p.setBrush(cell);
-        const QRectF chamber(m2x - 8.0, bs.y() - 19.0, 16.0, 38.0);
+        const QRectF chamber(bs.x() + 16.0, bs.y() - 12.0, std::max(0.0, m2x - bs.x() - 32.0), 24.0);
         p.drawRect(chamber);
-        text(p, QPointF(m2x + 6.0, chamber.center().y()), QString(" ") + num(m_in.n, 4), t.blue, 9);
+        text(p, QPointF(chamber.center().x(), chamber.top() - 5.0), QString("n = ") + num(m_in.n, 4), t.blue, 9, Qt::AlignHCenter);
     } else {
         text(p, QPointF(m2x + 6.0, bs.y() - 26.0), QString(" ") + num(m_in.n, 4), t.muted, 9);
     }
@@ -790,65 +789,55 @@ void MichelsonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     text(p, QPointF((bs.x() + m1.x()) / 2, bs.y() - 40),
          QString(" ") + num(m1Len, 1) + " px", t.amber, 9, Qt::AlignHCenter);
 
-    // --- M2 arm (side): BS → M2 → BS  — sage path
-    const QPointF m2Out(m2x - 5, bs.y() - 4);              // BS → M2 departure
-    const QPointF m2Back(m2x - 5, bs.y() + 4);             // M2 → BS return
+    // --- M2 arm (horizontal): BS → M2 → BS — each segment follows the optical axis.
+    const QPointF m2Out(m2x - 5, bs.y() - 4);
+    const QPointF m2Back(m2x - 5, bs.y() + 4);
     const double m2Len = std::hypot(m2x - bs.x(), 0.0);
-    ray(p, bsOut + QPointF(14, 0), m2Out, t.sage, 1.6);                      // BS → M2
-    ray(p, m2Back, bsIn + QPointF(0, 14), t.sage, 1.3);                      // M2 → BS
+    ray(p, QPointF(bs.x() + 14, bs.y() - 4), m2Out, t.sage, 1.6);            // BS → M2
+    ray(p, m2Back, QPointF(bs.x() + 14, bs.y() + 4), t.sage, 1.3);           // M2 → BS
     text(p, QPointF((bs.x() + m2x) / 2, bs.y() - 40),
          QString(" ") + num(m2Len, 1) + " px", t.sage, 9, Qt::AlignHCenter);
 
-    // --- Recombined beam: BS → detector  — brightness follows I/Imax
+    // --- Recombined beam: one stationary output axis from BS to detector.
     QColor detBeam = t.amber;
     detBeam.setAlpha(static_cast<int>(150 + 105 * intensity));
-    ray(p, bsIn + QPointF(0, 14), detector, detBeam, 1.4 + 1.2 * intensity);
+    ray(p, QPointF(bs.x(), bs.y() + 14), detector, detBeam, 1.4 + 1.2 * intensity);
 
-    // Beam splitter and the fixed-mirror-arm compensator C (M1 arm).
+    // Beam splitter. Its diagonal divides the horizontal source/detector ports from the two arms.
     p.setPen(QPen(t.sage, 1.6));
     p.setBrush(t.canvas);
     p.drawRect(QRectF(bs.x() - 14, bs.y() - 14, 28, 28));
     p.drawLine(QPointF(bs.x() - 14, bs.y() + 14), QPointF(bs.x() + 14, bs.y() - 14));
-    const double cx = bs.x() + armLength * 0.46;
-    p.setPen(QPen(t.blue, 2.4));
-    p.drawLine(QPointF(cx - 5, bs.y() + 7), QPointF(cx + 5, bs.y() - 7));
-    p.drawLine(QPointF(cx - 2, bs.y() + 7), QPointF(cx + 8, bs.y() - 7));
-    text(p, QPointF(cx + 2, bs.y() + 20), "C · compensator", t.blue, 9, Qt::AlignHCenter);
 
-    // Visual SFX: drag glow around M2 when being grabbed, zero-crossing pulse near Δx = 0.
-    const bool dragging = m_draggingM2;
-    const bool nearZero = std::fabs(dxUm) < 0.02;
-    if (dragging) {
-        QColor glow = t.amber; glow.setAlpha(70);
-        p.setPen(QPen(glow, 10, Qt::SolidLine, Qt::RoundCap));
-        p.drawLine(QPointF(m2x - 26, bs.y()), QPointF(m2x + 26, bs.y()));
-    }
-    if (nearZero) {
-        QColor pulse = t.amber; pulse.setAlpha(120);
-        p.setPen(QPen(pulse, 1.4, Qt::DotLine));
-        p.drawArc(QRectF(m2x - 10, bs.y() - 10, 20, 20), 0, 360 * 16);
-    }
-    // Dashed zero mark at M2's home position; amber M2 shows the signed, draggable mirror travel; M1 remains fixed.
+    // Compensator C is a plate across M1's vertical arm (perpendicular to that beam).
+    const double cy = bs.y() + (m1.y() - bs.y()) * 0.46;
+    p.setPen(QPen(t.blue, 2.4));
+    p.drawLine(QPointF(bs.x() - 8, cy - 2), QPointF(bs.x() + 8, cy - 2));
+    p.drawLine(QPointF(bs.x() - 8, cy + 2), QPointF(bs.x() + 8, cy + 2));
+    text(p, QPointF(bs.x() + 20, cy + 3), "C · compensator", t.blue, 9);
+
+    // Static home marker for M2.
     if (std::fabs(dxUm) > 1e-4) {
         p.setPen(QPen(t.dim, 1, Qt::DashLine));
-        p.drawLine(QPointF(m2xHome - 25, bs.y()), QPointF(m2xHome + 25, bs.y()));
+        p.drawLine(QPointF(m2xHome, bs.y() - 25), QPointF(m2xHome, bs.y() + 25));
     }
     if (m_in.piezo) {
         p.setPen(QPen(t.blue, 2));
         for (int k = 0; k < 3; ++k) {
-            const double x = m2x - 6.0 - 4.0 * k;
+            const double x = m2x + 7.0 + 4.0 * k;
             p.drawLine(QPointF(x, bs.y() - 18), QPointF(x, bs.y() + 18));
         }
     }
-    p.setPen(QPen(t.sage, 3, Qt::SolidLine, Qt::RoundCap));
-    p.drawLine(QPointF(bs.x(), m1.y() - 22), QPointF(bs.x(), m1.y() + 22));
-    // Mirror body: slightly larger when being dragged, amber highlight on the leading edge.
-    const double mirrorHalfW = dragging ? 26.0 : 22.0;
-    p.setPen(QPen(t.amber, dragging ? 4.0 : 3.0, Qt::SolidLine, Qt::RoundCap));
-    p.drawLine(QPointF(m2x - mirrorHalfW, bs.y()), QPointF(m2x + mirrorHalfW, bs.y()));
+
+    // Mirror faces are perpendicular to their optical arms: M1 horizontal on the vertical arm,
+    // M2 vertical on the horizontal arm. Both use the same fixed-width, non-animated drawing.
+    p.setPen(QPen(t.amber, 3.0, Qt::SolidLine, Qt::RoundCap));
+    p.drawLine(QPointF(m1.x() - 22, m1.y()), QPointF(m1.x() + 22, m1.y()));
+    p.setPen(QPen(t.sage, 3.0, Qt::SolidLine, Qt::RoundCap));
+    p.drawLine(QPointF(m2x, bs.y() - 22), QPointF(m2x, bs.y() + 22));
     text(p, QPointF(bs.x() - 30, m1.y()), "M1 · fixed", t.muted, 11, Qt::AlignRight);
-    text(p, QPointF(m2x + 30, bs.y() - 5), "M2 · movable", t.amber, 11);
-    text(p, QPointF(m2x + 30, bs.y() + 10), QString(" ") + QString(dxUm > 0 ? "+" : "") + num(dxUm, 4) + " µm", t.muted, 11);
+    text(p, QPointF(m2x - 28, bs.y() - 5), "M2 · movable", t.amber, 11, Qt::AlignRight);
+    text(p, QPointF(m2x - 28, bs.y() + 10), QString(" ") + QString(dxUm > 0 ? "+" : "") + num(dxUm, 4) + " µm", t.muted, 11, Qt::AlignRight);
     text(p, source + QPointF(-8, -20), "Source", t.muted, 11);
     text(p, bs + QPointF(0, 28), "BS", t.muted, 11, Qt::AlignHCenter);
     text(p, QPointF(detector.x() + 12, detector.y() - 8), "Detector", t.muted, 11);

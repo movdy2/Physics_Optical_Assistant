@@ -161,7 +161,7 @@ private:
 
     MichelsonInput m_in;
     bool m_draggingM2 = false;
-    double m_dragOffsetY = 0.0;
+    double m_dragOffsetX = 0.0;
 };
 class ThinFilmCanvas : public GridCanvas {
     Q_OBJECT

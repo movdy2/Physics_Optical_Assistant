@@ -8,7 +8,7 @@
 
 namespace phy104 {
 
-/// One Casio-style calculation register.
+/// One formatted calculation register.
 struct LcdRegister {
     std::string title = "CALCULATION REGISTER";
     std::string mode = "";              // shown as "● <mode>" (or "● OK"); empty = no unit tag

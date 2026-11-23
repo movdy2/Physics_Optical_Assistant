@@ -25,8 +25,7 @@ public:
     static bool validate(const QString& latex, QString* error = nullptr);
 };
 
-/// Shows one formula. Either on the normal background (Gruvbox text colour)
-/// or on a Casio LCD screen (olive background, dark ink).
+/// Shows one formula on the normal background or inside a Gruvbox card.
 class LatexWidget : public QWidget {
     Q_OBJECT
 public:
@@ -34,7 +33,7 @@ public:
 
     void setLatex(const QString& latex);
     void setPointSize(qreal points);
-    void setLcdStyle(bool lcd);                 // true: draw an LCD screen behind the formula
+    void setCardStyle(bool card);               // true: draw a Gruvbox card behind the formula
     void setInkColor(const QColor& color);      // overrides the automatic colour (e.g. green answer)
     void setAlignLeft(bool left) { m_left = left; update(); }
 
@@ -52,7 +51,7 @@ private:
     QFont m_baseFont;
     QString m_latex;
     qreal m_points = 18.0;
-    bool m_lcd = false;
+    bool m_card = false;
     bool m_left = false;
     QColor m_inkOverride;
     QPixmap m_cachedPixmap;        // rendered formula; invalidated on property change

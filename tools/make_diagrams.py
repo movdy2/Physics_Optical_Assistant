@@ -311,7 +311,201 @@ def prism():
           text(780, 112, "sin((A + δmin)/2) = n sin(A/2) at minimum deviation", 15, "@muted@", "end")]
     write("prism", W, H, b)
 
+# ----------------------------------------------------------------------------- 7. polarization (Malus and Brewster)
+def polarization():
+    W, H = 840, 500
+    y = 250
+    b = [line((35, y), (805, y), "@muted@", 1.6),
+         text(24, 35, "POLARIZATION · MALUS AND BREWSTER", 17, "@yellow@", bold=True)]
+    # Unpolarized source and first polarizer
+    b += [ray((55, y), (180, y), "@red@", 3),
+          text(70, y - 24, "Unpolarized", 16, "@muted@"),
+          f'<rect x="185" y="180" width="20" height="140" fill="@card@" stroke="@blue@" stroke-width="3"/>',
+          line((195, 195), (195, 305), "@blue@", 3),
+          text(195, 160, "P₁ · vertical axis", 17, "@blue@", "middle")]
+    ray((205, y), (420, y), "@yellow@", 3.5)
+    # Analyzer axis at 50 degrees to P1
+    theta = math.radians(50)
+    ux, uy = math.cos(theta), -math.sin(theta)
+    cx, cy = 440, y
+    b += [f'<rect x="430" y="180" width="20" height="140" fill="@card@" stroke="@green@" stroke-width="3"/>',
+          line((cx - ux * 58, cy - uy * 58), (cx + ux * 58, cy + uy * 58), "@green@", 3),
+          text(cx, 160, "Analyzer · axis θ", 17, "@green@", "middle"),
+          arc((cx, cy), (0, -1), (ux, uy), 52, "@orange@"),
+          sym(cx + 40, cy - 52, "θ", None, 22, "@orange@")]
+    ray((450, y), (650, y), "@green@", 3 * math.cos(theta) ** 2)
+    b += [f'<rect x="662" y="195" width="28" height="110" fill="@card@" stroke="@muted@" stroke-width="3"/>',
+          text(676, 170, "Detector", 16, "@muted@", "middle"),
+          text(805, 385, "I = I₀ cos²θ", 24, "@yellow@", "end", bold=True),
+          text(805, 415, "Brewster: reflected ⟂ refracted", 17, "@muted@", "end"),
+          text(805, 442, "tan θB = n₂ / n₁", 20, "@yellow@", "end", bold=True)]
+    write("polarization", W, H, b)
+
+# ----------------------------------------------------------------------------- 8. single slit diffraction
+def single_slit():
+    W, H = 840, 500
+    sx, screen = 280, 700
+    cy = 255
+    gap = 74
+    b = [text(24, 35, "SINGLE-SLIT DIFFRACTION", 18, "@yellow@", bold=True),
+         line((sx, 70), (sx, cy - gap / 2), "@blue@", 8),
+         line((sx, cy + gap / 2), (sx, 445), "@blue@", 8),
+         line((screen, 70), (screen, 445), "@muted@", 4),
+         text(sx, 465, "Slit width a", 17, "@muted@", "middle"),
+         text(screen, 465, "Screen · distance L", 16, "@muted@", "middle")]
+    # Incident plane wave and representative rays from slit edges
+    for yy in (125, 190, 255, 320, 385):
+        ray((55, yy), (sx - 12, yy), "@red@", 2.2)
+    center = (sx, cy)
+    b += [ray((sx + 5, cy - gap / 2), (screen - 4, cy - 142), "@yellow@", 2.3),
+          ray((sx + 5, cy + gap / 2), (screen - 4, cy + 142), "@yellow@", 2.3),
+          ray(center, (screen - 4, cy), "@green@", 2.5),
+          line((screen - 18, cy - 142), (screen + 18, cy - 142), "@red@", 5),
+          line((screen - 18, cy - 72), (screen + 18, cy - 72), "@yellow@", 5),
+          line((screen - 18, cy), (screen + 18, cy), "@green@", 8),
+          line((screen - 18, cy + 72), (screen + 18, cy + 72), "@yellow@", 5),
+          line((screen - 18, cy + 142), (screen + 18, cy + 142), "@red@", 5),
+          text(805, 65, "Minima", 17, "@muted@", "end"),
+          text(805, 92, "a sin θ = mλ", 22, "@yellow@", "end", bold=True),
+          text(805, 125, "Central width", 17, "@muted@", "end"),
+          text(805, 153, "w₀ ≈ 2Lλ / a", 22, "@yellow@", "end", bold=True),
+          dimension((screen + 35, cy - 142), (screen + 35, cy + 142), "@muted@", 1.6),
+          text(screen + 48, cy + 6, "central maximum", 15, "@muted@")]
+    write("single_slit", W, H, b)
+
+# ----------------------------------------------------------------------------- 9. diffraction grating
+def grating():
+    W, H = 840, 500
+    gx, gy, screen = 260, 260, 720
+    b = [text(24, 35, "DIFFRACTION GRATING", 18, "@yellow@", bold=True),
+         line((screen, 70), (screen, 450), "@muted@", 4),
+         text(gx, 455, "Grating · spacing d", 17, "@muted@", "middle"),
+         text(screen, 455, "Observation screen", 16, "@muted@", "middle")]
+    for y in range(115, 406, 24):
+        b.append(line((gx, y), (gx, y + 13), "@blue@", 2.5))
+    ray((45, gy), (gx - 10, gy), "@red@", 3)
+    orders = [(-2, 126), (-1, 190), (0, gy), (1, 330), (2, 394)]
+    for order, target_y in orders:
+        color = "@green@" if order == 0 else "@yellow@"
+        ray((gx + 5, gy), (screen - 8, target_y), color, 2.5)
+        line((screen - 14, target_y), (screen + 14, target_y), color, 6 if order == 0 else 4)
+        text(screen + 25, target_y + 6, f"m = {order}", 16, color)
+    b += [text(810, 66, "Principal maxima", 17, "@muted@", "end"),
+          text(810, 96, "d sin θₘ = mλ", 23, "@yellow@", "end", bold=True),
+          text(810, 128, "d = 1 / N", 21, "@yellow@", "end", bold=True),
+          text(810, 158, "Higher N separates close wavelengths", 15, "@muted@", "end")]
+    write("grating", W, H, b)
+
+# ----------------------------------------------------------------------------- 10. thin-film interference
+def thin_film():
+    W, H = 840, 500
+    top, bottom = 230, 330
+    b = [text(24, 35, "THIN-FILM INTERFERENCE", 18, "@yellow@", bold=True),
+         f'<rect x="255" y="{top}" width="450" height="{bottom-top}" fill="@blue@" fill-opacity="0.16" stroke="@blue@" stroke-width="3"/>',
+         line((255, top), (705, top), "@blue@", 3),
+         line((255, bottom), (705, bottom), "@blue@", 3),
+         text(480, top + 30, "Film · index n · thickness t", 17, "@blue@", "middle"),
+         text(480, bottom + 28, "Substrate", 16, "@muted@", "middle")]
+    p0 = (340, 70); p1 = (400, top); p2 = (475, top); p3 = (550, bottom); p4 = (640, bottom); p5 = (700, 430)
+    b += [ray(p0, p1, "@red@", 3), ray(p1, p2, "@yellow@", 3), ray(p2, p3, "@yellow@", 3),
+          ray(p3, p4, "@yellow@", 3), ray(p4, p5, "@green@", 3),
+          ray(p1, (220, 70), "@orange@", 3),
+          line((400, 120), (400, 205), "@muted@", 1.5, "7 5"),
+          text(260, 98, "Incident", 16, "@red@"),
+          text(190, 72, "Reflected rays", 16, "@orange@"),
+          text(655, 450, "Transmitted", 16, "@green@"),
+          dimension((745, top), (745, bottom), "@muted@", 1.6),
+          sym(758, 286, "t", None, 20, "@muted@")]
+    b += [text(810, 65, "Optical path difference", 16, "@muted@", "end"),
+          text(810, 95, "Δ = 2nt cos θₜ", 22, "@yellow@", "end", bold=True),
+          text(810, 130, "One phase reversal", 16, "@muted@", "end"),
+          text(810, 160, "2nt cos θₜ = (q + ½)λ", 20, "@yellow@", "end", bold=True)]
+    write("thin_film", W, H, b)
+
+# ----------------------------------------------------------------------------- 11. Michelson interferometer
+def michelson():
+    W, H = 840, 500
+    bs = (390, 255); m1 = (390, 95); m2 = (650, 255); det = (390, 430)
+    b = [text(24, 35, "MICHELSON INTERFEROMETER · TOP VIEW", 17, "@yellow@", bold=True),
+         # Two orthogonal arms and their round-trip ray paths
+         ray((65, bs[1]), (bs[0] - 16, bs[1]), "@red@", 3),
+         ray((bs[0] - 5, bs[1] - 16), (bs[0] - 5, m1[1] + 8), "@yellow@", 2.7),
+         ray((bs[0] + 5, m1[1] + 8), (bs[0] + 5, bs[1] - 16), "@yellow@", 2.7),
+         ray((bs[0] + 16, bs[1] - 5), (m2[0] - 8, bs[1] - 5), "@green@", 2.7),
+         ray((m2[0] - 8, bs[1] + 5), (bs[0] + 16, bs[1] + 5), "@green@", 2.7),
+         ray((bs[0], bs[1] + 16), (det[0], det[1] - 12), "@yellow@", 3),
+         # Beam splitter: diagonal plate. Mirrors are perpendicular to both arms.
+         f'<rect x="{bs[0]-16}" y="{bs[1]-16}" width="32" height="32" fill="@card@" stroke="@aqua@" stroke-width="2.5"/>',
+         line((bs[0]-15, bs[1]+15), (bs[0]+15, bs[1]-15), "@aqua@", 3),
+         line((m1[0]-25, m1[1]), (m1[0]+25, m1[1]), "@yellow@", 5),
+         line((m2[0], m2[1]-25), (m2[0], m2[1]+25), "@green@", 5),
+         line((m2[0]-18, m2[1]-34), (m2[0]-18, m2[1]+34), "@muted@", 1.5, "6 5"),
+         text(bs[0]+22, bs[1]+28, "BS", 17, "@aqua@"),
+         text(m1[0], m1[1]-18, "M₁ · fixed", 17, "@yellow@", "middle"),
+         text(m2[0]+30, m2[1]+5, "M₂ · movable", 16, "@green@"),
+         text(det[0]+18, det[1]+5, "Detector", 16, "@muted@"),
+         text(180, bs[1]-18, "Source", 16, "@red@"),
+         text(810, 90, "Perpendicular arms", 18, "@muted@", "end"),
+         text(810, 125, "ΔOPD = 2nΔx", 23, "@yellow@", "end", bold=True),
+         text(810, 160, "m = 2nΔx / λ", 22, "@yellow@", "end", bold=True),
+         text(810, 195, "One fringe per λ / (2n)", 16, "@muted@", "end")]
+    write("michelson", W, H, b)
+
+# ----------------------------------------------------------------------------- 12. Newton's rings
+def newton_rings():
+    W, H = 840, 500
+    b = [text(24, 35, "NEWTON’S RINGS · REFLECTED LIGHT", 18, "@yellow@", bold=True),
+         line((65, 330), (425, 330), "@muted@", 4),
+         # Lens underside approximated by a shallow circular arc above the flat plate
+         f'<path d="M 95 185 Q 245 365 405 185" fill="@blue@" fill-opacity="0.16" stroke="@blue@" stroke-width="4"/>',
+         text(250, 150, "Plano-convex lens", 17, "@blue@", "middle"),
+         text(250, 360, "Flat glass plate", 16, "@muted@", "middle"),
+         line((250, 245), (250, 328), "@orange@", 2, "5 4"),
+         dimension((250, 300), (340, 300), "@muted@", 1.5),
+         sym(295, 290, "r", None, 20, "@muted@"),
+         text(265, 318, "t(r)", 17, "@orange@")]
+    # Coherent reflected rays at a point in the film
+    b += [ray((115, 75), (215, 235), "@red@", 2.6),
+          ray((215, 235), (165, 82), "@yellow@", 2.5),
+          ray((215, 235), (275, 82), "@green@", 2.5),
+          text(95, 65, "Monochromatic light", 15, "@muted@")]
+    # Concentric rings schematic
+    cx, cy = 645, 255
+    for i, rad in enumerate((22, 42, 63, 84, 105)):
+        b.append(f'<circle cx="{cx}" cy="{cy}" r="{rad}" fill="none" stroke="{"@yellow@" if i % 2 else "@green@"}" stroke-width="5"/>')
+    b += [dot((cx, cy), 6, "@red@"), text(cx, 125, "Concentric fringes", 17, "@muted@", "middle"),
+          text(810, 405, "rₘ² = mλR / n", 23, "@yellow@", "end", bold=True),
+          text(810, 435, "t(r) ≈ r² / (2R)", 19, "@muted@", "end")]
+    write("newton_rings", W, H, b)
+
+# ----------------------------------------------------------------------------- 13. thick lens and spherical aberration
+def thick_lens():
+    W, H = 840, 500
+    axis = 270
+    b = [text(24, 35, "THICK LENS · SPHERICAL ABERRATION", 17, "@yellow@", bold=True),
+         line((45, axis), (795, axis), "@muted@", 1.8),
+         # Convex thick lens cross-section
+         f'<path d="M 350 105 Q 300 270 350 435 L 455 435 Q 505 270 455 105 Z" fill="@blue@" fill-opacity="0.18" stroke="@blue@" stroke-width="4"/>',
+         text(402, 465, "Thick lens · centre thickness d", 16, "@blue@", "middle")]
+    # Incident parallel rays, paraxial and marginal focus are separated to show aberration
+    for y in (160, 215, 270, 325, 380):
+        ray((70, y), (345, y), "@red@", 2.3)
+    ray((350, 160), (640, 270), "@yellow@", 2.7)
+    ray((350, 215), (605, 270), "@yellow@", 2.7)
+    ray((350, 270), (575, 270), "@green@", 2.7)
+    ray((350, 325), (605, 270), "@yellow@", 2.7)
+    ray((350, 380), (640, 270), "@yellow@", 2.7)
+    b += [line((575, 245), (575, 295), "@green@", 2.5),
+          line((640, 245), (640, 295), "@orange@", 2.5),
+          text(575, 230, "Paraxial focus", 15, "@green@", "middle"),
+          text(640, 315, "Marginal focus", 15, "@orange@", "middle"),
+          text(810, 75, "Different rays, different foci", 16, "@muted@", "end"),
+          text(810, 105, "Spherical aberration", 20, "@yellow@", "end", bold=True),
+          text(810, 405, "Thick lens-maker relation", 16, "@muted@", "end"),
+          text(810, 435, "1/f = (n−1)[1/R₁−1/R₂+…]", 19, "@yellow@", "end", bold=True)]
+    write("thick_lens", W, H, b)
+
 if __name__ == "__main__":
-    for fn in (refraction, tir, thin_lens, mirror, double_slit, prism):
+    for fn in (refraction, tir, thin_lens, mirror, double_slit, prism, polarization, single_slit, grating, thin_film, michelson, newton_rings, thick_lens):
         fn()
     print("written to", os.path.abspath(OUT))

@@ -49,7 +49,7 @@ QPushButton#navItem:hover {
 }
 
 QPushButton#navItem:checked {
-    background: rgba(56, 189, 248, 12);
+    background: @accentCyanTint@;
     border-left: 3px solid @accentCyan@;
     color: @accentCyan@;
     font-weight: 600;
@@ -270,11 +270,11 @@ QPushButton#primary {
 }
 
 QPushButton#primary:hover {
-    background: #2FA3D8;
+    background: @accentCyanHover@;
 }
 
 QPushButton#primary:pressed {
-    background: #0E7490;
+    background: @accentCyanPressed@;
 }
 
 QPushButton#secondary {
@@ -304,7 +304,7 @@ QPushButton#outlineAmber, QPushButton#sendToNotes {
 }
 
 QPushButton#outlineAmber:hover, QPushButton#sendToNotes:hover {
-    background: rgba(251,191,36,12);
+    background: @accentAmberTint@;
 }
 
 QPushButton#presetBtn {
@@ -444,7 +444,7 @@ QFrame#notice {
 }
 
 QFrame#notice[error="true"] {
-    background: rgba(248, 113, 113, 8);
+    background: @errorBg@;
     border: 1px solid @error@;
 }
 

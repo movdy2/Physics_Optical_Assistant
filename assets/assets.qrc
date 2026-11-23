@@ -12,6 +12,13 @@
         <file alias="spherical_mirror.svg">diagrams/spherical_mirror.svg</file>
         <file alias="double_slit.svg">diagrams/double_slit.svg</file>
         <file alias="prism.svg">diagrams/prism.svg</file>
+        <file alias="polarization.svg">diagrams/polarization.svg</file>
+        <file alias="single_slit.svg">diagrams/single_slit.svg</file>
+        <file alias="grating.svg">diagrams/grating.svg</file>
+        <file alias="thin_film.svg">diagrams/thin_film.svg</file>
+        <file alias="michelson.svg">diagrams/michelson.svg</file>
+        <file alias="newton_rings.svg">diagrams/newton_rings.svg</file>
+        <file alias="thick_lens.svg">diagrams/thick_lens.svg</file>
     </qresource>
     <qresource prefix="/fonts">
         <file alias="Inter-Regular.otf">fonts/Inter-Regular.otf</file>
@@ -20,9 +27,6 @@
         <file alias="NotoSansArabic.ttf">fonts/NotoSansArabic.ttf</file>
         <file alias="JetBrainsMono-Regular.ttf">fonts/JetBrainsMono-Regular.ttf</file>
         <file alias="JetBrainsMono-Bold.ttf">fonts/JetBrainsMono-Bold.ttf</file>
-        <file alias="DSEG7Classic-Bold.ttf">fonts/DSEG7Classic-Bold.ttf</file>
-        <file alias="DSEG14Classic-Bold.ttf">fonts/DSEG14Classic-Bold.ttf</file>
-        <file alias="CasioCalculatorFont.otf">fonts/casio-calculator-font.otf</file>
     </qresource>
     <qresource prefix="/licenses">
         <file alias="NotoSansArabic-OFL.txt">fonts/NotoSansArabic-OFL.txt</file>

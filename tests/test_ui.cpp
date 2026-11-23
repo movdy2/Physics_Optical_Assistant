@@ -1,7 +1,7 @@
 // UI-level checks that need Qt Widgets/Svg but no visible window (run with the offscreen platform):
 //   * every LaTeX string in the JSON files is understood by our renderer
 //   * every SVG diagram has only known colour tokens and renders with Qt in both themes
-//   * the Warm Dark + Paper Light + Casio LCD colours are valid and consistent
+//   * Gruvbox dark/light palettes and application fonts are valid
 #include "Icons.h"
 #include "MarkdownHighlighter.h"
 #include "MarkdownWorkspace.h"
@@ -69,18 +69,27 @@ int main(int argc, char** argv) {
     check(!pix.isNull() && pix.width() > 10 && pix.height() > 10, "LaTeX renders to a pixmap");
     check(LatexRenderer::measure("\\frac{a}{b}", font).height() > LatexRenderer::measure("a", font).height(), "fraction is taller than a letter");
 
-    // ---- theme colours: Warm Dark & Paper Light ----
-    const Theme dark = Theme::figmaDark();
+    // ---- theme colours: classic Gruvbox dark & light ----
+    const Theme dark = Theme::gruvboxDark();
     check(dark.bg.isValid() && dark.card.isValid() && dark.text.isValid(), "dark theme core colours valid");
-    check(dark.amber.isValid() && dark.accentAmberHover.isValid() && dark.accentAmberPressed.isValid(), "amber primary, hover, pressed valid");
+    check(dark.bg == QColor("#282828") && dark.sidebar == QColor("#3c3836") &&
+          dark.text == QColor("#ebdbb2") && dark.accentAmber == QColor("#d79921") &&
+          dark.accentCyan == QColor("#83a598"), "classic Gruvbox dark palette is restored");
+    const Theme light = Theme::gruvboxLight();
+    check(light.bg == QColor("#fbf1c7") && light.sidebar == QColor("#ebdbb2") &&
+          light.text == QColor("#282828"), "classic Gruvbox light palette is restored");
+    check(dark.amber.isValid() && dark.sage.isValid() && dark.accentAmberHover.isValid() && dark.accentAmberPressed.isValid(), "Gruvbox amber/sage theme colors are valid");
     check(dark.border.isValid() && dark.error.isValid(), "border and error colours valid");
-    check(dark.lcdBg.isValid() && dark.lcdText.isValid() && dark.lcdFrame.isValid() && dark.lcdDivider.isValid(), "Casio LCD colours valid");
-    check(Theme::figmaLight().lcdBg == dark.lcdBg, "LCD is the same olive screen in light mode");
+    const QStringList diagramFiles = QDir(":/diagrams").entryList({"*.svg"}, QDir::Files);
+    check(diagramFiles.size() == 13, "all setup-diagram SVG resources are embedded");
+    for (const QString& file : diagramFiles) {
+        SvgDiagramView view;
+        check(view.load(":/diagrams/" + file), "setup SVG renders: " + file);
+    }
     ThemeManager::loadFonts();
     check(QFontDatabase::families().contains("Inter") && QFontDatabase::families().contains("JetBrains Mono"), "bundled fonts Inter + JetBrains Mono load");
     check(QFontDatabase::families().contains("Noto Sans Arabic"), "bundled Noto Sans Arabic fallback loads");
     check(QFile::exists(":/licenses/NotoSansArabic-OFL.txt"), "Noto Sans Arabic OFL license is embedded");
-    check(QFontDatabase::families().contains("DSEG14 Classic"), "shared Casio-style DSEG14 font loads");
     for (const char* icon : {"layout-dashboard", "split", "focus", "triangle", "waves", "notebook-pen", "file-spreadsheet", "scan-line", "arrow-up-right", "sigma", "calculator", "ruler", "image", "download", "printer", "slit", "aperture"})
         check(!Icons::pixmap(icon, Qt::white, 18).isNull(), QString("icon exists: ") + icon);
 
@@ -131,4 +140,12 @@ int main(int argc, char** argv) {
                     found << line.mid(r.start, r.length);
             return found;
         };
-        check(mathColor("The law $n₁ sin θ₁ = n₂ sin θ₂$ holds
+        const QStringList inlineMath = mathColor("The law $n₁ sin θ₁ = n₂ sin θ₂$ holds");
+        check(inlineMath.contains("$n₁ sin θ₁ = n₂ sin θ₂$"), "inline math span is highlighted");
+        const QStringList displayMath = mathColor("Result: $$\\frac{1}{f}$$");
+        check(displayMath.contains("$$\\frac{1}{f}$$"), "display math span is highlighted");
+    }
+
+    std::cout << "UI checks: " << (g_failures == 0 ? "passed" : "failed") << "\n";
+    return g_failures == 0 ? 0 : 1;
+}

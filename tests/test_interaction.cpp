@@ -526,48 +526,19 @@ private slots:
         QVERIFY(!input->text().endsWith("("));
     }
 
-    void casioSegmentFontsCoverEveryLcdSurface() {
-        auto family = [](const QWidget* widget) {
-            const QStringList families = widget->font().families();
-            return families.isEmpty() ? QString() : families.front();
-        };
+    void calculatorUsesNormalGruvboxTypography() {
         goTo(m_app->calculator);
-        auto* calculatorInput = m_app->calculator->findChild<QLineEdit*>("lcdInput");
-        auto* calculatorResult = m_app->calculator->findChild<QLabel*>("lcdResult");
-        auto* calculatorHistory = m_app->calculator->findChild<QTextBrowser*>("lcdScreen");
-        QVERIFY(calculatorInput && calculatorResult && calculatorHistory);
-        QCOMPARE(family(calculatorInput), QString("DSEG14 Classic"));
-        QCOMPARE(family(calculatorResult), QString("DSEG14 Classic"));
-        QCOMPARE(family(calculatorHistory), QString("DSEG14 Classic"));
+        auto* input = m_app->calculator->findChild<QLineEdit*>("lcdInput");
+        auto* result = m_app->calculator->findChild<QLabel*>("lcdResult");
+        QVERIFY(input && result);
+        QCOMPARE(input->font().families(), qApp->font().families());
+        QCOMPARE(result->font().families(), qApp->font().families());
+        QVERIFY(input->font().families().contains("Inter"));
 
         goTo(m_app->solver);
         auto* solverInput = m_app->solver->findChild<QLineEdit*>("lcdInput");
-        auto* solverScreen = m_app->solver->findChild<QTextBrowser*>("lcdScreen");
-        QVERIFY(solverInput && solverScreen);
-        QCOMPARE(family(solverInput), QString("DSEG14 Classic"));
-        QCOMPARE(family(solverScreen), QString("DSEG14 Classic"));
-        const auto formulaDisplays = m_app->solver->findChildren<LatexWidget*>();
-        QVERIFY(!formulaDisplays.isEmpty());
-        for (const auto* formula : formulaDisplays)
-            QCOMPARE(family(formula), QString("DSEG14 Classic"));
-
-        goTo(m_app->refraction);
-        for (const char* objectName : {"lcdTitle", "lcdLine", "lcdCaption", "lcdFoot"}) {
-            auto* label = m_app->refraction->findChild<QLabel*>(objectName);
-            QVERIFY(label);
-            QCOMPARE(family(label), QString("DSEG14 Classic"));
-        }
-        auto* registerValue = m_app->refraction->findChild<QLabel*>("lcdBig");
-        QVERIFY(registerValue);
-        QCOMPARE(family(registerValue), QString("DSEG14 Classic"));
-
-        auto* scientificKeyboard = m_app->notes->findChild<ScientificKeyboard*>();
-        QVERIFY(scientificKeyboard);
-        for (const char* objectName : {"lcdKeyDisplay", "lcdCaption"}) {
-            auto* label = scientificKeyboard->findChild<QLabel*>(objectName);
-            QVERIFY(label);
-            QCOMPARE(family(label), QString("DSEG14 Classic"));
-        }
+        QVERIFY(solverInput);
+        QCOMPARE(solverInput->font().families(), qApp->font().families());
     }
 
     // ------------------------------------------------------------------ formula solver, constants
@@ -1081,7 +1052,9 @@ private slots:
         QVERIFY(language);
         QCOMPARE(language->text(), QString("العربية"));
         const QStringList englishUiFontStack = qApp->font().families();
-        const QStringList englishLcdFontStack = ThemeManager::lcdFont().families();
+        auto* calculatorInput = m_app->calculator->findChild<QLineEdit*>("lcdInput");
+        QVERIFY(calculatorInput);
+        const QStringList calculatorFontStack = calculatorInput->font().families();
         QVERIFY(englishUiFontStack.contains("Inter"));
         auto* notesWorkspace = m_app->notes->findChild<MarkdownWorkspace*>();
         QVERIFY(notesWorkspace);
@@ -1094,8 +1067,7 @@ private slots:
         QCOMPARE(language->text(), QString("English"));
         QCOMPARE(language->accessibleName(), QString("التبديل إلى الإنجليزية"));
         QCOMPARE(qApp->font().families(), englishUiFontStack);
-        QCOMPARE(ThemeManager::lcdFont().families(), englishLcdFontStack);
-        auto* calculatorInput = m_app->calculator->findChild<QLineEdit*>("lcdInput");
+        QCOMPARE(calculatorInput->font().families(), calculatorFontStack);
         auto* formulaInput = m_app->solver->findChild<QLineEdit*>("lcdInput");
         auto* unitField = m_app->refraction->findChild<UnitField*>();
         QVERIFY(calculatorInput && formulaInput && unitField);
@@ -1434,7 +1406,21 @@ private slots:
         QVERIFY2(m_app->studyHub->notesEditor() && m_app->studyHub->notesEditor()->isVisibleTo(&win()), "the chapter JSON notes editor is missing");
         m_app->studyHub->selectSection(2);
         auto* diagrams = m_app->diagrams->findChild<QListWidget*>("diagramList");
-        QVERIFY2(diagrams && diagrams->count() >= 6, "the Optical Setups gallery is missing from Study Hub");
+        QVERIFY2(diagrams, "the Optical Setups gallery is missing from Study Hub");
+        QCOMPARE(diagrams->count(), 11);
+        const QStringList expectedSetups = {
+            "Refraction & TIR", "Lenses & Mirrors", "Prisms", "Wave Interference (Double-Slit)",
+            "Polarization (Malus & Brewster)", "Single-Slit Diffraction", "Diffraction Grating",
+            "Thin-Film Interference", "Michelson Interferometry", "Newton's Rings", "Thick Lens & Aberration"
+        };
+        for (int i = 0; i < expectedSetups.size(); ++i)
+            QCOMPARE(diagrams->item(i)->text(), expectedSetups[i]);
+        auto* variants = m_app->diagrams->findChild<QComboBox*>("diagramVariantSelector");
+        QVERIFY(variants);
+        diagrams->setCurrentRow(0);
+        QCOMPARE(variants->count(), 2);                                   // Refraction and TIR grouped as one experiment
+        diagrams->setCurrentRow(2);
+        QCOMPARE(variants->count(), 1);
         m_app->studyHub->selectSection(3);                                  // removed global Constants tab is ignored
         QCOMPARE(m_app->studyHub->currentSection(), 2);
         m_app->studyHub->selectSection(0);
