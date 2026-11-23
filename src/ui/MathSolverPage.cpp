@@ -5,8 +5,6 @@
 #include "ThemeManager.h"
 
 #include <QAbstractItemView>
-#include <QApplication>
-#include <QClipboard>
 #include <QColor>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -17,7 +15,6 @@
 #include <QPushButton>
 #include <QSize>
 #include <QSizePolicy>
-#include <QTimer>
 #include <QVBoxLayout>
 
 namespace phy104 {
@@ -64,17 +61,10 @@ MathSolverPage::MathSolverPage(AppContext* context, QWidget* parent)
     m_result->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_result->setMinimumHeight(64);
 
-    m_copyBtn = new QPushButton("📋");
-    m_copyBtn->setObjectName("calcCopy");
-    m_copyBtn->setFixedSize(28, 28);
-    m_copyBtn->setToolTip("Copy result to clipboard");
-    m_copyBtn->setEnabled(false);
-
     auto* resultRow = new QHBoxLayout;
     resultRow->setContentsMargins(0, 0, 0, 0);
     resultRow->setSpacing(4);
     resultRow->addWidget(m_result, 1);
-    resultRow->addWidget(m_copyBtn);
     calculatorPanel->body()->addLayout(resultRow);
 
     m_status = new QLabel;
@@ -154,7 +144,6 @@ MathSolverPage::MathSolverPage(AppContext* context, QWidget* parent)
         m_input->setFocus();
     });
     connect(m_angleButton, &QPushButton::toggled, this, &MathSolverPage::toggleAngleMode);
-    connect(m_copyBtn, &QPushButton::clicked, this, &MathSolverPage::onCopyResult);
     connect(m_historyList, &QListWidget::itemClicked, this, [this](QListWidgetItem* item) {
         m_input->setText(item->data(Qt::UserRole).toString());
         m_input->setFocus();
@@ -177,13 +166,11 @@ void MathSolverPage::calculate() {
     if (entry.ok) {
         m_result->setText(QString::fromStdString(entry.result));
         m_status->hide();
-        m_copyBtn->setEnabled(true);
         m_input->selectAll();                                      // next typing replaces the previous expression
     } else {
         m_result->setText("ERROR");
         m_status->setText(QString(" ") + QString::fromStdString(entry.error));
         m_status->show();
-        m_copyBtn->setEnabled(false);
     }
     refreshHistory();
 }
@@ -194,7 +181,6 @@ void MathSolverPage::clearAll() {
     m_input->clear();
     m_result->setText("0");
     m_status->hide();
-    m_copyBtn->setEnabled(false);
     m_input->setFocus();
 }
 
@@ -218,18 +204,6 @@ void MathSolverPage::refreshHistory() {
 }
 
 QString MathSolverPage::resultText() const { return m_result->text(); }
-
-void MathSolverPage::onCopyResult() {
-    if (m_result->text() == "ERROR" || m_result->text() == "0") return;
-    QApplication::clipboard()->setText(m_result->text());
-    const QString original = m_copyBtn->text();
-    m_copyBtn->setText("✓");
-    m_copyBtn->setToolTip("Copied to clipboard");
-    QTimer::singleShot(1200, this, [this, original] {
-        m_copyBtn->setText(original);
-        m_copyBtn->setToolTip("Copy result to clipboard");
-    });
-}
 
 void MathSolverPage::toggleAngleMode(bool degrees) {
     m_calc.setAngleUnit(degrees ? AngleUnit::Degrees : AngleUnit::Radians);

@@ -48,6 +48,21 @@ void text(QPainter& p, QPointF pos, const QString& s, const QColor& c, int px = 
     p.drawText(QPointF(x, pos.y() + fm.ascent() / 2 - 1), display);
 }
 
+/// Equation and numeric callouts are explicit LTR runs, independent of the page's Arabic direction.
+void mathText(QPainter& p, QPointF pos, const QString& value, const QColor& color, int px = 9,
+              Qt::Alignment align = Qt::AlignLeft, bool bold = false) {
+    const QFont f = monoFont(px, bold);
+    const QFontMetricsF fm(f);
+    const double width = fm.horizontalAdvance(value);
+    double x = pos.x();
+    if (align & Qt::AlignRight) x -= width;
+    else if (align & Qt::AlignHCenter) x -= width / 2.0;
+    p.setFont(f);
+    p.setPen(color);
+    const QRectF bounds(x, pos.y() - fm.height() / 2.0, width + 2.0, fm.height() + 2.0);
+    p.drawText(bounds, Qt::AlignLeft | Qt::AlignVCenter | Qt::TextSingleLine | Qt::TextForceLeftToRight, value);
+}
+
 QPointF unit(QPointF v) {
     const double n = std::hypot(v.x(), v.y());
     return n < 1e-9 ? QPointF(1, 0) : v / n;
@@ -113,7 +128,7 @@ QString num(double v, int dp = 4) { return QString::number(v, 'f', dp); }
 } // namespace
 
 // ============================================================================ Refraction & TIR
-RefractionCanvas::RefractionCanvas(QWidget* parent) : GridCanvas(parent) { setMinimumSize(300, 330); }
+RefractionCanvas::RefractionCanvas(QWidget* parent) : GridCanvas(parent) { setMinimumSize(220, 230); }
 
 void RefractionCanvas::setInput(const RefractionInput& in, const QString& m1, const QString& m2) {
     m_in = in; m_m1 = m1; m_m2 = m2;
@@ -167,7 +182,7 @@ void RefractionCanvas::paintDiagram(QPainter& p, const QRectF& a) {
 }
 
 // ============================================================================ TIR (single case)
-TirCanvas::TirCanvas(QWidget* parent) : GridCanvas(parent) { setMinimumSize(300, 330); }
+TirCanvas::TirCanvas(QWidget* parent) : GridCanvas(parent) { setMinimumSize(220, 230); }
 
 void TirCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     const Theme& t = th();
@@ -218,7 +233,7 @@ void TirCanvas::paintDiagram(QPainter& p, const QRectF& a) {
 }
 
 // ============================================================================ thin lens
-LensCanvas::LensCanvas(QWidget* parent) : GridCanvas(parent) { setMinimumSize(300, 280); }
+LensCanvas::LensCanvas(QWidget* parent) : GridCanvas(parent) { setMinimumSize(220, 210); }
 
 void LensCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     const Theme& t = th();
@@ -306,7 +321,7 @@ void LensCanvas::paintDiagram(QPainter& p, const QRectF& a) {
 }
 
 // ============================================================================ spherical mirror
-MirrorCanvas::MirrorCanvas(QWidget* parent) : GridCanvas(parent) { setMinimumSize(300, 280); }
+MirrorCanvas::MirrorCanvas(QWidget* parent) : GridCanvas(parent) { setMinimumSize(220, 210); }
 
 void MirrorCanvas::paintDiagram(QPainter& p, const QRectF& a) {
     const Theme& t = th();
@@ -415,7 +430,7 @@ void MirrorCanvas::paintDiagram(QPainter& p, const QRectF& a) {
 }
 
 // ============================================================================ prism
-PrismCanvas::PrismCanvas(QWidget* parent) : GridCanvas(parent) { setMinimumSize(300, 330); }
+PrismCanvas::PrismCanvas(QWidget* parent) : GridCanvas(parent) { setMinimumSize(220, 230); }
 
 void PrismCanvas::setInput(const PrismInput& in, const QList<PrismPath>& extra) {
     m_in = in; m_extra = extra;
@@ -553,7 +568,7 @@ void PrismCanvas::paintDiagram(QPainter& p, const QRectF& a) {
 }
 
 // ============================================================================ double slit
-WaveCanvas::WaveCanvas(QWidget* parent) : GridCanvas(parent) { setMinimumSize(300, 330); }
+WaveCanvas::WaveCanvas(QWidget* parent) : GridCanvas(parent) { setMinimumSize(220, 230); }
 
 void WaveCanvas::setInput(const SlitInput& in, bool wavefronts) {
     m_in = in; m_wavefronts = wavefronts;
@@ -684,35 +699,42 @@ void NewtonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
 }
 
 MichelsonCanvas::MichelsonCanvas(QWidget* parent) : GridCanvas(parent) {
-    setMinimumSize(300, 330);
+    setMinimumSize(300, 280);
     setMouseTracking(true);
     setAccessibleName("Michelson interferometer optical bench");
-    setAccessibleDescription("M2 is the movable mirror. Drag it left or right along its arm, or use the mirror travel slider.");
-    setToolTip("Drag the amber M2 mirror left or right along its arm. Its travel updates the path difference and fringes.");
+    setAccessibleDescription("In the laser-wavelength view drag movable M1 vertically; in the legacy views drag M2 horizontally.");
+    setToolTip("Drag the amber movable mirror. M1 displacement d is active in Laser wavelength mode.");
 }
 
 QPointF MichelsonCanvas::movableMirrorCenter() const {
-    const double splitterX = width() * 0.38;
+    const double splitterX = width() * 0.40;
     const double referenceY = bsY();
+    if (m_display.wavelengthMode) {
+        const double homeY = referenceY - 70.0;
+        const double d = std::clamp(m_display.displacementUm, 0.0, kMaxInteractiveTravelUm);
+        return QPointF(splitterX, homeY - d * kMichelsonPixelsPerUm);
+    }
     const double m2x = width() - 70.0;
-    const double armLength = m2x - splitterX;
-    const double travel = std::clamp(m_in.displacementUm, -kMaxInteractiveTravelUm, kMaxInteractiveTravelUm);
-    return QPointF(splitterX + armLength + travel * kMichelsonPixelsPerUm, referenceY);
+    const double travel = std::clamp(m_display.displacementUm, -kMaxInteractiveTravelUm, kMaxInteractiveTravelUm);
+    return QPointF(m2x + travel * kMichelsonPixelsPerUm, referenceY);
 }
 
-double MichelsonCanvas::bsY() const {
-    return height() * 0.43;
-}
+double MichelsonCanvas::bsY() const { return height() * 0.48; }
 
 bool MichelsonCanvas::isNearMovableMirror(const QPointF& point) const {
     const QPointF mirror = movableMirrorCenter();
-    return QRectF(mirror.x() - 12.0, mirror.y() - 27.0, 24.0, 54.0).contains(point);
+    const QRectF hit = m_display.wavelengthMode
+        ? QRectF(mirror.x() - 28.0, mirror.y() - 11.0, 56.0, 22.0)
+        : QRectF(mirror.x() - 12.0, mirror.y() - 28.0, 24.0, 56.0);
+    return hit.contains(point);
 }
 
 void MichelsonCanvas::mousePressEvent(QMouseEvent* event) {
-    if (event->button() == Qt::LeftButton && isNearMovableMirror(event->position())) {
-        m_draggingM2 = true;
-        m_dragOffsetX = event->position().x() - movableMirrorCenter().x();
+    if (m_mirrorMovable && event->button() == Qt::LeftButton && isNearMovableMirror(event->position())) {
+        m_draggingMirror = true;
+        const QPointF center = movableMirrorCenter();
+        m_dragOffsetX = event->position().x() - center.x();
+        m_dragOffsetY = event->position().y() - center.y();
         setCursor(Qt::ClosedHandCursor);
         event->accept();
         return;
@@ -721,25 +743,31 @@ void MichelsonCanvas::mousePressEvent(QMouseEvent* event) {
 }
 
 void MichelsonCanvas::mouseMoveEvent(QMouseEvent* event) {
-    if (m_draggingM2) {
-        const double splitterX = width() * 0.38;
-        const double m2x = width() - 70.0;
-        const double armLength = m2x - splitterX;
-        const double centerX = event->position().x() - m_dragOffsetX;
-        const double travel = (centerX - splitterX - armLength) / kMichelsonPixelsPerUm;
-        const double bounded = std::clamp(travel, -kMaxInteractiveTravelUm, kMaxInteractiveTravelUm);
-        emit mirrorDisplacementChanged(std::round(bounded * 1000.0) / 1000.0);
+    if (m_draggingMirror) {
+        double displacement = 0.0;
+        if (m_display.wavelengthMode) {
+            const double homeY = bsY() - 70.0;
+            const double centerY = event->position().y() - m_dragOffsetY;
+            displacement = (homeY - centerY) / kMichelsonPixelsPerUm;
+            displacement = std::clamp(displacement, 0.0, kMaxInteractiveTravelUm);
+        } else {
+            const double m2HomeX = width() - 70.0;
+            const double centerX = event->position().x() - m_dragOffsetX;
+            displacement = (centerX - m2HomeX) / kMichelsonPixelsPerUm;
+            displacement = std::clamp(displacement, -kMaxInteractiveTravelUm, kMaxInteractiveTravelUm);
+        }
+        emit mirrorDisplacementChanged(std::round(displacement * 10000.0) / 10000.0);
         event->accept();
         return;
     }
-    setCursor(isNearMovableMirror(event->position()) ? Qt::OpenHandCursor : Qt::ArrowCursor);
+    setCursor(m_mirrorMovable && isNearMovableMirror(event->position()) ? Qt::OpenHandCursor : Qt::ArrowCursor);
     event->ignore();
 }
 
 void MichelsonCanvas::mouseReleaseEvent(QMouseEvent* event) {
-    if (event->button() == Qt::LeftButton && m_draggingM2) {
-        m_draggingM2 = false;
-        setCursor(isNearMovableMirror(event->position()) ? Qt::OpenHandCursor : Qt::ArrowCursor);
+    if (event->button() == Qt::LeftButton && m_draggingMirror) {
+        m_draggingMirror = false;
+        setCursor(m_mirrorMovable && isNearMovableMirror(event->position()) ? Qt::OpenHandCursor : Qt::ArrowCursor);
         event->accept();
         return;
     }
@@ -747,166 +775,124 @@ void MichelsonCanvas::mouseReleaseEvent(QMouseEvent* event) {
 }
 
 void MichelsonCanvas::paintDiagram(QPainter& p, const QRectF& a) {
-    const Theme& t = th();
-    const QPointF bs(a.left() + a.width() * 0.38, a.top() + a.height() * 0.43);
-    const QPointF m1(bs.x(), bs.y() - 84.0);          // M1 fixed, top arm
-    const double m2xHome = a.right() - 70.0;           // M2 home (zero travel) position
-    const double m2x = movableMirrorCenter().x();      // M2 current position (includes travel)
-    const QPointF source(a.left() + 24.0, bs.y());
-    const QPointF detector(bs.x(), a.bottom() - 116.0);
-    const double dxUm = std::clamp(m_in.displacementUm, -kMaxInteractiveTravelUm, kMaxInteractiveTravelUm);
-    const double vis = std::clamp(m_in.visibility, 0.0, 1.0);
-    const double dphi = 4 * std::numbers::pi * m_in.n * dxUm * 1e3 / m_in.lambdaNm;
-    const double intensity = (1 + vis * std::cos(dphi)) / (1 + vis);
+    const Theme& theme = th();
+    const double dUm = m_display.displacementUm;
+    const QPointF splitter(a.left() + a.width() * 0.40, a.top() + a.height() * 0.48);
+    const double m1HomeY = splitter.y() - 70.0;
+    const double m1Y = m_display.wavelengthMode ? m1HomeY - dUm * kMichelsonPixelsPerUm : m1HomeY;
+    const double m2HomeX = a.right() - 70.0;
+    const double m2X = m_display.wavelengthMode ? m2HomeX : m2HomeX + dUm * kMichelsonPixelsPerUm;
+    const QPointF m1(splitter.x(), m1Y);
+    const QPointF m2(m2X, splitter.y());
+    const QPointF source(a.left() + 32.0, splitter.y());
+    const QPointF detector(splitter.x(), a.bottom() - 76.0);
+    const double dDisplay = std::clamp(dUm, -kMaxInteractiveTravelUm, kMaxInteractiveTravelUm);
 
-    text(p, QPointF(a.left() + 14, a.top() + 18), "MICHELSON · TOP VIEW", t.amber, 11);
+    text(p, QPointF(a.left() + 12, a.top() + 16),
+         m_display.wavelengthMode ? "MICHELSON · LASER WAVELENGTH" : "MICHELSON · INTERFEROMETER",
+         theme.amber, 10, Qt::AlignLeft, true);
 
-    // The arm medium occupies both paths conceptually; ΔOPD = 2nΔx for the movable M2 arm.
-    if (m_in.n > 1.0001) {
-        QColor cell = t.blue;
-        cell.setAlpha(45);
-        p.setPen(QPen(t.blue, 1, Qt::DashLine));
-        p.setBrush(cell);
-        const QRectF chamber(bs.x() + 16.0, bs.y() - 12.0, std::max(0.0, m2x - bs.x() - 32.0), 24.0);
-        p.drawRect(chamber);
-        text(p, QPointF(chamber.center().x(), chamber.top() - 5.0), QString("n = ") + num(m_in.n, 4), t.blue, 9, Qt::AlignHCenter);
-    } else {
-        text(p, QPointF(m2x + 6.0, bs.y() - 26.0), QString(" ") + num(m_in.n, 4), t.muted, 9);
+    // Two perpendicular arms recombine at the beam splitter; all optical labels occupy fixed callout zones.
+    ray(p, source + QPointF(8, 0), QPointF(splitter.x() - 14, splitter.y()), theme.amber, 1.8);
+    ray(p, QPointF(splitter.x() - 4, splitter.y() - 14), QPointF(m1.x() - 4, m1.y() + 4), theme.amber, 1.6);
+    ray(p, QPointF(m1.x() + 4, m1.y() + 4), QPointF(splitter.x() + 4, splitter.y() - 14), theme.amber, 1.3);
+    ray(p, QPointF(splitter.x() + 14, splitter.y() - 4), QPointF(m2.x() - 4, splitter.y() - 4), theme.sage, 1.6);
+    ray(p, QPointF(m2.x() - 4, splitter.y() + 4), QPointF(splitter.x() + 14, splitter.y() + 4), theme.sage, 1.3);
+    ray(p, QPointF(splitter.x(), splitter.y() + 14), detector, theme.amber, 1.8);
+
+    p.setPen(QPen(theme.sage, 1.8));
+    p.setBrush(theme.card);
+    p.drawRoundedRect(QRectF(splitter.x() - 11, splitter.y() - 11, 22, 22), 3, 3);
+    p.drawLine(QPointF(splitter.x() - 11, splitter.y() + 11), QPointF(splitter.x() + 11, splitter.y() - 11));
+
+    // Compensating plate CP matches the glass thickness of BS in the other arm.
+    p.setPen(QPen(theme.blue, 3.0, Qt::SolidLine, Qt::RoundCap));
+    const double cpY = splitter.y() - 34.0;
+    p.drawLine(QPointF(splitter.x() - 8, cpY), QPointF(splitter.x() + 8, cpY));
+    p.drawLine(QPointF(splitter.x() - 8, cpY + 5), QPointF(splitter.x() + 8, cpY + 5));
+
+    // M1 and M2 mirror faces, with the movable face and its grab target highlighted amber.
+    p.setPen(QPen(m_display.wavelengthMode ? theme.amber : theme.sage, 4.0, Qt::SolidLine, Qt::RoundCap));
+    p.drawLine(QPointF(m1.x() - 20, m1.y()), QPointF(m1.x() + 20, m1.y()));
+    p.setPen(QPen(m_display.wavelengthMode ? theme.sage : theme.amber, 4.0, Qt::SolidLine, Qt::RoundCap));
+    p.drawLine(QPointF(m2.x(), m2.y() - 20), QPointF(m2.x(), m2.y() + 20));
+
+    p.setPen(QPen(theme.dim, 1, Qt::DashLine));
+    if (m_display.wavelengthMode && dUm > 1e-5)
+        p.drawLine(QPointF(m1.x() + 25, m1.y()), QPointF(m1.x() + 25, m1HomeY));
+    if (!m_display.wavelengthMode && std::fabs(dUm) > 1e-5)
+        p.drawLine(QPointF(m2HomeX, splitter.y() - 24), QPointF(m2HomeX, splitter.y() + 24));
+
+    text(p, QPointF(source.x(), source.y() - 18), "S · laser", theme.text, 9, Qt::AlignHCenter);
+    text(p, QPointF(splitter.x(), splitter.y() + 26), "BS", theme.text, 9, Qt::AlignHCenter);
+    text(p, QPointF(splitter.x() + 20, cpY + 3), "CP", theme.blue, 9);
+    text(p, QPointF(m1.x() - 24, m1.y() + (m_display.wavelengthMode ? 18.0 : -11.0)),
+         m_display.wavelengthMode ? "M1 · movable" : "M1",
+         m_display.wavelengthMode ? theme.amber : theme.muted, 9, Qt::AlignRight);
+    text(p, QPointF(m2.x() - 7, m2.y() - 27), m_display.wavelengthMode ? "M2 · fixed" : "M2 · movable",
+         m_display.wavelengthMode ? theme.muted : theme.amber, 9, Qt::AlignRight);
+    text(p, QPointF(detector.x(), detector.y() + 15), "Detector", theme.muted, 9, Qt::AlignHCenter);
+
+    if (m_display.wavelengthMode) {
+        // Virtual images are shown in a separate, dimensioned inset so they do not imply
+        // that the schematic arm lengths are to scale.
+        mathText(p, QPointF(a.right() - 86, a.top() + 38), "M1′ ↕ M2 = d", theme.blue, 8);
+        const double mirrorSeparation = 8.0 * std::fabs(dUm);
+        const double mirrorY = a.top() + 68.0;
+        const double mirrorX0 = a.right() - 124.0;
+        const double mirrorX1 = a.right() - 92.0;
+        p.setPen(QPen(theme.blue, 2.0, Qt::DashLine));
+        p.drawLine(QPointF(mirrorX0, mirrorY - mirrorSeparation / 2.0),
+                   QPointF(mirrorX1, mirrorY - mirrorSeparation / 2.0));
+        p.drawLine(QPointF(mirrorX0, mirrorY + mirrorSeparation / 2.0),
+                   QPointF(mirrorX1, mirrorY + mirrorSeparation / 2.0));
+        mathText(p, QPointF(a.left() + 12, a.top() + 38), "S₁ ↕ S₂ = 2d", theme.muted, 8);
+        const double sourceSeparation = 2.0 * mirrorSeparation;
+        const QPointF virtualSource(a.left() + 19, a.top() + 88);
+        p.setPen(QPen(theme.blue, 1.2));
+        p.setBrush(theme.blue);
+        p.drawEllipse(QPointF(virtualSource.x(), virtualSource.y() - sourceSeparation / 2.0), 2.5, 2.5);
+        p.drawEllipse(QPointF(virtualSource.x(), virtualSource.y() + sourceSeparation / 2.0), 2.5, 2.5);
+        p.setPen(QPen(theme.blue, 1, Qt::DashLine));
+        p.drawLine(QPointF(virtualSource.x(), virtualSource.y() - sourceSeparation / 2.0),
+                   QPointF(virtualSource.x(), virtualSource.y() + sourceSeparation / 2.0));
     }
 
-    // Beam path tracing: draw each complete round-trip arm as a traced path with
-    // direction arrows and path-length labels.  Source → BS → mirror → BS → detector.
-    const QPointF bsOut(bs.x() - 4, bs.y());                 // BS output port (toward source side)
-    const QPointF bsIn(bs.x() + 4, bs.y());                  // BS input port (toward detector side)
-
-    // --- M1 arm (top): BS → M1 → BS  — amber path
-    const QPointF m1Out(bs.x() - 4, m1.y() + 4);             // BS → M1 departure
-    const QPointF m1Back(bs.x() + 4, m1.y() + 4);            // M1 → BS return
-    const double m1Len = std::hypot(m1.x() - bs.x(), m1.y() - bs.y());
-    ray(p, source + QPointF(8, 0), bsOut - QPointF(14, 0), t.amber, 1.8);        // source → BS
-    ray(p, bsOut + QPointF(0, -14), m1Out, t.amber, 1.6);                       // BS → M1
-    ray(p, m1Back, bsIn + QPointF(0, -14), t.amber, 1.3);                       // M1 → BS
-    text(p, QPointF((bs.x() + m1.x()) / 2, bs.y() - 40),
-         QString(" ") + num(m1Len, 1) + " px", t.amber, 9, Qt::AlignHCenter);
-
-    // --- M2 arm (horizontal): BS → M2 → BS — each segment follows the optical axis.
-    const QPointF m2Out(m2x - 5, bs.y() - 4);
-    const QPointF m2Back(m2x - 5, bs.y() + 4);
-    const double m2Len = std::hypot(m2x - bs.x(), 0.0);
-    ray(p, QPointF(bs.x() + 14, bs.y() - 4), m2Out, t.sage, 1.6);            // BS → M2
-    ray(p, m2Back, QPointF(bs.x() + 14, bs.y() + 4), t.sage, 1.3);           // M2 → BS
-    text(p, QPointF((bs.x() + m2x) / 2, bs.y() - 40),
-         QString(" ") + num(m2Len, 1) + " px", t.sage, 9, Qt::AlignHCenter);
-
-    // --- Recombined beam: one stationary output axis from BS to detector.
-    QColor detBeam = t.amber;
-    detBeam.setAlpha(static_cast<int>(150 + 105 * intensity));
-    ray(p, QPointF(bs.x(), bs.y() + 14), detector, detBeam, 1.4 + 1.2 * intensity);
-
-    // Beam splitter. Its diagonal divides the horizontal source/detector ports from the two arms.
-    p.setPen(QPen(t.sage, 1.6));
-    p.setBrush(t.canvas);
-    p.drawRect(QRectF(bs.x() - 14, bs.y() - 14, 28, 28));
-    p.drawLine(QPointF(bs.x() - 14, bs.y() + 14), QPointF(bs.x() + 14, bs.y() - 14));
-
-    // Compensator C is a plate across M1's vertical arm (perpendicular to that beam).
-    const double cy = bs.y() + (m1.y() - bs.y()) * 0.46;
-    p.setPen(QPen(t.blue, 2.4));
-    p.drawLine(QPointF(bs.x() - 8, cy - 2), QPointF(bs.x() + 8, cy - 2));
-    p.drawLine(QPointF(bs.x() - 8, cy + 2), QPointF(bs.x() + 8, cy + 2));
-    text(p, QPointF(bs.x() + 20, cy + 3), "C · compensator", t.blue, 9);
-
-    // Static home marker for M2.
-    if (std::fabs(dxUm) > 1e-4) {
-        p.setPen(QPen(t.dim, 1, Qt::DashLine));
-        p.drawLine(QPointF(m2xHome, bs.y() - 25), QPointF(m2xHome, bs.y() + 25));
-    }
-    if (m_in.piezo) {
-        p.setPen(QPen(t.blue, 2));
-        for (int k = 0; k < 3; ++k) {
-            const double x = m2x + 7.0 + 4.0 * k;
-            p.drawLine(QPointF(x, bs.y() - 18), QPointF(x, bs.y() + 18));
+    // A sampled interference field produced by WaveExperiments::michelsonDisplayData.
+    const int imageSize = std::clamp(static_cast<int>(std::min(88.0, a.height() * 0.31)), 48, 96);
+    QImage field(imageSize, imageSize, QImage::Format_ARGB32);
+    field.fill(Qt::transparent);
+    const int resolution = m_display.fieldResolution;
+    if (resolution > 0 && m_display.circularIntensity.size() == static_cast<std::size_t>(resolution * resolution)) {
+        for (int y = 0; y < imageSize; ++y) {
+            for (int x = 0; x < imageSize; ++x) {
+                const double nx = (x + 0.5 - imageSize / 2.0) / (imageSize / 2.0);
+                const double ny = (y + 0.5 - imageSize / 2.0) / (imageSize / 2.0);
+                if (nx * nx + ny * ny > 1.0) continue;
+                const int sx = std::clamp(static_cast<int>((x + 0.5) * resolution / imageSize), 0, resolution - 1);
+                const int sy = std::clamp(static_cast<int>((y + 0.5) * resolution / imageSize), 0, resolution - 1);
+                const double value = m_display.circularIntensity[static_cast<std::size_t>(sy * resolution + sx)];
+                if (value >= 0.0) field.setPixelColor(x, y, mix(theme.canvas, theme.lime, value));
+            }
         }
     }
-
-    // Mirror faces are perpendicular to their optical arms: M1 horizontal on the vertical arm,
-    // M2 vertical on the horizontal arm. Both use the same fixed-width, non-animated drawing.
-    p.setPen(QPen(t.amber, 3.0, Qt::SolidLine, Qt::RoundCap));
-    p.drawLine(QPointF(m1.x() - 22, m1.y()), QPointF(m1.x() + 22, m1.y()));
-    p.setPen(QPen(t.sage, 3.0, Qt::SolidLine, Qt::RoundCap));
-    p.drawLine(QPointF(m2x, bs.y() - 22), QPointF(m2x, bs.y() + 22));
-    text(p, QPointF(bs.x() - 30, m1.y()), "M1 · fixed", t.muted, 11, Qt::AlignRight);
-    text(p, QPointF(m2x - 28, bs.y() - 5), "M2 · movable", t.amber, 11, Qt::AlignRight);
-    text(p, QPointF(m2x - 28, bs.y() + 10), QString(" ") + QString(dxUm > 0 ? "+" : "") + num(dxUm, 4) + " µm", t.muted, 11, Qt::AlignRight);
-    text(p, source + QPointF(-8, -20), "Source", t.muted, 11);
-    text(p, bs + QPointF(0, 28), "BS", t.muted, 11, Qt::AlignHCenter);
-    text(p, QPointF(detector.x() + 12, detector.y() - 8), "Detector", t.muted, 11);
-    text(p, QPointF(detector.x() + 12, detector.y() + 7), QString(" ") + num(intensity, 4), t.amber, 11);
-
-    // Live fringe counter data is shown in the LCD registers on the right panel;
-    // not drawn on the canvas to avoid overlapping the optical beam diagram.
-
-    // Circular detector fringes are a schematic radial phase map. At r = 0 it uses the same
-    // Δφ = 4πnΔx/λ and normalized intensity as the register above.
-    const int size = static_cast<int>(std::min(108.0, a.height() * 0.27));
-    // Item 14: tilt converts circular (bullseye) fringes into straight fringes.
-    // tiltMrad adds a linear OPD gradient across the field of view; at zero tilt
-    // the pattern is circular, at large tilt the fringes straighten and crowd together.
-    const double tiltRad = m_in.tiltMrad * 1e-3;
-    const double tiltGrad = 2.0 * std::numbers::pi * tiltRad * size / m_in.lambdaNm * 1e3;
-    const QImage img = fringeImage(size, [dphi, size, vis, tiltRad, tiltGrad](double px, double py) {
-        const double r2 = (px * px + py * py) / double((size / 2) * (size / 2));
-        // Linear tilt term across x plus circular quadratic term; tilt straightens fringes.
-        const double phase = dphi + 18.0 * r2 + tiltGrad * px / (size / 2.0);
-        return (1 + vis * std::cos(phase)) / (1 + vis);
-    });
-    const QPointF fringeCenter(a.right() - size / 2.0 - 16.0, a.bottom() - size / 2.0 - 22.0);
-    p.drawImage(QPointF(fringeCenter.x() - size / 2.0, fringeCenter.y() - size / 2.0), img);
-    text(p, QPointF(fringeCenter.x(), fringeCenter.y() - size / 2.0 - 10.0), "FRINGE VIEW", t.amber, 9, Qt::AlignHCenter);
-
-    const double spacing = m_in.lambdaNm / (2 * m_in.n);
-    text(p, QPointF(a.left() + 14, a.bottom() - 14), QString(" ") + num(2 * m_in.n * dxUm, 4) + " µm", t.muted, 9);
-    text(p, QPointF(a.left() + 14, a.bottom() - 30), QString(" ") + num(spacing, 4) + " nm per fringe", t.muted, 9);
-    text(p, QPointF(a.left() + 14, a.bottom() - 46), m_in.fringes
-             ? QString(" ") + num(vis, 2) + " · sweep ±2 µm"
-             : "Concentric fringes · schematic", t.muted, 9);
-
-    // ---- Detector screen interference fringes ----
-    // A horizontal screen showing vertical bright/dark fringes. Fringe spacing across
-    // the screen is set by the M2 tilt (tilt = 0 → uniform intensity); contrast is set
-    // by visibility V (coherence-length decay reduces V). Center intensity matches I/Imax.
-    const int screenW = 120, screenH = 14;
-    const QRectF screenRect(detector.x() + 44, detector.y() + 12, screenW, screenH);
-    const double screenCenter = screenW / 2.0;
-
-    // Screen frame
-    p.setPen(QPen(t.muted, 1));
+    const QPointF fieldTopLeft(a.right() - imageSize - 8.0, a.bottom() - imageSize - 40.0);
+    p.drawImage(fieldTopLeft, field);
+    p.setPen(QPen(theme.border, 1));
     p.setBrush(Qt::NoBrush);
-    p.drawRect(screenRect);
-    text(p, QPointF(screenRect.left(), screenRect.top() - 6), "Detector screen · fringes", t.muted, 8);
+    p.drawEllipse(QRectF(fieldTopLeft, QSizeF(imageSize, imageSize)));
+    text(p, QPointF(fieldTopLeft.x() + imageSize / 2.0, fieldTopLeft.y() - 7), "FRINGE VIEW", theme.amber, 8, Qt::AlignHCenter);
 
-    // Fringe phase gradient across screen from mirror tilt:
-    //   ΔOPD(x) ≈ 2·θ·x  (round trip)  →  φ(x) = φ₀ + 4πθx/λ
-    // At 10 mrad tilt → ~8 fringes across the screen width.
-    const double tiltFringeCount = (std::fabs(tiltRad) / 0.01) * 8.0;
-    const double phaseGrad = tiltFringeCount * 2.0 * std::numbers::pi / screenW;
-    for (int i = 0; i < screenW; ++i) {
-        const double phase = dphi + phaseGrad * (i - screenCenter);
-        const double I = (1 + vis * std::cos(phase)) / (1 + vis);
-        p.setPen(mix(t.canvas, t.lime, I));
-        p.drawLine(static_cast<int>(screenRect.left()) + i, static_cast<int>(screenRect.top()), static_cast<int>(screenRect.left()) + i, static_cast<int>(screenRect.bottom()));
-    }
-
-    // Center marker: intensity at screen center = I/Imax
-    const int centerX = static_cast<int>(screenRect.left()) + static_cast<int>(screenCenter);
-    p.setPen(QPen(t.amber, 2));
-    p.drawLine(QPointF(centerX, screenRect.top() - 4), QPointF(centerX, screenRect.top() + screenH + 4));
-    text(p, QPointF(centerX, screenRect.bottom() + 12), QString(" ") + num(intensity, 4), t.amber, 8, Qt::AlignHCenter);
-
-    // Beam path tracing legend: color-coded arms
-    legendItem(p, QPointF(a.left() + 14, a.bottom() - 66), "M1 arm (top)", t.amber);
-    legendItem(p, QPointF(a.left() + 120, a.bottom() - 66), "M2 arm (side)", t.sage);
-    legendItem(p, QPointF(a.left() + 226, a.bottom() - 66), "Recombined → detector", t.amber);
+    // Live measurements are laid out in fixed-width cells, with no overlap against the fringe inset.
+    const double metricsY = a.bottom() - 10.0;
+    const QString dText = QString("d = %1 µm").arg(dDisplay, 0, 'f', 4);
+    const QString deltaText = QString("Δ = %1 nm").arg(m_display.pathDifferenceNm, 0, 'f', 1);
+    const QString nText = QString("N = %1").arg(m_display.fringeCount, 0, 'f', 3);
+    const QString lambdaText = QString("λ = %1 nm").arg(m_display.wavelengthNm, 0, 'f', 1);
+    mathText(p, QPointF(a.left() + 12, metricsY - 28), dText, theme.text, 8);
+    mathText(p, QPointF(a.left() + 112, metricsY - 28), deltaText, theme.text, 8);
+    mathText(p, QPointF(a.left() + 12, metricsY - 10), nText, theme.text, 8);
+    mathText(p, QPointF(a.left() + 112, metricsY - 10), lambdaText, theme.text, 8);
 }
 
 void ThinFilmCanvas::paintDiagram(QPainter& p, const QRectF& a) {

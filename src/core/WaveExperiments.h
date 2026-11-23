@@ -33,12 +33,32 @@ struct NewtonInput    {
     double sigmaLambdaNm = 0.0, sigmaRadiusM = 0.0, sigmaN = 0.0;   // independent 1σ uncertainties
     bool transmitted = false;
 };
-/// `fringes` selects the spacing/count view; `piezo` selects the movable mirror's actuator (otherwise a micrometer).
-/// The classroom stage models mirror travel from −2 to +2 µm; moving it changes round-trip OPD by 2nΔx.
+/// Legacy tabs retain M2 displacement/fringe-spacing controls. `wavelengthMode` switches to M1 travel and λ/N/d solving.
+/// In wavelength mode `solveFor` is 0=λ, 1=N, 2=d; d is in µm, λ in nm, and θ is in degrees.
 /// `coherenceLengthUm` = 0 means infinite coherence (V constant). Otherwise V decays as exp(-|ΔOPD|/Lc).
-/// `tiltMrad` is the M2 tilt in milliradians; affects the canvas fringe pattern, not the 1D intensity curve.
-/// `plateThicknessUm` / `plateIndex` model a glass plate inserted in one arm: ΔOPD_plate = 2(n_plate − 1)·t.
-struct MichelsonInput { double lambdaNm = 632.8, displacementUm = 0.75, n = 1.0, visibility = 1.0; bool fringes = false, piezo = false; double coherenceLengthUm = 0.0; double tiltMrad = 0.0; double plateThicknessUm = 0.0, plateIndex = 1.5; };
+/// `tiltMrad` is the M2 tilt in milliradians; `plateThicknessUm` / `plateIndex` model legacy glass insertion.
+struct MichelsonInput {
+    double lambdaNm = 632.8, displacementUm = 0.75, n = 1.0, visibility = 1.0;
+    bool fringes = false, piezo = false;
+    double coherenceLengthUm = 0.0, tiltMrad = 0.0, plateThicknessUm = 0.0, plateIndex = 1.5;
+    bool wavelengthMode = false;       // solve the laser wavelength from mirror travel and counted fringes
+    double fringeCount = 2.3704;       // N: central fringes counted while M1 moves
+    int solveFor = 0;                  // 0 = λ, 1 = N, 2 = d
+    double viewAngleDeg = 0.0;         // θ in Δ = 2d cos θ + λ/2
+};
+
+/// Physics-derived display state. Kept independent of QWidget/QPainter so both simulation and tests
+/// use the same wavelength, path-difference and interference calculations.
+struct MichelsonDisplayData {
+    double displacementUm = 0.0, wavelengthNm = 632.8, refractiveIndex = 1.0;
+    double fringeCount = 0.0, pathDifferenceNm = 316.4, normalizedIntensity = 0.0, visibility = 1.0;
+    double viewAngleDeg = 0.0, tiltMrad = 0.0;
+    bool wavelengthMode = false, piezo = false, fringes = false;
+    int fieldResolution = 0;
+    std::vector<double> circularIntensity;
+    std::vector<double> detectorIntensity;
+};
+
 /// `transmission` picks the second mode tab: reflected (false) or transmitted (true) light.
 /// `colours` is the third tab: every wavelength at once - the perceived colour of the film.
 /// `n2` is the substrate index; phase reversal depends on n₀ < n vs n vs n₂ relations.
@@ -86,6 +106,7 @@ namespace WaveExperiments {
 
 ModelReport newtonRings(const NewtonInput& in, const ReportContext& ctx = {});
 ModelReport michelson(const MichelsonInput& in, const ReportContext& ctx = {});
+MichelsonDisplayData michelsonDisplayData(const MichelsonInput& in, int fieldResolution = 96, int detectorSamples = 160);
 ModelReport thinFilm(const ThinFilmInput& in, const ReportContext& ctx = {});
 ModelReport grating(const GratingInput& in, const ReportContext& ctx = {});
 ModelReport singleSlit(const SingleSlitInput& in, const ReportContext& ctx = {});

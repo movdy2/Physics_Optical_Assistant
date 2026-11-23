@@ -636,6 +636,24 @@ int main() {
         for (const auto& [key, value] : WE::michelson(piez).report.parameters) if (key == "mount" && value == "piezo scan") piezoScan = true;
         CHECK(piezoScan);
         CHECK(fm.report.parameters.back().second == "fringes" && mm.report.parameters.back().second == "displacement");
+
+        // Laser-wavelength mode: λ = 2d/N, with d measured by moving M1.
+        MichelsonInput wavelength; wavelength.wavelengthMode = true; wavelength.solveFor = 0;
+        wavelength.lambdaNm = 632.8; wavelength.displacementUm = 1.582; wavelength.fringeCount = 5.0;
+        const auto wl = WE::michelson(wavelength);
+        CHECK(wl.report.valid && wl.report.registers[0].resultValue == "632.8000 nm");
+        CHECK(wl.report.registers[1].resultValue == "3480.4000 nm");
+        CHECK(hasText(wl.report.registers[1], "Bright (constructive): Δ = 2d cos θ + λ/2 = mλ")
+              && hasText(wl.report.registers[1], "Dark (destructive): Δdestr = 2d cos θ + λ/2 = (m + ½)λ"));
+        wavelength.solveFor = 1;
+        CHECK(WE::michelson(wavelength).report.registers[0].resultValue == "5.0000 fringes");
+        wavelength.solveFor = 2;
+        CHECK(WE::michelson(wavelength).report.registers[0].resultValue == "1.5820 µm");
+        wavelength.displacementUm = 0.0; wavelength.fringeCount = 0.0; wavelength.solveFor = 2;
+        const auto zeroGap = WE::michelsonDisplayData(wavelength);
+        CHECK(near(zeroGap.pathDifferenceNm, 316.4, 1e-9));
+        CHECK(near(zeroGap.normalizedIntensity, 0.0, 1e-9));
+        CHECK(zeroGap.circularIntensity[48 * zeroGap.fieldResolution + 48] == 0.0);
         ThinFilmInput tf; tf.transmission = true;
         auto ft = WE::thinFilm(tf);
         CHECK(ft.report.registers[0].resultLabel == "NORMALIZED TRANSMISSION" && ft.report.registers[0].resultValue == "0.0000");

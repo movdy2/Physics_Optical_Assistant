@@ -41,7 +41,6 @@ private slots:
     void nextPage();
     void onSolve();
     void onClear();
-    void onCopyResult();
     void onRecentFormula(const QString& id);
 
 private:
@@ -81,9 +80,7 @@ private:
     QFormLayout* m_form;
     std::map<std::string, QLineEdit*> m_edits;
     QLabel* m_status;
-    QPushButton* m_copyBtn;
     LatexWidget* m_answer;
-    QString m_lastAnswerLatex;                                   // last answer LaTeX, for copy-to-clipboard
 };
 
 } // namespace phy104

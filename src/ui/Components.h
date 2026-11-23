@@ -114,6 +114,19 @@ private:
     QVBoxLayout* m_layout;
 };
 
+/// Native-theme result card. Result math is kept LTR while surrounding UI may be RTL.
+class ResultCard : public QFrame {
+    Q_OBJECT
+public:
+    explicit ResultCard(QWidget* parent = nullptr);
+    void setRegister(const LcdRegister& result);
+private:
+    QLabel* m_title;
+    QLabel* m_caption;
+    QLabel* m_value;
+    QLabel* m_details;
+};
+
 /// Short explanatory card (amber title) or error card (red).
 class NoticeCard : public QFrame {
     Q_OBJECT

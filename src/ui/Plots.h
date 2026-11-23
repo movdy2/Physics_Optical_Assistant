@@ -6,7 +6,7 @@
 
 namespace phy104 {
 
-/// Dark "optical bench" background with a faint grid; subclasses draw the diagram.
+/// Theme-colored optical bench background; subclasses draw the diagram.
 class GridCanvas : public QWidget {
     Q_OBJECT
 public:
@@ -43,7 +43,7 @@ struct ChartPoint {
     double xUncertainty = 0, yUncertainty = 0;
 };
 
-/// Simple line / scatter chart (ticks, grid, legend) drawn with QPainter.
+/// Simple line / scatter chart (ticks, legend, no background grid) drawn with QPainter.
 class LineChart : public QWidget {
     Q_OBJECT
 public:

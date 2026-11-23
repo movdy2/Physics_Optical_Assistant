@@ -1,11 +1,8 @@
 #include "ConstantsPage.h"
 
-#include <QApplication>
-#include <QClipboard>
 #include <QHeaderView>
 #include <QLabel>
 #include <QLineEdit>
-#include <QPushButton>
 #include <QTableWidget>
 #include <QVBoxLayout>
 
@@ -36,8 +33,6 @@ ConstantsPage::ConstantsPage(const IConstantsRepository& repository, QWidget* pa
     m_description = new QLabel("Select a constant to see its description.");
     m_description->setWordWrap(true);
 
-    auto* copyBtn = new QPushButton("Copy value");
-
     auto* root = new QVBoxLayout(this);
     auto* title = new QLabel("Physics Constants");
     title->setObjectName("pageTitle");
@@ -45,11 +40,9 @@ ConstantsPage::ConstantsPage(const IConstantsRepository& repository, QWidget* pa
     root->addWidget(m_search);
     root->addWidget(m_table, 1);
     root->addWidget(m_description);
-    root->addWidget(copyBtn);
 
     connect(m_search, &QLineEdit::textChanged, this, &ConstantsPage::applyFilter);
     connect(m_table, &QTableWidget::itemSelectionChanged, this, &ConstantsPage::onSelectionChanged);
-    connect(copyBtn, &QPushButton::clicked, this, &ConstantsPage::copySelected);
 }
 
 int ConstantsPage::selectedIndex() const {
@@ -68,13 +61,6 @@ void ConstantsPage::applyFilter(const QString& text) {
 void ConstantsPage::onSelectionChanged() {
     const int i = selectedIndex();
     if (i >= 0) m_description->setText(QString::fromStdString(m_constants[std::size_t(i)].description));
-}
-
-void ConstantsPage::copySelected() {
-    const int i = selectedIndex();
-    if (i < 0) return;
-    // Copies the plain number so it can be pasted straight into a solver field.
-    QApplication::clipboard()->setText(QString::number(m_constants[std::size_t(i)].value, 'g', 12));
 }
 
 } // namespace phy104

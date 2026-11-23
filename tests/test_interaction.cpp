@@ -898,6 +898,29 @@ private slots:
         QApplication::processEvents();
         QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->michelson).startsWith("-"), 1500);
 
+        // --- Michelson wavelength mode: M1 moves vertically while legacy tabs retain M2 behavior
+        click(findControl(m_app->michelson, "resetParameters"));
+        click(modeTab(m_app->michelson, "Laser wavelength"));
+        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->michelson), QString("632.8046 nm"), 1500);
+        const QPoint m1Press = canvas->movableMirrorCenter().toPoint();
+        QTest::mousePress(canvas, Qt::LeftButton, Qt::NoModifier, m1Press);
+        QTest::mouseMove(canvas, m1Press + QPoint(0, -10));
+        QTest::mouseRelease(canvas, Qt::LeftButton, Qt::NoModifier, m1Press + QPoint(0, -10));
+        QTRY_COMPARE_WITH_TIMEOUT(slider->value(), 17500, 1500);
+        QVERIFY2(allLabelTexts(m_app->michelson).contains("Michelson setup / virtual images M1′ and M2"),
+                 "wavelength-mode setup title was not shown");
+        auto* solveFor = comboWith(m_app->michelson, "Laser wavelength λ");
+        QVERIFY(solveFor);
+        auto wavelengthFields = m_app->michelson->findChildren<UnitField*>();
+        QVERIFY(wavelengthFields.size() >= 3);
+        chooseItem(solveFor, 1);
+        typeInto(wavelengthFields[0], "632.8");
+        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->michelson), QString("5.5297 fringes"), 1500);
+        chooseItem(solveFor, 2);
+        typeInto(wavelengthFields[2], "5");
+        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->michelson), QString("1.5820 µm"), 1500);
+        QTRY_COMPARE_WITH_TIMEOUT(slider->value(), 15820, 1500);
+
         // --- Newton's rings: the viewing-mode dropdown now reaches the physics and the diagram
         goTo(m_app->newton);
         QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->newton), QString("1.5492 mm"), 1500);

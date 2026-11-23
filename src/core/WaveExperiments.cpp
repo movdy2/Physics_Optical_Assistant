@@ -148,7 +148,194 @@ ModelReport newtonRings(const NewtonInput& in, const ReportContext& ctx) {
 }
 
 // ================================================================================ Michelson interferometer
+namespace {
+struct MichelsonState {
+    double displacementUm = 0.0;
+    double wavelengthNm = 632.8;
+    double fringeCount = 0.0;
+    double pathDifferenceNm = 0.0;
+    double phaseRad = 0.0;
+    double visibility = 1.0;
+    double intensity = 1.0;
+};
+
+MichelsonState resolveMichelsonState(const MichelsonInput& in) {
+    MichelsonState state;
+    state.displacementUm = in.displacementUm;
+    state.wavelengthNm = in.lambdaNm;
+    state.fringeCount = in.fringeCount;
+    if (in.wavelengthMode) {
+        if (in.solveFor == 0 && in.fringeCount != 0.0)
+            state.wavelengthNm = 2.0 * in.displacementUm * 1000.0 / in.fringeCount;
+        else if (in.solveFor == 1 && in.lambdaNm != 0.0)
+            state.fringeCount = 2.0 * in.displacementUm * 1000.0 / in.lambdaNm;
+        else if (in.solveFor == 2)
+            state.displacementUm = in.fringeCount * in.lambdaNm / 2000.0;
+        state.pathDifferenceNm = 2.0 * state.displacementUm * 1000.0 * std::cos(in.viewAngleDeg * kDeg)
+                               + state.wavelengthNm / 2.0;
+    } else {
+        const double plateNm = 2.0 * (in.plateIndex - 1.0) * in.plateThicknessUm * 1000.0;
+        state.pathDifferenceNm = 2.0 * in.n * state.displacementUm * 1000.0 + plateNm;
+        state.fringeCount = state.pathDifferenceNm / state.wavelengthNm;
+    }
+    const double baseVisibility = std::clamp(in.visibility, 0.0, 1.0);
+    state.visibility = baseVisibility;
+    if (in.coherenceLengthUm > 0.0)
+        state.visibility *= std::exp(-std::fabs(state.pathDifferenceNm) / 1000.0 / in.coherenceLengthUm);
+    state.phaseRad = 2.0 * std::numbers::pi * state.pathDifferenceNm / state.wavelengthNm;
+    state.intensity = (1.0 + state.visibility * std::cos(state.phaseRad)) / (1.0 + state.visibility);
+    return state;
+}
+} // namespace
+
+MichelsonDisplayData michelsonDisplayData(const MichelsonInput& in, int fieldResolution, int detectorSamples) {
+    const MichelsonState state = resolveMichelsonState(in);
+    MichelsonDisplayData display;
+    display.displacementUm = state.displacementUm;
+    display.wavelengthNm = state.wavelengthNm;
+    display.refractiveIndex = in.wavelengthMode ? 1.0 : in.n;
+    display.fringeCount = state.fringeCount;
+    display.pathDifferenceNm = state.pathDifferenceNm;
+    display.normalizedIntensity = state.intensity;
+    display.visibility = state.visibility;
+    display.viewAngleDeg = in.viewAngleDeg;
+    display.tiltMrad = in.tiltMrad;
+    display.wavelengthMode = in.wavelengthMode;
+    display.piezo = in.piezo;
+    display.fringes = in.fringes;
+    display.fieldResolution = std::clamp(fieldResolution, 8, 512);
+    detectorSamples = std::clamp(detectorSamples, 2, 2048);
+
+    const int n = display.fieldResolution;
+    display.circularIntensity.reserve(static_cast<std::size_t>(n * n));
+    const double basePhase = state.phaseRad;
+    const double tiltRad = in.tiltMrad * 1e-3;
+    for (int y = 0; y < n; ++y) {
+        for (int x = 0; x < n; ++x) {
+            const double nx = (x + 0.5 - n / 2.0) / (n / 2.0);
+            const double ny = (y + 0.5 - n / 2.0) / (n / 2.0);
+            const double r2 = nx * nx + ny * ny;
+            if (r2 > 1.0) {
+                display.circularIntensity.push_back(-1.0); // outside the circular field
+                continue;
+            }
+            double intensity = 0.0;
+            if (in.wavelengthMode) {
+                if (std::fabs(state.displacementUm) < 1e-9) {
+                    // At equal virtual mirrors the phase offset gives the central dark spot.
+                    // The bright surrounding field is a schematic aid to make its location visible.
+                    intensity = r2 < 0.015 ? 0.0 : 0.72;
+                } else {
+                    const double theta = std::sqrt(r2) * 18.0 * kDeg;
+                    const double delta = 2.0 * state.displacementUm * 1000.0 * std::cos(theta)
+                                       + state.wavelengthNm / 2.0;
+                    const double visibility = state.visibility;
+                    intensity = (1.0 + visibility * std::cos(2.0 * std::numbers::pi * delta / state.wavelengthNm))
+                              / (1.0 + visibility);
+                }
+            } else {
+                const double phase = basePhase + 18.0 * r2 + 8.0 * tiltRad * nx * n;
+                intensity = (1.0 + state.visibility * std::cos(phase)) / (1.0 + state.visibility);
+            }
+            display.circularIntensity.push_back(std::clamp(intensity, 0.0, 1.0));
+        }
+    }
+    display.detectorIntensity.reserve(static_cast<std::size_t>(detectorSamples));
+    for (int i = 0; i < detectorSamples; ++i) {
+        const double x = (2.0 * i / (detectorSamples - 1)) - 1.0;
+        const double phase = basePhase + (in.wavelengthMode ? 0.0 : 8.0 * tiltRad * x * detectorSamples);
+        display.detectorIntensity.push_back(std::clamp((1.0 + state.visibility * std::cos(phase))
+                                                       / (1.0 + state.visibility), 0.0, 1.0));
+    }
+    return display;
+}
+
 ModelReport michelson(const MichelsonInput& in, const ReportContext& ctx) {
+    if (in.wavelengthMode) {
+        std::vector<FieldIssue> issues;
+        const bool validTarget = in.solveFor >= 0 && in.solveFor <= 2;
+        if (!validTarget) issues.push_back({FieldIds::wavelength, "Choose wavelength, fringe count, or mirror shift.", "Solve for"});
+        if (in.solveFor != 2 && (!std::isfinite(in.displacementUm) || in.displacementUm < 0.0 || in.displacementUm > 2.0))
+            issues.push_back({FieldIds::mirrorDisplacement, "Enter M1 displacement d from 0 to 2 µm.", "d"});
+        if (!std::isfinite(in.viewAngleDeg) || std::fabs(in.viewAngleDeg) >= 90.0)
+            issues.push_back({FieldIds::michelsonViewAngle, "Enter a viewing angle between −90° and 90°.", "θ"});
+        if (in.solveFor == 0 && (!std::isfinite(in.fringeCount) || in.fringeCount <= 0.0))
+            issues.push_back({FieldIds::michelsonFringeCount, "Count a positive number of central fringes N.", "N"});
+        if (in.solveFor == 1 && (!std::isfinite(in.lambdaNm) || in.lambdaNm <= 0.0))
+            issues.push_back({FieldIds::wavelength, "Enter λ > 0 nm to calculate N.", "λ"});
+        if (in.solveFor == 2 && (!std::isfinite(in.lambdaNm) || in.lambdaNm <= 0.0))
+            issues.push_back({FieldIds::wavelength, "Enter λ > 0 nm to calculate d.", "λ"});
+        if (in.solveFor == 2 && (!std::isfinite(in.fringeCount) || in.fringeCount < 0.0))
+            issues.push_back({FieldIds::michelsonFringeCount, "Enter N ≥ 0 to calculate d.", "N"});
+        if (!issues.empty()) {
+            const std::string issueLabel = issues.front().label;
+            const std::string issueMessage = issues.front().message;
+            return paused(issueLabel + " out of range", std::move(issues),
+                          {"λ = 2d/N", "d = mirror M1 displacement", "N = counted central fringes", std::string("ACTION: ") + issueMessage},
+                          "For a laser in air: λ = 2d/N. Keep d between 0 and 2 µm.", ctx);
+        }
+
+        const MichelsonState state = resolveMichelsonState(in);
+        std::vector<FieldIssue> rangeIssues;
+        if (!std::isfinite(state.wavelengthNm) || state.wavelengthNm <= 0.0)
+            rangeIssues.push_back({FieldIds::wavelength, "The calculated wavelength must be greater than zero.", "λ"});
+        if (!std::isfinite(state.displacementUm) || state.displacementUm < 0.0 || state.displacementUm > 2.0)
+            rangeIssues.push_back({FieldIds::mirrorDisplacement, "The calculated M1 displacement is outside the 0–2 µm stage range.", "d"});
+        if (!rangeIssues.empty())
+            return paused("calculated value out of range", std::move(rangeIssues), {"λ = 2d/N", "Check λ, d and N."},
+                          "Wavelength must be positive and mirror travel must remain within the 0–2 µm stage range.", ctx);
+        ModelReport out;
+        Report& report = out.report;
+        LcdRegister primary;
+        primary.title = in.solveFor == 0 ? "LASER WAVELENGTH" : in.solveFor == 1 ? "CENTRAL FRINGE COUNT" : "M1 MIRROR DISPLACEMENT";
+        primary.mode = in.solveFor == 0 ? "nm" : in.solveFor == 1 ? "fringes" : "µm";
+        primary.lines = {"λ = 2d/N", std::string("d = ") + fx(state.displacementUm) + " µm",
+                         std::string("N = ") + fx(state.fringeCount) + " central fringes"};
+        primary.resultLabel = in.solveFor == 0 ? "CALCULATED LASER WAVELENGTH" : in.solveFor == 1 ? "CALCULATED FRINGE COUNT" : "CALCULATED M1 DISPLACEMENT";
+        primary.resultValue = in.solveFor == 0 ? fx(state.wavelengthNm) + " nm" : in.solveFor == 1 ? fx(state.fringeCount) + " fringes" : fx(state.displacementUm) + " µm";
+        primary.footer.clear();
+
+        LcdRegister path;
+        path.title = "PATH DIFFERENCE · HAIDINGER FRINGES";
+        path.mode = "air";
+        path.lines = {"Δ = 2d cos θ + λ/2",
+                      "θ = " + fx(in.viewAngleDeg) + "°",
+                      "Bright (constructive): Δ = 2d cos θ + λ/2 = mλ",
+                      "Dark (destructive): Δdestr = 2d cos θ + λ/2 = (m + ½)λ",
+                      "m = 0, 1, 2, …",
+                      "At d = 0: Δdestr = λ/2 · dark centre",
+                      "M1 travel λ/4 changes path by λ/2 (one fringe)"};
+        path.resultLabel = "CURRENT TOTAL PATH DIFFERENCE";
+        path.resultValue = fx(state.pathDifferenceNm) + " nm";
+        path.footer.clear();
+        report.registers = {primary, path};
+        const std::string output = primary.resultValue;
+        report.notices = {interpretation("M1 is movable on the bench. As d increases the bright/dark circular fringes expand; reversing the travel contracts them. Count central fringes N and use λ = 2d/N."),
+                          guard("Air-path approximation · coherent source · BS reflection adds λ/2 to the path difference.")};
+        report.headline = output;
+        report.retained = retained({"λ = 2d/N", std::string("d = ") + fx(state.displacementUm) + " µm · N = " + fx(state.fringeCount)}, primary.resultLabel, output);
+        report.parameters = {{"d", fx(state.displacementUm) + " µm"}, {"N", fx(state.fringeCount)},
+                             {"λ", fx(state.wavelengthNm) + " nm"}, {"Δ", fx(state.pathDifferenceNm) + " nm"},
+                             {"θ", fx(in.viewAngleDeg) + "°"}, {"solveFor", std::to_string(in.solveFor)},
+                             {"mode", "wavelength"}};
+
+        ChartData& chart = out.chart;
+        chart.xLabel = "M1 displacement d (µm)";
+        chart.yLabel = "Central normalized intensity";
+        chart.xMin = 0.0; chart.xMax = 2.0; chart.yMin = 0.0; chart.yMax = 1.0;
+        chart.xTicks = 4; chart.yTicks = 2; chart.xDecimals = 1; chart.yDecimals = 1;
+        chart.curve.reserve(201);
+        for (int i = 0; i <= 200; ++i) {
+            const double d = 2.0 * i / 200.0;
+            const double delta = 2.0 * d * 1000.0 * std::cos(in.viewAngleDeg * kDeg) + state.wavelengthNm / 2.0;
+            const double intensity = (1.0 + state.visibility * std::cos(2.0 * std::numbers::pi * delta / state.wavelengthNm))
+                                   / (1.0 + state.visibility);
+            chart.curve.emplace_back(d, std::clamp(intensity, 0.0, 1.0));
+        }
+        chart.marker = {{state.displacementUm, state.intensity}};
+        chart.legend = "Central intensity · current d";
+        return out;
+    }
     std::vector<FieldIssue> issues;
     if (in.lambdaNm <= 0) issues.push_back({FieldIds::wavelength, "Enter λ > 0 nm.", "λ"});
     if (in.n < 1) issues.push_back({FieldIds::refractiveIndex, "Enter n ≥ 1.", "n"});

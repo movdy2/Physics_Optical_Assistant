@@ -7,12 +7,19 @@
 namespace phy104 {
 
 QPixmap Icons::pixmap(const QString& name, const QColor& color, int size, qreal dpr) {
+    if (size <= 0) return {};
     QFile file(":/icons/" + name + ".svg");
-    if (!file.open(QIODevice::ReadOnly)) return QPixmap();
+    if (!file.open(QIODevice::ReadOnly)) return {};
     QByteArray svg = file.readAll();
-    svg.replace("currentColor", color.name().toUtf8());
+    if (!color.isValid()) return {};
+    // SVG 2's currentColor is not supported consistently by all QtSvg versions.
+    svg.replace("currentColor", color.name(QColor::HexRgb).toUtf8());
     QSvgRenderer renderer(svg);
-    QPixmap pix(qRound(size * dpr), qRound(size * dpr));
+    if (!renderer.isValid()) return {};
+
+    dpr = qMax<qreal>(1.0, dpr);
+    const int pixelSize = qMax(1, qRound(size * dpr));
+    QPixmap pix(pixelSize, pixelSize);
     pix.setDevicePixelRatio(dpr);
     pix.fill(Qt::transparent);
     QPainter p(&pix);

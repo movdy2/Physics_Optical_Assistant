@@ -621,7 +621,7 @@ QFrame#register {
     border-radius: 8px;
 }
 
-QLabel#regBig {
+QLabel#regBig, QLabel#lcdBig {
     font-family: 'JetBrains Mono';
     font-size: 18px;
     font-weight: 700;
@@ -648,6 +648,41 @@ QLabel#regFoot {
     font-family: 'JetBrains Mono';
     font-size: 9px;
     color: @dim@;
+}
+
+/* ---------- Native physics result cards ---------- */
+QFrame#resultCard {
+    background: @card@;
+    border: 1px solid @border@;
+    border-left: 3px solid @accentAmber@;
+    border-radius: 9px;
+}
+
+QLabel#resultCardTitle {
+    color: @text@;
+    font-family: 'Inter';
+    font-size: 12px;
+    font-weight: 700;
+}
+
+QLabel#resultCardCaption {
+    color: @muted@;
+    font-family: 'Inter';
+    font-size: 10px;
+}
+
+QFrame#resultCard QLabel#lcdBig {
+    color: @accentAmber@;
+    font-family: 'Inter';
+    font-size: 22px;
+    font-weight: 700;
+    padding: 0;
+}
+
+QLabel#resultCardDetails {
+    color: @muted@;
+    font-family: 'Inter';
+    font-size: 10px;
 }
 
 /* ---------- Notices (compact) ---------- */
