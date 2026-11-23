@@ -458,7 +458,7 @@ void showHelpDialog(QWidget* parent, const QString& title, const QString& html) 
     auto* btn = new QPushButton("Got it");
     btn->setObjectName("primary");
     btn->setDefault(true);
-    connect(btn, &QPushButton::clicked, dlg, &QDialog::accept);
+    QObject::connect(btn, &QPushButton::clicked, dlg, &QDialog::accept);
     lay->addWidget(btn, 0, Qt::AlignRight);
     dlg->exec();
     dlg->deleteLater();
