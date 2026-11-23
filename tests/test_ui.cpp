@@ -131,4 +131,4 @@ int main(int argc, char** argv) {
                     found << line.mid(r.start, r.length);
             return found;
         };
-        check(mathColor("The law $n₁ sin θ₁ = n₂ sin θ₂$ holds
+        check(mathColor("The law $n₁ sin θ₁ = n₂ sin θ₂$ holds").size() > 0, "math spans found in Snell's law");
