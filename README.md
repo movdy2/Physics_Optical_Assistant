@@ -51,8 +51,8 @@ See the [v3.0.9 release page](https://github.com/movdy2/phy104-sim/releases/tag/
 - **Linux:** download the AppImage, make it executable, and run it:
 
   ```sh
-  chmod +x PHY104OpticalAssistant-3.0.9-Linux-x86_64.AppImage
-  ./PHY104OpticalAssistant-3.0.9-Linux-x86_64.AppImage
+  chmod +x PHY104OpticalAssistant-3.0.9-Linux-x86_64.appimage
+  ./PHY104OpticalAssistant-3.0.9-Linux-x86_64.appimage
   ```
 
   The AppImage is smoke-tested on Arch Linux. For normal AppImage mounting on Arch, install FUSE 2 and the runtime libraries if needed:
