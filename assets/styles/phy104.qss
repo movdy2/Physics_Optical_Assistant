@@ -10,7 +10,7 @@ QMainWindow, QWidget#pageArea, QWidget {
     color: @text@;
     font-family: 'Inter', 'Noto Sans Arabic', 'DejaVu Sans', 'Segoe UI', 'Arial';
     font-size: 12px;
-    selection-background-color: @accentCyan@;
+    selection-background-color: @accentPrimary@;
     selection-color: @bg@;
 }
 
@@ -29,6 +29,55 @@ QFrame#sidebar {
     border-right: 1px solid @border@;
 }
 
+QWidget#sidebarBrand,
+QWidget#navigationContents,
+QWidget#navigationItems,
+QWidget#navigationViewport,
+QScrollArea#navigationScroll {
+    background: @surface@;
+}
+
+QFrame#sidebar QLabel {
+    background: transparent;
+}
+
+QLabel#brandName {
+    color: @accentAmber@;
+    font-family: 'JetBrains Mono';
+    font-size: 20px;
+    font-weight: 700;
+}
+
+QLabel#brandProduct {
+    color: @text@;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+QLabel#brandMeta, QLabel#sidebarMeta {
+    color: @dim@;
+    font-family: 'JetBrains Mono';
+    font-size: 8px;
+}
+
+QLabel#sidebarCount {
+    color: @accentAmber@;
+    font-family: 'JetBrains Mono';
+    font-size: 12px;
+    font-weight: 700;
+}
+
+QWidget#sidebarFooter {
+    background: @surface@;
+    border-top: 1px solid @border@;
+}
+
+QLabel#engineReady {
+    color: @lime@;
+    font-family: 'JetBrains Mono';
+    font-size: 8px;
+}
+
 QPushButton#navItem {
     text-align: left;
     padding: 6px 12px;
@@ -45,13 +94,13 @@ QPushButton#navItem {
 QPushButton#navItem:hover {
     background: @surfaceHover@;
     color: @text@;
-    border-left: 3px solid @accentCyan@;
+    border-left: 3px solid @accentPrimary@;
 }
 
 QPushButton#navItem:checked {
-    background: @accentCyanTint@;
-    border-left: 3px solid @accentCyan@;
-    color: @accentCyan@;
+    background: @accentPrimaryTint@;
+    border-left: 3px solid @accentPrimary@;
+    color: @accentPrimary@;
     font-weight: 600;
 }
 
@@ -107,7 +156,7 @@ QFrame#panel {
 }
 
 QFrame#panel[hover="true"] {
-    border-color: @accentCyan@;
+    border-color: @accentPrimary@;
     background: @surfaceHover@;
 }
 
@@ -148,7 +197,7 @@ QLineEdit {
 }
 
 QLineEdit:focus {
-    border: 2px solid @accentCyan@;
+    border: 2px solid @accentPrimary@;
     background: @surfaceHover@;
     padding: 5px 9px;
 }
@@ -189,12 +238,12 @@ QComboBox {
     min-width: 130px;
     font-family: 'JetBrains Mono';
     font-size: 12px;
-    selection-background-color: @accentCyan@;
+    selection-background-color: @accentPrimary@;
     selection-color: @bg@;
 }
 
 QComboBox:focus {
-    border: 2px solid @accentCyan@;
+    border: 2px solid @accentPrimary@;
     background: @surfaceHover@;
     padding: 5px 9px;
 }
@@ -214,7 +263,7 @@ QComboBox QAbstractItemView {
     background: @surface@;
     color: @text@;
     border: 1px solid @border@;
-    selection-background-color: @accentCyan@;
+    selection-background-color: @accentPrimary@;
     selection-color: @bg@;
     outline: 0;
     padding: 5px;
@@ -228,7 +277,7 @@ QComboBox QAbstractItemView::item {
 }
 
 QComboBox QAbstractItemView::item:selected {
-    background: @accentCyan@;
+    background: @accentPrimary@;
     color: @bg@;
 }
 
@@ -246,7 +295,7 @@ QPushButton {
 
 QPushButton:hover {
     background: @surfaceHover@;
-    border-color: @accentCyan@;
+    border-color: @accentPrimary@;
 }
 
 QPushButton:pressed {
@@ -260,7 +309,7 @@ QPushButton:disabled {
 }
 
 QPushButton#primary {
-    background: @accentCyan@;
+    background: @accentPrimary@;
     color: @bg@;
     border: none;
     font-weight: 700;
@@ -270,11 +319,11 @@ QPushButton#primary {
 }
 
 QPushButton#primary:hover {
-    background: @accentCyanHover@;
+    background: @accentPrimaryHover@;
 }
 
 QPushButton#primary:pressed {
-    background: @accentCyanPressed@;
+    background: @accentPrimaryPressed@;
 }
 
 QPushButton#secondary {
@@ -288,7 +337,7 @@ QPushButton#secondary {
 }
 
 QPushButton#secondary:hover {
-    border-color: @accentCyan@;
+    border-color: @accentPrimary@;
     background: @surfaceHover@;
 }
 
@@ -342,12 +391,12 @@ QPushButton#modeTab {
 }
 
 QPushButton#modeTab:hover {
-    border-color: @accentCyan@;
-    color: @accentCyan@;
+    border-color: @accentPrimary@;
+    color: @accentPrimary@;
 }
 
 QPushButton#modeTab:checked {
-    background: @accentCyan@;
+    background: @accentPrimary@;
     color: @bg@;
     border: none;
     font-weight: 600;
@@ -369,13 +418,13 @@ QCheckBox::indicator {
 }
 
 QCheckBox::indicator:checked {
-    background: @accentCyan@;
-    border-color: @accentCyan@;
+    background: @accentPrimary@;
+    border-color: @accentPrimary@;
     image: url(:/icons/check.svg);
 }
 
 QCheckBox::indicator:hover {
-    border-color: @accentCyan@;
+    border-color: @accentPrimary@;
 }
 
 /* ---------- Sliders (compact) ---------- */
@@ -386,12 +435,12 @@ QSlider::groove:horizontal {
 }
 
 QSlider::sub-page:horizontal {
-    background: @accentCyan@;
+    background: @accentPrimary@;
     border-radius: 3px;
 }
 
 QSlider::handle:horizontal {
-    background: @accentCyan@;
+    background: @accentPrimary@;
     width: 18px;
     height: 18px;
     margin: -6px 0;
@@ -526,7 +575,7 @@ QFrame#cardHot {
 }
 
 QFrame#cardHot:hover {
-    border-color: @accentCyan@;
+    border-color: @accentPrimary@;
     background: @surfaceHover@;
 }
 

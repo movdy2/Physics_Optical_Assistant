@@ -75,19 +75,19 @@ App::App(const Paths& paths) {
     thickLens = new ThickLensPage(m_context.get());
     m_window->addPage("Thick Lens & Aberration", "aperture", thickLens);                    // 11
     notes = new NotesPage(m_context.get(), keyboardRepo.scientific());
-    const int notesIndex = m_window->addPage("Notes", "notebook-pen", notes, 1);             // standalone Notes shortcut
+    const int notesIndex = m_window->addPage("Notes", "notebook-pen", notes);             // standalone Notes shortcut
     equationLab = new EquationLabPage(m_context.get(), keyboardRepo.scientific());
-    m_window->addPage("Equation Lab", "square-function", equationLab, 1);
+    m_window->addPage("Equation Lab", "square-function", equationLab);
     diagrams = new DiagramsPage;
     const QString studyHubNotes = QFileInfo(paths.sessionFile).absolutePath() + "/study_hub_notes.json";
     studyHub = new StudyHubPage(studyHubRepo.loadAll(), studyNotesRepo.loadAll(), m_context.get(), diagrams, studyHubNotes);
-    m_window->addPage("Study Hub", "book-open", studyHub, 1);                                // chapters, notes, setups
+    m_window->addPage("Study Hub", "book-open", studyHub);                                // chapters, notes, setups
     solver = new SolverPage(m_engine, m_manager, m_solver, m_context.get());
-    m_window->addPage("Formula Solver", "sigma", solver, 1);
+    m_window->addPage("Formula Solver", "sigma", solver);
     calculator = new MathSolverPage(m_context.get());
-    m_window->addPage("Calculator", "calculator", calculator, 1);
+    m_window->addPage("Calculator", "calculator", calculator);
     exportPage = new ExportPage(m_context.get());
-    const int exportIndex = m_window->addPage("Export", "download", exportPage, 1);
+    const int exportIndex = m_window->addPage("Export", "download", exportPage);
     reportPage = new ReportPage(m_context.get(), exportPage);
     exportPage->setReportPage(reportPage);
     reportPage->setSources({refraction, lenses, prisms, wave, polarization, singleSlit, grating, thinFilm, michelson, newton, thickLens});

@@ -22,7 +22,7 @@ struct Theme {
     QColor text, muted, dim;
 
     // accent (primary action, titles, active navigation)
-    QColor accentCyan, accentCyanHover, accentCyanPressed, accentCyanTint;
+    QColor accentPrimary, accentPrimaryHover, accentPrimaryPressed, accentPrimaryTint;
     QColor accentAmber, accentAmberHover, accentAmberPressed, accentAmberTint;
     QColor accentTeal, accentTealHover;
 

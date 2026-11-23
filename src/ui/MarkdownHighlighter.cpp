@@ -53,7 +53,7 @@ void add(QList<QTextLayout::FormatRange>& out, int start, int length, const QTex
 MarkdownPalette MarkdownPalette::darkSet() {
     MarkdownPalette p;
     p.h1 = "#d79921"; p.h2 = "#e78a4e"; p.h3 = "#a9b665"; p.h4 = "#ea696c";
-    p.math = "#83a598"; p.bullet = "#ebdbb2";
+    p.math = "#b8bb26"; p.bullet = "#ebdbb2";
     p.quote = "#a89984"; p.dim = "#928374"; p.text = "#ebdbb2";
     p.dark = true;
     return p;
@@ -62,7 +62,7 @@ MarkdownPalette MarkdownPalette::darkSet() {
 MarkdownPalette MarkdownPalette::lightSet() {
     MarkdownPalette p;
     p.h1 = "#b57614"; p.h2 = "#af3a03"; p.h3 = "#79740e"; p.h4 = "#9d0006";
-    p.math = "#076678"; p.bullet = "#3c3836";
+    p.math = "#427b58"; p.bullet = "#3c3836";
     p.quote = "#665c54"; p.dim = "#7c6f64"; p.text = "#3c3836";
     p.dark = false;
     return p;

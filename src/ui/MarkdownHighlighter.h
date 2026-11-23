@@ -15,7 +15,7 @@ struct MarkdownPalette {
     QColor quote, dim, text;
     bool dark = true;
 
-    static MarkdownPalette darkSet();     // #d79921 #e78a4e #a9b665 #ea696c / #83a598 / #ebdbb2
+    static MarkdownPalette darkSet();     // #d79921 #e78a4e #a9b665 #ea696c / #b8bb26 / #ebdbb2
     static MarkdownPalette lightSet();
     static MarkdownPalette forCurrentTheme();
 };
