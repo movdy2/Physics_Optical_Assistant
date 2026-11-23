@@ -74,7 +74,7 @@ int main(int argc, char** argv) {
     check(dark.bg.isValid() && dark.card.isValid() && dark.text.isValid(), "dark theme core colours valid");
     check(dark.bg == QColor("#282828") && dark.sidebar == QColor("#3c3836") &&
           dark.text == QColor("#ebdbb2") && dark.accentAmber == QColor("#d79921") &&
-          dark.accentCyan == QColor("#83a598"), "classic Gruvbox dark palette is restored");
+          dark.accentPrimary == QColor("#d79921"), "classic Gruvbox dark palette is restored");
     const Theme light = Theme::gruvboxLight();
     check(light.bg == QColor("#fbf1c7") && light.sidebar == QColor("#ebdbb2") &&
           light.text == QColor("#282828"), "classic Gruvbox light palette is restored");
@@ -136,7 +136,7 @@ int main(int argc, char** argv) {
             std::sort(ranges.begin(), ranges.end(), [](const auto& a, const auto& b) { return a.start < b.start; });
             QStringList found;
             for (const auto& r : ranges)
-                if (r.format.foreground().color() == QColor("#83a598") && r.format.fontFamilies().toStringList().contains("JetBrains Mono"))
+                if (r.format.foreground().color() == QColor("#b8bb26") && r.format.fontFamilies().toStringList().contains("JetBrains Mono"))
                     found << line.mid(r.start, r.length);
             return found;
         };

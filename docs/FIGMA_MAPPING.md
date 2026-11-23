@@ -6,7 +6,7 @@ Wave Interference, Formulas Notes & Export, Component Sheet).
 ## Frames
 | Figma frame | Class | Notes |
 |---|---|---|
-| Window shell, sidebar, status bar | `MainWindow` | 224 px sidebar, Lucide icons, two-line label for the long item, status messages |
+| Window shell, sidebar, status bar | `MainWindow` | 224 px Gruvbox sidebar, compact PHY104 brand, one ungrouped page list, session/engine footer, status messages |
 | Dashboard | `DashboardPage` | metric cards, clickable experiment cards (`PreviewIcon`), table, notebook |
 | Refraction & TIR | `RefractionPage` + `RefractionCanvas`, `LineChart` | cases A and B on one bench, regression chart |
 | Lenses & Mirrors | `LensesPage` + `LensCanvas`, `MirrorCanvas` | |
@@ -22,10 +22,10 @@ Wave Interference, Formulas Notes & Export, Component Sheet).
 | Panel (header + body) | `Panel` |
 | Input with unit, focus ring, error | `UnitField` (amber 2 px focus, red error, ↕ spinner, Up/Down keys) |
 | Segmented tabs | `ModeTabs` |
-| Casio calculation register | `LcdRegisterView` (data from `LcdRegister`) |
+| Calculation register | `RegisterView` (formatted data from `LcdRegister`) |
 | Notice / guarded-case card | `NoticeCard` (amber title, red when `error`) |
-| Buttons | style sheet: `primary` (amber, hover `#e5ac39`, pressed `#b57614`), `secondary`, `outline` |
-| Colours | `Theme::figmaDark()` - `#282828 #3c3836 #ebdbb2 #d79921 #504945 #fb4934`, LCD `#9bb094 / #0b1c08 / #171e15 / #708369` |
+| Buttons | style sheet: `primary` (Gruvbox amber, hover `#fabd2f`, pressed `#b57614`), `secondary`, `outline` |
+| Colours | `Theme::gruvboxDark()` - `#282828 #3c3836 #ebdbb2 #d79921 #504945 #fb4934`, LCD `#9bb094 / #0b1c08 / #171e15 / #708369` |
 | Type | Inter (UI), JetBrains Mono (numbers, registers) |
 
 ## Numbers in the design are reproduced exactly

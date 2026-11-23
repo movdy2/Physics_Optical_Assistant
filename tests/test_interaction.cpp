@@ -209,23 +209,36 @@ private slots:
         QCOMPARE(win().currentPage(), 0);
     }
 
-    void shellRemovesTechnicalLabelsAndTracksActivity() {
+    void shellUsesSingleV23SidebarAndKeepsActivityData() {
         QVERIFY(win().windowTitle().isEmpty());
         const QStringList labels = allLabelTexts(&win());
-        for (const QString& removed : {QStringLiteral("PHY104"), QStringLiteral("Optical Assistant"),
-                                       QStringLiteral("COMPUTATIONAL OPTICS / v1.4"), QStringLiteral("LAB SESSION"),
-                                       QStringLiteral("ENGINE READY"), QStringLiteral("Qt 6 · Offline"),
-                                       QStringLiteral("PHY104 / Semester 02")}) {
-            for (const QString& label : labels)
-                QVERIFY2(!label.contains(removed, Qt::CaseInsensitive), qPrintable("removed sidebar/status label remains: " + label));
+        for (const QString& expected : {QStringLiteral("PHY104"), QStringLiteral("Optical Assistant"),
+                                        QStringLiteral("COMPUTATIONAL OPTICS / v1.4"), QStringLiteral("PAGES"),
+                                        QStringLiteral("LAB SESSION"), QStringLiteral("ENGINE READY")}) {
+            bool found = false;
+            for (const QString& label : labels) found |= label.contains(expected, Qt::CaseInsensitive);
+            QVERIFY2(found, qPrintable("missing v2.3 sidebar label: " + expected));
         }
+        for (const QString& label : labels) {
+            QVERIFY2(!label.contains("TOOLS", Qt::CaseInsensitive), qPrintable("extra Tools group remains: " + label));
+            QVERIFY2(!label.contains("RECENT ACTIVITY", Qt::CaseInsensitive), qPrintable("activity panel remains visible: " + label));
+        }
+        const auto nav = win().navButtons();
+        QVERIFY(!nav.isEmpty());
+        QCOMPARE(nav.size(), win().pageCount());
+        for (QPushButton* button : nav) QCOMPARE(button->objectName(), QString("navItem"));
+        auto* savedRunCount = win().findChild<QLabel*>("sidebarCount");
+        QVERIFY(savedRunCount);
+        const int countBefore = savedRunCount->text().toInt();
         auto* activity = win().activityLog();
         QVERIFY(activity && activity->objectName() == "activityLog");
+        QVERIFY(activity->isHidden());                                      // kept as data, not a sidebar panel
         QVERIFY(activity->count() > 0);
         goTo(m_app->refraction);
         QTRY_VERIFY_WITH_TIMEOUT(activity->item(0)->text().contains("Refraction & TIR"), 1500);
         click(findControl(m_app->refraction, "calculate"));
         QTRY_VERIFY_WITH_TIMEOUT(activity->item(0)->text().contains("#"), 1500);
+        QTRY_COMPARE_WITH_TIMEOUT(savedRunCount->text().toInt(), countBefore + 1, 1500);
     }
     void dashboardCardsAndButtonsNavigate() {
         go(0);
@@ -681,7 +694,7 @@ private slots:
         QCOMPARE(colorOf(2), QColor("#a9b665"));
         QCOMPARE(colorOf(3), QColor("#ea696c"));
         QCOMPARE(colorOf(4, 2), QColor("#ebdbb2"));                                  // bullet text
-        QCOMPARE(colorOf(4, 14), QColor("#83a598"));                                 // the formula inside the bullet
+        QCOMPARE(colorOf(4, 14), QColor("#b8bb26"));                                 // the formula inside the bullet
     }
     void previewShowsHeadingsAndFormulas() {
         auto* w = workspace();

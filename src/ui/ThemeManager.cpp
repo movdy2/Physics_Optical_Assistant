@@ -20,7 +20,7 @@ namespace phy104 {
 Theme Theme::gruvboxDark() {
     Theme t;
     t.dark = true;
-    // Classic Gruvbox dark: warm charcoal surfaces, parchment text, yellow + aqua accents.
+    // Classic Gruvbox dark: warm charcoal surfaces, parchment text, amber + olive-green accents.
     t.bg = "#282828";
     t.sidebar = "#3c3836";
     t.titleBar = "#1d2021";
@@ -35,10 +35,10 @@ Theme Theme::gruvboxDark() {
     t.text = "#ebdbb2";
     t.muted = "#d5c4a1";
     t.dim = "#bdae93";
-    t.accentCyan = "#83a598";
-    t.accentCyanHover = "#8ec07c";
-    t.accentCyanPressed = "#689d6a";
-    t.accentCyanTint = QColor(131, 165, 152, 36);
+    t.accentPrimary = "#d79921";
+    t.accentPrimaryHover = "#fabd2f";
+    t.accentPrimaryPressed = "#b57614";
+    t.accentPrimaryTint = QColor(215, 153, 33, 36);
     t.accentAmber = "#d79921";
     t.accentAmberHover = "#fabd2f";
     t.accentAmberPressed = "#b57614";
@@ -52,7 +52,7 @@ Theme Theme::gruvboxDark() {
     t.green = "#b8bb26";
     t.red = "#fb4934";
     t.orange = "#fe8019";
-    t.blue = "#83a598";
+    t.blue = "#8ec07c";
     t.aqua = "#8ec07c";
     t.amber = t.accentAmber;
     t.sage = t.accentTeal;
@@ -62,7 +62,7 @@ Theme Theme::gruvboxDark() {
 Theme Theme::gruvboxLight() {
     Theme t;
     t.dark = false;
-    // Gruvbox light keeps the same recognizable yellow/aqua semantics and clear contrast.
+    // Gruvbox light keeps the same warm amber/green semantics and clear contrast.
     t.bg = "#fbf1c7";
     t.sidebar = "#ebdbb2";
     t.titleBar = "#f2e5bc";
@@ -77,10 +77,10 @@ Theme Theme::gruvboxLight() {
     t.text = "#282828";
     t.muted = "#504945";
     t.dim = "#7c6f64";
-    t.accentCyan = "#427b58";
-    t.accentCyanHover = "#689d6a";
-    t.accentCyanPressed = "#3c6c4b";
-    t.accentCyanTint = QColor(66, 123, 88, 34);
+    t.accentPrimary = "#b57614";
+    t.accentPrimaryHover = "#d79921";
+    t.accentPrimaryPressed = "#8f5b0a";
+    t.accentPrimaryTint = QColor(181, 118, 20, 34);
     t.accentAmber = "#b57614";
     t.accentAmberHover = "#d79921";
     t.accentAmberPressed = "#8f5b0a";
@@ -94,7 +94,7 @@ Theme Theme::gruvboxLight() {
     t.green = "#79740e";
     t.red = "#9d0006";
     t.orange = "#af3a03";
-    t.blue = "#427b58";
+    t.blue = "#689d6a";
     t.aqua = "#689d6a";
     t.amber = t.accentAmber;
     t.sage = t.accentTeal;
@@ -158,12 +158,12 @@ void ThemeManager::apply(QApplication& app, bool dark) {
     p.setColor(QPalette::Text, t.text);
     p.setColor(QPalette::Button, t.card);
     p.setColor(QPalette::ButtonText, t.text);
-    p.setColor(QPalette::Highlight, t.accentCyan);
+    p.setColor(QPalette::Highlight, t.accentPrimary);
     p.setColor(QPalette::HighlightedText, t.bg);
     p.setColor(QPalette::ToolTipBase, t.card);
     p.setColor(QPalette::ToolTipText, t.text);
     p.setColor(QPalette::PlaceholderText, t.dim);
-    p.setColor(QPalette::Link, t.accentCyan);
+    p.setColor(QPalette::Link, t.accentPrimary);
     p.setColor(QPalette::Disabled, QPalette::Text, t.dim);
     p.setColor(QPalette::Disabled, QPalette::ButtonText, t.dim);
     app.setPalette(p);
@@ -174,8 +174,8 @@ void ThemeManager::apply(QApplication& app, bool dark) {
         {"@bg@", t.bg}, {"@surface@", t.surface}, {"@surfaceHover@", t.surfaceHover},
         {"@border@", t.border}, {"@text@", t.text}, {"@muted@", t.muted},
         {"@dim@", t.dim},
-        {"@accentCyan@", t.accentCyan}, {"@accentCyanHover@", t.accentCyanHover},
-        {"@accentCyanPressed@", t.accentCyanPressed},
+        {"@accentPrimary@", t.accentPrimary}, {"@accentPrimaryHover@", t.accentPrimaryHover},
+        {"@accentPrimaryPressed@", t.accentPrimaryPressed},
         {"@accentAmber@", t.accentAmber}, {"@accentAmberHover@", t.accentAmberHover},
         {"@accentAmberPressed@", t.accentAmberPressed},
         {"@accentTeal@", t.accentTeal}, {"@accentTealHover@", t.accentTealHover},
@@ -190,12 +190,12 @@ void ThemeManager::apply(QApplication& app, bool dark) {
                     .arg(t.errorBg.green())
                     .arg(t.errorBg.blue())
                     .arg(t.errorBg.alpha()));
-    qss.replace("@accentCyanTint@",
+    qss.replace("@accentPrimaryTint@",
                 QString("rgba(%1,%2,%3,%4)")
-                    .arg(t.accentCyanTint.red())
-                    .arg(t.accentCyanTint.green())
-                    .arg(t.accentCyanTint.blue())
-                    .arg(t.accentCyanTint.alpha()));
+                    .arg(t.accentPrimaryTint.red())
+                    .arg(t.accentPrimaryTint.green())
+                    .arg(t.accentPrimaryTint.blue())
+                    .arg(t.accentPrimaryTint.alpha()));
     qss.replace("@accentAmberTint@",
                 QString("rgba(%1,%2,%3,%4)")
                     .arg(t.accentAmberTint.red())

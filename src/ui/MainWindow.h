@@ -20,16 +20,16 @@ class AppContext;
 class BasePage;
 class ExperimentBase;
 
-/// Figma shell: sidebar (navigation and recent activity) | pages | status bar.
+/// Figma shell: single-page navigation sidebar | active page | status bar.
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
     explicit MainWindow(AppContext* context, QWidget* parent = nullptr);
 
-    /// Adds a page to the stack. `section` 0 = main module list, 1 = tools list. Returns the stack index.
-    int addPage(const QString& title, const QString& icon, QWidget* page, int section = 0);
+    /// Adds a page to the stack and the single v2.3 navigation list. Returns the stack index.
+    int addPage(const QString& title, const QString& icon, QWidget* page);
     /// A second sidebar entry that opens an existing page.
-    void addNavAlias(const QString& title, const QString& icon, int pageIndex, int section = 0);
+    void addNavAlias(const QString& title, const QString& icon, int pageIndex);
 
     int pageCount() const;
     int currentPage() const;
@@ -58,7 +58,7 @@ signals:
     void themeToggled(bool dark);
 
 private:
-    void addNavButton(const QString& title, const QString& icon, int pageIndex, int section);
+    void addNavButton(const QString& title, const QString& icon, int pageIndex);
     void installShortcuts();
     void refreshIcons();
     void closeEvent(QCloseEvent* event) override;
@@ -71,9 +71,8 @@ private:
 
     AppContext* m_ctx;
     QStackedWidget* m_stack;
-    QVBoxLayout* m_modules;
-    QVBoxLayout* m_tools;
-    QLabel *m_modulesHeader, *m_toolsHeader;
+    QVBoxLayout* m_pages;
+    QLabel* m_savedRunCountLabel;
     QButtonGroup* m_navGroup;
     struct NavEntry { QPushButton* button; QString icon; int page; };
     std::vector<NavEntry> m_nav;

@@ -106,16 +106,31 @@ MainWindow::MainWindow(AppContext* ctx, QWidget* parent)
     sl->setContentsMargins(0, 0, 0, 0);
     sl->setSpacing(0);
 
-    // Keep the small app mark, but remove the sidebar/window title block.
+    // v2.3 Figma sidebar: compact brand, one ungrouped page list, session status.
     auto* brand = new QWidget;
-    brand->setObjectName("sidebarMark");
-    auto* bl = new QHBoxLayout(brand);
-    bl->setContentsMargins(20, 16, 20, 10);
+    brand->setObjectName("sidebarBrand");
+    auto* brandLayout = new QVBoxLayout(brand);
+    brandLayout->setContentsMargins(18, 14, 16, 12);
+    brandLayout->setSpacing(4);
+    auto* brandRow = new QHBoxLayout;
+    brandRow->setContentsMargins(0, 0, 0, 0);
+    brandRow->setSpacing(8);
     auto* logo = new QLabel;
-    logo->setPixmap(Icons::pixmap("scan-line", ThemeManager::instance().theme().amber, 24));
-    logo->setAlignment(Qt::AlignVCenter);
-    bl->addWidget(logo);
-    bl->addStretch();
+    logo->setPixmap(Icons::pixmap("scan-line", ThemeManager::instance().theme().amber, 22));
+    logo->setFixedSize(22, 22);
+    auto* brandName = new QLabel("PHY104");
+    brandName->setObjectName("brandName");
+    brandRow->addWidget(logo);
+    brandRow->addWidget(brandName);
+    brandRow->addStretch();
+    auto* brandProduct = new QLabel("Optical Assistant");
+    brandProduct->setObjectName("brandProduct");
+    auto* brandMeta = new QLabel("COMPUTATIONAL OPTICS / v1.4");
+    brandMeta->setObjectName("brandMeta");
+    brandMeta->setWordWrap(false);
+    brandLayout->addLayout(brandRow);
+    brandLayout->addWidget(brandProduct);
+    brandLayout->addWidget(brandMeta);
     sl->addWidget(brand);
 
     auto* navigation = new QWidget;
@@ -123,53 +138,51 @@ MainWindow::MainWindow(AppContext* ctx, QWidget* parent)
     auto* navigationLayout = new QVBoxLayout(navigation);
     navigationLayout->setContentsMargins(0, 0, 0, 0);
     navigationLayout->setSpacing(0);
-    m_modulesHeader = new QLabel("EXPERIMENTS");
-    m_modulesHeader->setObjectName("navSection");
-    navigationLayout->addWidget(m_modulesHeader);
+    auto* pagesHeader = new QLabel("PAGES");
+    pagesHeader->setObjectName("navSection");
+    navigationLayout->addWidget(pagesHeader);
     auto* navHolder = new QWidget;
-    m_modules = new QVBoxLayout(navHolder);
-    m_modules->setContentsMargins(12, 0, 12, 0);
-    m_modules->setSpacing(4);
+    navHolder->setObjectName("navigationItems");
+    m_pages = new QVBoxLayout(navHolder);
+    m_pages->setContentsMargins(12, 0, 12, 0);
+    m_pages->setSpacing(2);
     navigationLayout->addWidget(navHolder);
-
-    m_toolsHeader = new QLabel("TOOLS");
-    m_toolsHeader->setObjectName("navSection");
-    navigationLayout->addWidget(m_toolsHeader);
-    auto* toolsHolder = new QWidget;
-    m_tools = new QVBoxLayout(toolsHolder);
-    m_tools->setContentsMargins(12, 0, 12, 0);
-    m_tools->setSpacing(2);
-    navigationLayout->addWidget(toolsHolder);
     navigationLayout->addStretch(1);
 
     auto* navigationScroll = new QScrollArea;
     navigationScroll->setObjectName("navigationScroll");
+    navigationScroll->viewport()->setObjectName("navigationViewport");
     navigationScroll->setFrameShape(QFrame::NoFrame);
     navigationScroll->setWidgetResizable(true);
     navigationScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     navigationScroll->setWidget(navigation);
     sl->addWidget(navigationScroll, 1);
 
-    auto* activity = new QWidget;
-    activity->setObjectName("activityPanel");
-    auto* activityLayout = new QVBoxLayout(activity);
-    activityLayout->setContentsMargins(14, 8, 14, 10);
-    activityLayout->setSpacing(4);
-    auto* activityTitle = new QLabel("RECENT ACTIVITY");
-    activityTitle->setObjectName("activityTitle");
-    m_activityLog = new QListWidget;
+    auto* sessionFooter = new QWidget;
+    sessionFooter->setObjectName("sidebarFooter");
+    auto* footerLayout = new QVBoxLayout(sessionFooter);
+    footerLayout->setContentsMargins(14, 9, 14, 12);
+    footerLayout->setSpacing(3);
+    auto* sessionRow = new QHBoxLayout;
+    sessionRow->setContentsMargins(0, 0, 0, 0);
+    auto* sessionLabel = new QLabel("LAB SESSION");
+    sessionLabel->setObjectName("sidebarMeta");
+    m_savedRunCountLabel = new QLabel(QStringLiteral("%1").arg(ctx->log.savedCalculations(), 2, 10, QChar('0')));
+    m_savedRunCountLabel->setObjectName("sidebarCount");
+    sessionRow->addWidget(sessionLabel);
+    sessionRow->addStretch();
+    sessionRow->addWidget(m_savedRunCountLabel);
+    auto* engineReady = new QLabel("● ENGINE READY");
+    engineReady->setObjectName("engineReady");
+    footerLayout->addLayout(sessionRow);
+    footerLayout->addWidget(engineReady);
+    sl->addWidget(sessionFooter);
+
+    // Keep the activity stream available to existing observers, but do not add a
+    // recent-activity panel to the v2.3 shell.
+    m_activityLog = new QListWidget(central);
     m_activityLog->setObjectName("activityLog");
-    m_activityLog->setSelectionMode(QAbstractItemView::NoSelection);
-    m_activityLog->setFocusPolicy(Qt::NoFocus);
-    m_activityLog->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    m_activityLog->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    m_activityLog->setTextElideMode(Qt::ElideRight);
-    m_activityLog->setWordWrap(false);
-    m_activityLog->setMinimumHeight(56);
-    m_activityLog->setMaximumHeight(74);
-    activityLayout->addWidget(activityTitle);
-    activityLayout->addWidget(m_activityLog);
-    sl->addWidget(activity);
+    m_activityLog->hide();
     root->addWidget(sidebar);
 
     // ------------------------------------------------------------------ pages
@@ -216,6 +229,7 @@ MainWindow::MainWindow(AppContext* ctx, QWidget* parent)
     if (ctx->log.hasExport()) addActivity("Exported", QFileInfo(QString::fromStdString(ctx->log.lastExport().path)).fileName());
     connect(ctx, &AppContext::runsChanged, this, [this] {
         const int count = m_ctx->log.savedCalculations();
+        m_savedRunCountLabel->setText(QStringLiteral("%1").arg(count, 2, 10, QChar('0')));
         if (count > m_lastRunCount && !m_ctx->log.runs().empty()) {
             const RunRecord& run = m_ctx->log.runs().back();
             addActivity("Calculated", QString("%1 · %2").arg(QString::fromStdString(SessionLog::runLabel(run.id)),
@@ -356,24 +370,24 @@ QList<QPushButton*> MainWindow::navButtons() const {
     return out;
 }
 
-int MainWindow::addPage(const QString& title, const QString& icon, QWidget* page, int section) {
+int MainWindow::addPage(const QString& title, const QString& icon, QWidget* page) {
     const int index = m_stack->addWidget(page);
     if (auto* base = qobject_cast<BasePage*>(page)) connect(base, &BasePage::stateChanged, this, [this] { refreshStatus(); });
-    addNavButton(title, icon, index, section);
+    addNavButton(title, icon, index);
     return index;
 }
 
-void MainWindow::addNavAlias(const QString& title, const QString& icon, int pageIndex, int section) {
-    addNavButton(title, icon, pageIndex, section);
+void MainWindow::addNavAlias(const QString& title, const QString& icon, int pageIndex) {
+    addNavButton(title, icon, pageIndex);
 }
 
-void MainWindow::addNavButton(const QString& title, const QString& icon, int pageIndex, int section) {
+void MainWindow::addNavButton(const QString& title, const QString& icon, int pageIndex) {
     const bool wraps = title.contains(" (") && title.size() > 22;
     auto* b = new NavButton(title, icon);
-    b->setObjectName(section == 0 ? "navItem" : "navItemSmall");
-    if (wraps) b->setMinimumHeight(54);
+    b->setObjectName("navItem");
+    if (wraps) b->setMinimumHeight(48);
     m_navGroup->addButton(b);
-    (section == 0 ? m_modules : m_tools)->addWidget(b);
+    m_pages->addWidget(b);
     m_nav.push_back({b, icon, pageIndex});
     connect(b, &QPushButton::clicked, this, [this, pageIndex] { setCurrentPage(pageIndex); });
     if (m_nav.size() == 1) b->setChecked(true);
