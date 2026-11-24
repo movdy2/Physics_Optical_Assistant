@@ -293,7 +293,6 @@ QLineEdit#lcdInput {
     border-radius: 6px;
     padding: 6px 10px;
     min-height: 32px;
-    font-family: 'JetBrains Mono';
     font-size: 14px;
 }
 
@@ -304,7 +303,6 @@ QLineEdit#lcdInput:focus {
 QLabel#lcdResult {
     background: transparent;
     color: @accentAmber@;
-    font-family: 'JetBrains Mono';
     font-size: 28px;
     font-weight: 700;
 }

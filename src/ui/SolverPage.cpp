@@ -2,6 +2,7 @@
 #include "AppContext.h"
 #include "FormulaListDelegate.h"
 #include "LatexRenderer.h"
+#include "LanguageManager.h"
 
 #include "ThemeManager.h"
 
@@ -415,7 +416,8 @@ void SolverPage::onSolve() {
         return;
     }
 
-    setStatus("Ok", QString(" ") + QString::fromStdString(r.checkSummary));
+    setStatus("Ok", LanguageManager::instance().text("Solved") + QString(" · ") +
+                       QString::fromStdString(r.checkSummary));
     m_answer->setLatex(QString::fromStdString(r.answerLatex));
     m_answer->setInkColor(ThemeManager::instance().theme().lime);
     m_answer->show();

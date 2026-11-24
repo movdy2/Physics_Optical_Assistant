@@ -4,6 +4,7 @@
 #include "Components.h"
 #include "LanguageManager.h"
 
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
 #include <QSettings>
@@ -169,7 +170,7 @@ void ExperimentBase::buildButtons(QVBoxLayout* fields, const QString& hint) {
     m_hintText = hint;
     fields->addSpacing(2);
     // One shared placement for every experiment: calculate and append the latest valid result.
-    auto* send = new QPushButton("Send to Notes");
+    auto* send = new QPushButton("Send to\nNotes");
     send->setObjectName("sendToNotes");
     send->setAccessibleName("Send to Notes");
     send->setCursor(Qt::PointingHandCursor);
@@ -179,8 +180,11 @@ void ExperimentBase::buildButtons(QVBoxLayout* fields, const QString& hint) {
     m_calc->setText("Calculate & Simulate");
     m_calc->setMinimumHeight(34);
     m_calc->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    fields->addWidget(m_calc);
-    fields->addWidget(send);
+    auto* actionRow = new QHBoxLayout;
+    actionRow->setSpacing(6);
+    actionRow->addWidget(m_calc, 1);
+    actionRow->addWidget(send, 1);
+    fields->addLayout(actionRow);
     connect(send, &QPushButton::clicked, this, [this] { sendToNotes(); });
     fields->addWidget(m_reset);
     fields->addWidget(m_restore);
@@ -243,10 +247,11 @@ void ExperimentBase::applyIssues(const Report& r) {
 
 void ExperimentBase::sendToNotes() {
     if (!m_haveLast) { emit m_ctx->message("Nothing to send yet: calculate first"); return; }
-    QString md = QString(" ") + m_experiment + QString(" ") + q(m_last.headline) + "\n";
-    for (const auto& [name, value] : m_last.parameters) md += QString(" ") + q(name) + QString(" ") + q(value) + "\n";
+    QString md = QString("### ") + m_experiment + "\n\n" + q(m_last.headline) + "\n";
+    for (const auto& [name, value] : m_last.parameters)
+        md += QString("- ") + q(name) + ": " + q(value) + "\n";
     for (const LcdRegister& r : m_last.registers) {
-        md += QString("*") + q(r.title) + "**: ";
+        md += QString("- **") + q(r.title) + "**: ";
         QStringList parts;
         for (const auto& l : r.lines) parts << q(l).trimmed();
         md += parts.join("; ");
