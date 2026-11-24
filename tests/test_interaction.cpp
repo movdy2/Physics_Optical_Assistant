@@ -600,23 +600,28 @@ private slots:
     void builtinStarterNotesTranslateButUserContentStaysUntouched() {
         auto* w = workspace();
         const QString english = MarkdownWorkspace::starterNotes();
-        QCOMPARE(w->markdown(), english);
+        QVERIFY2(w->markdown() == english,
+                 qPrintable(QStringLiteral("initial starter mismatch: ") + w->markdown()));
         auto* language = win().languageButton();
         click(language);
         const QString arabic = QString::fromUtf8(
             "# ملاحظات المختبر\n\n## الانكسار والانعكاس الكلي الداخلي\n\n### قانون سنيل\n"
             "- $n₁ sin θ₁ = n₂ sin θ₂$\n- قارن معامل الانكسار المستخرج بالقيمة المرجعية\n\n"
             "#### تنبيه للاختبار\nتُقاس الزوايا من العمود المقام، لا من السطح.\n");
-        QCOMPARE(w->markdown(), arabic);
+        QVERIFY2(w->markdown() == arabic,
+                 qPrintable(QStringLiteral("Arabic starter mismatch: ") + w->markdown()));
         click(language);
-        QCOMPARE(w->markdown(), english);
+        QVERIFY2(w->markdown() == english,
+                 qPrintable(QStringLiteral("starter did not return to English: ") + w->markdown()));
 
         const QString authored = "# My notes\n- n₁ sin θ₁ = n₂ sin θ₂\n";
         w->setMarkdown(authored); // loading student text clears the built-in-content marker
         click(language);
-        QCOMPARE(w->markdown(), authored);
+        QVERIFY2(w->markdown() == authored,
+                 qPrintable(QStringLiteral("user notes changed on Arabic switch: ") + w->markdown()));
         click(language);
-        QCOMPARE(w->markdown(), authored);
+        QVERIFY2(w->markdown() == authored,
+                 qPrintable(QStringLiteral("user notes changed on English switch: ") + w->markdown()));
     }
     void workspaceHasSnippetToolbar() {
         auto* w = workspace();
@@ -833,9 +838,11 @@ private slots:
     void secondTabsAndDropdownsDriveTheDiagram() {
         // --- thin film: the Transmission tab flips to the complementary intensity and re-captions both panels
         goTo(m_app->thinFilm);
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->thinFilm), QString("1.0000"), 1500);
+        QVERIFY2(bigValue(m_app->thinFilm) == QString("1.0000"),
+                 qPrintable(QStringLiteral("thin-film reflection result: ") + bigValue(m_app->thinFilm)));
         click(modeTab(m_app->thinFilm, "Transmission"));
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->thinFilm), QString("0.0000"), 1500);          // t = 100 nm is dark in transmission
+        QVERIFY2(bigValue(m_app->thinFilm) == QString("0.0000"),
+                 qPrintable(QStringLiteral("thin-film transmission result: ") + bigValue(m_app->thinFilm)));
         QVERIFY2(allLabelTexts(m_app->thinFilm).contains("Film layers / transmitted beam"), "diagram title did not follow the tab");
         QVERIFY(allLabelTexts(m_app->thinFilm).contains("Transmitted intensity vs thickness"));
         click(modeTab(m_app->thinFilm, "Reflection"));
@@ -844,10 +851,13 @@ private slots:
 
         // --- Michelson: the Fringes tab shows the pattern numbers instead of the displacement numbers
         goTo(m_app->michelson);
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->michelson), QString("+2.3704"), 1500);
+        QVERIFY2(bigValue(m_app->michelson) == QString("+2.3704"),
+                 qPrintable(QStringLiteral("Michelson displacement result: ") + bigValue(m_app->michelson)));
         click(modeTab(m_app->michelson, "Fringes"));
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->michelson), QString("316.4000 nm"), 1500);
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->michelson, 1), QString("12.6422 fringes"), 1500);
+        QVERIFY2(bigValue(m_app->michelson) == QString("316.4000 nm"),
+                 qPrintable(QStringLiteral("Michelson fringe spacing: ") + bigValue(m_app->michelson)));
+        QVERIFY2(bigValue(m_app->michelson, 1) == QString("12.6422 fringes"),
+                 qPrintable(QStringLiteral("Michelson fringe count: ") + bigValue(m_app->michelson, 1)));
         QVERIFY2(allLabelTexts(m_app->michelson).contains("Optical bench / fringe pattern"), "bench title did not follow the tab");
         // beam balance sets the contrast, not the fringe spacing
         chooseItem(comboWith(m_app->michelson, "Unequal beams · V = 0.60"), 1);
@@ -1227,7 +1237,8 @@ private slots:
             auto* title = page->findChild<QLabel*>("pageTitle");
             auto* subtitle = page->findChild<QLabel*>("pageSubtitle");
             QVERIFY(title && subtitle);
-            QCOMPARE(title->text(), name);
+            QVERIFY2(title->text() == name,
+                     qPrintable(QStringLiteral("%1 page title was '%2'").arg(name, title->text())));
             QVERIFY2(!subtitle->text().contains("EXPERIMENT", Qt::CaseInsensitive), qPrintable(subtitle->text()));
             auto* calculate = findControl(page, "calculate");
             auto* send = page->findChild<QPushButton*>("sendToNotes");
@@ -1562,10 +1573,14 @@ private slots:
         const auto navigation = win().navButtons();
         QVERIFY(navigation.size() >= arabicExperimentTitles.size() + 1);
         for (int i = 0; i < arabicExperimentTitles.size(); ++i) {
-            QCOMPARE(navigation[i + 1]->accessibleName(), arabicExperimentTitles[i]);
+            QVERIFY2(navigation[i + 1]->accessibleName() == arabicExperimentTitles[i],
+                     qPrintable(QStringLiteral("Arabic navigation title %1: %2")
+                                    .arg(i).arg(navigation[i + 1]->accessibleName())));
             auto* title = experimentPages[i]->findChild<QLabel*>("pageTitle");
             QVERIFY(title);
-            QCOMPARE(title->text(), arabicExperimentTitles[i]);
+            QVERIFY2(title->text() == arabicExperimentTitles[i],
+                     qPrintable(QStringLiteral("Arabic page title %1: %2")
+                                    .arg(i).arg(title->text())));
         }
 
         auto* experimentMenu = m_app->dashboard->findChild<QMenu*>("allExperimentsMenu");
@@ -1579,7 +1594,8 @@ private slots:
         };
         for (int i = 0; i < actions.size(); ++i) {
             const QString expected = QString("%1 · %2").arg(i + 1, 2, 10, QChar('0')).arg(arabicExperimentTitles[i]);
-            QCOMPARE(actions[i]->text(), expected);
+            QVERIFY2(actions[i]->text() == expected,
+                     qPrintable(QStringLiteral("Arabic menu item %1: %2").arg(i).arg(actions[i]->text())));
             QVERIFY2(hasArabicText(actions[i]->toolTip()), qPrintable("Arabic experiment description missing: " + actions[i]->toolTip()));
         }
 
@@ -1661,8 +1677,10 @@ private slots:
             const QString localizedChapter = translated(chapter);
             const QString localizedType = translated(type);
             QVERIFY(!localizedChapter.isEmpty() && !localizedType.isEmpty());
-            QCOMPARE(noteMeta->text(), localizedChapter + "  ·  " + localizedType.toUpper() + "  ·  " +
-                                         QString::fromStdString(expected.id));
+            const QString expectedMeta = localizedChapter + "  ·  " + localizedType.toUpper() + "  ·  " +
+                                         QString::fromStdString(expected.id);
+            QVERIFY2(noteMeta->text() == expectedMeta,
+                     qPrintable(QStringLiteral("Arabic note metadata: ") + noteMeta->text()));
 
             QStringList shownPoints;
             QStringList rawPoints;
@@ -1776,13 +1794,14 @@ private slots:
         QVERIFY(result);
         const QColor expectedPlaceholder = ThemeManager::instance().theme().dark
                                                ? QColor(Qt::white) : ThemeManager::instance().theme().text;
-        QCOMPARE(input->palette().color(QPalette::PlaceholderText), expectedPlaceholder);
+        QVERIFY2(input->palette().color(QPalette::PlaceholderText) == expectedPlaceholder,
+                 "calculator placeholder color does not follow the Gruvbox theme");
         auto* angle = findButton(m_app->calculator, "DEG");
         QVERIFY(angle);
         click(angle);
-        QCOMPARE(angle->text(), QString("RAD"));
+        QVERIFY2(angle->text() == QString("RAD"), qPrintable(QStringLiteral("angle button after first toggle: ") + angle->text()));
         click(angle);
-        QCOMPARE(angle->text(), QString("DEG"));
+        QVERIFY2(angle->text() == QString("DEG"), qPrintable(QStringLiteral("angle button after second toggle: ") + angle->text()));
         QVERIFY2(!m_app->calculator->findChild<QComboBox*>("keysCombo"), "the extra physics-symbol browser is still on Calculator");
         QVERIFY2(findButton(m_app->calculator, "sin") && findButton(m_app->calculator, "sec") &&
                  findButton(m_app->calculator, "abs") && findButton(m_app->calculator, "exp") &&
@@ -1794,7 +1813,8 @@ private slots:
                  findButton(m_app->calculator, "DEL"), "an advanced math key is missing");
         auto* keypad = m_app->calculator->findChild<CalculatorKeypad*>("calculatorKeypad");
         QVERIFY(keypad);
-        QCOMPARE(keypad->findChildren<QPushButton*>().size(), 52);
+        QVERIFY2(keypad->findChildren<QPushButton*>().size() == 52,
+                 qPrintable(QStringLiteral("calculator key count: %1").arg(keypad->findChildren<QPushButton*>().size())));
         for (QPushButton* key : keypad->findChildren<QPushButton*>())
             QVERIFY2(key->maximumHeight() <= 36, qPrintable("calculator key is still oversized: " + key->text()));
 
@@ -1804,10 +1824,10 @@ private slots:
         input->setText("5");
         input->selectAll();
         click(findButton(m_app->calculator, "x²"));
-        QCOMPARE(input->text(), QString("(5)^2"));
+        QVERIFY2(input->text() == QString("(5)^2"), qPrintable(QStringLiteral("square key inserted: ") + input->text()));
         input->setText("4");
         click(findButton(m_app->calculator, "1/x"));
-        QCOMPARE(input->text(), QString("1/(4)"));
+        QVERIFY2(input->text() == QString("1/(4)"), qPrintable(QStringLiteral("reciprocal key inserted: ") + input->text()));
         input->clear();
         click(findButton(m_app->calculator, "sin"));
         QVERIFY2(input->text().startsWith("sin("), "the math key did not insert a plain-text function");
@@ -1818,9 +1838,10 @@ private slots:
 
         input->setText("2+3");
         QTest::keyClick(input, Qt::Key_Return);
-        QCOMPARE(result->text(), QString("5"));
-        QCOMPARE(history->count(), 1);
-        QCOMPARE(history->item(0)->data(Qt::UserRole).toString(), QString("2+3"));
+        QVERIFY2(result->text() == QString("5"), qPrintable(QStringLiteral("2+3 result: ") + result->text()));
+        QVERIFY2(history->count() == 1, qPrintable(QStringLiteral("history item count: %1").arg(history->count())));
+        QVERIFY2(history->item(0)->data(Qt::UserRole).toString() == QString("2+3"),
+                 qPrintable(QStringLiteral("history expression: ") + history->item(0)->data(Qt::UserRole).toString()));
         const QRect firstEntry = history->visualItemRect(history->item(0));
         QTest::mouseClick(history->viewport(), Qt::LeftButton, Qt::NoModifier, firstEntry.center());
         QCOMPARE(input->text(), QString("2+3"));
