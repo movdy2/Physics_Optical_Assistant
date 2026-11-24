@@ -140,7 +140,8 @@ DashboardPage::DashboardPage(AppContext* ctx, QWidget* parent)
 
     m_savedValue = form.savedValue;
     m_seriesValue = form.seriesValue;
-    form.experimentCount->setObjectName("metricValue");
+    // Keep the stable name used by interaction tests and external page integrations.
+    form.experimentCount->setObjectName("experimentCount");
     m_browseExperiments = form.browseExperiments;
     QFrame* metricCards[] = {form.metricExperimentsCard, form.savedMetricCard, form.seriesMetricCard};
     QLabel* metricTitles[] = {form.experimentsMetricTitle, form.savedMetricTitle, form.seriesMetricTitle};

@@ -31,7 +31,8 @@ BasePage::BasePage(const QString& title, const QString& subtitle, AppContext* co
     m_firstColumn = form.firstColumn;
     m_lastColumn = form.lastColumn;
     m_saveButton = form.outline;
-    m_exportButton = form.exportMenu;
+    m_exportButton = showHeader ? form.exportMenu : nullptr;
+    if (!showHeader) delete form.exportMenu;
 
     form.pageTitle->setObjectName("pageTitle");
     form.pageSubtitle->setObjectName("pageSubtitle");
@@ -45,19 +46,21 @@ BasePage::BasePage(const QString& title, const QString& subtitle, AppContext* co
     }
 
     m_saveButton->setCursor(Qt::PointingHandCursor);
-    m_exportButton->setCursor(Qt::PointingHandCursor);
-    auto* exportMenu = new QMenu(m_exportButton);
-    for (const auto& entry : {std::pair<const char*, int>{"PDF report…", 0}, {"Excel (.xls)…", 1}, {"CSV (.csv)…", 2}}) {
-        QAction* action = exportMenu->addAction(QString::fromUtf8(entry.first));
-        const int format = entry.second;
-        connect(action, &QAction::triggered, this, [this, format] { emit exportFormatRequested(format); });
+    if (m_exportButton) {
+        m_exportButton->setCursor(Qt::PointingHandCursor);
+        auto* exportMenu = new QMenu(m_exportButton);
+        for (const auto& entry : {std::pair<const char*, int>{"PDF report…", 0}, {"Excel (.xls)…", 1}, {"CSV (.csv)…", 2}}) {
+            QAction* action = exportMenu->addAction(QString::fromUtf8(entry.first));
+            const int format = entry.second;
+            connect(action, &QAction::triggered, this, [this, format] { emit exportFormatRequested(format); });
+        }
+        m_exportButton->setMenu(exportMenu);
+        const auto refreshExportIcon = [this] {
+            m_exportButton->setIcon(Icons::pixmap("download", ThemeManager::instance().theme().amber, 18));
+        };
+        refreshExportIcon();
+        connect(&ThemeManager::instance(), &ThemeManager::themeChanged, this, refreshExportIcon);
     }
-    m_exportButton->setMenu(exportMenu);
-    const auto refreshExportIcon = [this] {
-        m_exportButton->setIcon(Icons::pixmap("download", ThemeManager::instance().theme().amber, 18));
-    };
-    refreshExportIcon();
-    connect(&ThemeManager::instance(), &ThemeManager::themeChanged, this, refreshExportIcon);
 
     connect(m_saveButton, &QPushButton::clicked, this, [this] {
         if (m_ctx->saveSession()) emit m_ctx->message(QString(" ") + m_ctx->sessionFile);
