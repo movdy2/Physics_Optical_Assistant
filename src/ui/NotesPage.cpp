@@ -22,8 +22,12 @@ NotesPage::NotesPage(AppContext* ctx, std::vector<ScientificPage> keyboardPages,
     m_notes = new MarkdownWorkspace;
     const QString saved = QString::fromStdString(ctx->log.notes());
     const bool showingStarter = saved.isEmpty();
-    m_notes->setMarkdown(showingStarter ? MarkdownWorkspace::starterNotes() : saved);
-    if (showingStarter) m_notes->editor()->setProperty("i18nBuiltinContent", true);
+    const QString initialNotes = showingStarter ? MarkdownWorkspace::starterNotes() : saved;
+    m_notes->setMarkdown(initialNotes);
+    if (showingStarter) {
+        m_notes->editor()->setProperty("i18nBuiltinSource", initialNotes);
+        m_notes->editor()->setProperty("i18nBuiltinContent", true);
+    }
     form.editorSlotLayout->addWidget(m_notes, 1);
 
     // the same scientific keyboard as the Equation Lab, docked under the note and writing LaTeX into it

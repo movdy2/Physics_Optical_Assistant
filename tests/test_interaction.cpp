@@ -1482,6 +1482,7 @@ private slots:
     }
 
     void studyHubShowsAllStructuredNotesAndRetainsThePersonalEditor() {
+        goTo(m_app->studyHub);
         m_app->studyHub->selectSection(1);
         auto* noteViews = m_app->studyHub->findChild<QStackedWidget*>("studyHubNoteViews");
         auto* materialList = m_app->studyHub->findChild<QListWidget*>("studyMaterialList");

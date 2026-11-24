@@ -77,7 +77,7 @@ const QHash<QString, QString>& arabicCatalog() {
         {QStringLiteral("Lenses & Mirrors"), QStringLiteral("العدسات والمرايا")},
         {QStringLiteral("Prisms"), QStringLiteral("الموشورات")},
         {QStringLiteral("Wave Interference (Double-Slit)"), QStringLiteral("تداخل الموجات (الشق المزدوج)")},
-        {QStringLiteral("Wave Interference"), QStringLiteral("تداخل الموجات")},
+        {QStringLiteral("Wave Interference"), QStringLiteral("تداخل الموجات (الشق المزدوج)")},
         {QStringLiteral("Polarization (Malus & Brewster)"), QStringLiteral("الاستقطاب (مالوس وبروستر)")},
         {QStringLiteral("Single-Slit Diffraction"), QStringLiteral("حيود الشق الواحد")},
         {QStringLiteral("Diffraction Grating"), QStringLiteral("محزوز الحيود")},
@@ -684,10 +684,12 @@ void LanguageManager::translateWidget(QWidget* widget) {
         // Only the untouched app-provided starter note is eligible for localization. Once the
         // student edits it, the flag is cleared and their authored content is never rewritten.
         if (edit->property("i18nBuiltinContent").toBool()) {
-            update(edit, "plainText", edit->toPlainText(), [edit](const QString& v) {
+            const QString source = edit->property("i18nBuiltinSource").toString();
+            const QString translated = text(source.isEmpty() ? edit->toPlainText() : source);
+            if (translated != edit->toPlainText()) {
                 const QSignalBlocker blocker(edit);
-                edit->setPlainText(v);
-            });
+                edit->setPlainText(translated);
+            }
         }
     }
 
