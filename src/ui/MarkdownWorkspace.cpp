@@ -215,7 +215,16 @@ MarkdownWorkspace::MarkdownWorkspace(QWidget* parent) : QWidget(parent) {
     connect(m_statsTimer, &QTimer::timeout, this, &MarkdownWorkspace::updateStats);
     connect(m_editor, &QPlainTextEdit::textChanged, this, [this] {
         if (m_loading) return;
-        m_editor->setProperty("i18nBuiltinContent", false);
+        if (m_editor->property("i18nBuiltinContent").toBool()) {
+            const QString source = m_editor->property("i18nBuiltinSource").toString();
+            const QString current = m_editor->toPlainText();
+            const bool stillBuiltin = !source.isEmpty() &&
+                (current == source || current == LanguageManager::instance().text(source));
+            if (!stillBuiltin) {
+                m_editor->setProperty("i18nBuiltinContent", false);
+                m_editor->setProperty("i18nBuiltinSource", QString());
+            }
+        }
         m_pending = true;
         m_saved->setText("Editing…");
         m_saveTimer->start();

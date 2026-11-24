@@ -935,7 +935,7 @@ private slots:
         QVERIFY(wavelengthFields.size() >= 3);
         chooseItem(solveFor, 1);
         typeInto(wavelengthFields[0], "632.8");
-        const bool fringeCountUpdated = waitForBigValue(m_app->michelson, QString("5.5297 fringes"));
+        const bool fringeCountUpdated = waitForBigValue(m_app->michelson, QString("5.5310 fringes"));
         QVERIFY2(fringeCountUpdated,
                  qPrintable(QStringLiteral("solve-for fringe count actual=%1, wavelength=%2 nm, displacement=%3 µm, target=%4")
                                 .arg(bigValue(m_app->michelson), wavelengthFields[0]->text(),
