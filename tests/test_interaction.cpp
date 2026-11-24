@@ -310,35 +310,24 @@ private slots:
         QVERIFY(ctx.log.runs().back().id > 0 && ctx.log.runs().back().series.rows.size() == 3);   // the sweep travelled with the run
         go(0);
 
-        // the "Compare" tab overlays two saved sweeps on one chart
-        click(modeTab(m_app->dashboard, "Compare"));
-        QComboBox* pickA = nullptr;
-        QComboBox* pickB = nullptr;
-        for (auto* c : m_app->dashboard->findChildren<QComboBox*>()) {
-            if (c->count() >= 2 && c->itemData(0).isValid()) (pickA ? pickB : pickA) = c;
-        }
-        QVERIFY2(pickA && pickB, "the compare tab has two run pickers");
-        chooseItem(pickA, pickA->count() - 2);
-        chooseItem(pickB, pickB->count() - 1);
-        QApplication::processEvents();
-        bool summary = false;
-        for (auto* l : m_app->dashboard->findChildren<QLabel*>())
-            if (l->text().contains(" vs ") && l->text().contains("points")) summary = true;
-        QVERIFY2(summary, "the compare tab reports both runs");
-        click(modeTab(m_app->dashboard, "Recent"));
+        // The dashboard's comparison panel overlays checked saved runs without a separate tab.
+        auto* comparisonFilter = m_app->dashboard->findChild<QComboBox*>("comparisonFilter");
+        QVERIFY(comparisonFilter);
+        chooseItem(comparisonFilter, comparisonFilter->findData(QStringLiteral("Prism sweep")));
+        QList<QCheckBox*> selectedRuns;
+        for (auto* check : m_app->dashboard->findChildren<QCheckBox*>())
+            if (check->property("runId").isValid()) selectedRuns << check;
+        QCOMPARE(selectedRuns.size(), 2);
+        QVERIFY(selectedRuns[0]->isChecked() && selectedRuns[1]->isChecked());
 
-        // "Delete selected run" drops the newest run and autosaves the session
-        QTableWidget* table = nullptr;
-        for (auto* t : m_app->dashboard->findChildren<QTableWidget*>())
-            if (t->columnCount() == 4) table = t;
-        QVERIFY(table);
-        int row = -1;
-        for (int i = 0; i < table->rowCount(); ++i)
-            if (table->item(i, 0) && table->item(i, 0)->data(Qt::UserRole).toInt() == newest) row = i;
-        QVERIFY2(row >= 0, "the newest run is listed");
-        table->setCurrentCell(row, 0);
-        QApplication::processEvents();
-        QPushButton* del = findButton(m_app->dashboard, "Delete selected run");
+        // Selecting a row in the activity log enables deletion of that saved run.
+        QFrame* newestRow = nullptr;
+        for (auto* row : m_app->dashboard->findChildren<QFrame*>("logRow"))
+            if (row->property("runId").toInt() == newest) newestRow = row;
+        QVERIFY2(newestRow, "the newest run is listed in the activity log");
+        click(newestRow);
+        go(0);
+        QPushButton* del = findButton(m_app->dashboard, "Delete selected");
         QVERIFY(del && del->isEnabled());
         click(del);
         QApplication::processEvents();
@@ -1276,19 +1265,25 @@ private slots:
         QVERIFY(!win().findChild<QLabel*>("engineReady"));
 
         goTo(m_app->grating);
-        auto g = m_app->grating->findChildren<UnitField*>();                        // N, λ, m, M
-        typeInto(g[2], "4");                                                         // order 4 has no real angle
+        UnitField* gratingOrder = nullptr;
+        for (auto* field : m_app->grating->findChildren<UnitField*>())
+            if (field->property("fieldId").toString() == QLatin1String("m")) gratingOrder = field;
+        QVERIFY(gratingOrder);
+        typeInto(gratingOrder, "4");                                                // order 4 has no real angle
         QTRY_VERIFY_WITH_TIMEOUT(m_app->grating->isPaused(), 1500);
         click(findControl(m_app->grating, "restoreInput"));
         QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->grating, 0), QString("+17.4576°"), 1500);
     }
     void gratingSpinnerSteps() {
         goTo(m_app->grating);
-        auto g = m_app->grating->findChildren<UnitField*>();
-        click(g[2]->findChild<QWidget*>("spinUp"));
-        QCOMPARE(g[2]->text(), QString("+2"));
+        UnitField* gratingOrder = nullptr;
+        for (auto* field : m_app->grating->findChildren<UnitField*>())
+            if (field->property("fieldId").toString() == QLatin1String("m")) gratingOrder = field;
+        QVERIFY(gratingOrder);
+        click(gratingOrder->findChild<QWidget*>("spinUp"));
+        QCOMPARE(gratingOrder->text(), QString("+2"));
         QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->grating, 0), QString("+36.8699°"), 1500);
-        click(g[2]->findChild<QWidget*>("spinDown"));
+        click(gratingOrder->findChild<QWidget*>("spinDown"));
         click(m_app->grating->findChild<QPushButton*>());                            // harmless: any button
     }
 

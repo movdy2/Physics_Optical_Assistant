@@ -87,6 +87,7 @@ void ModelPage::debounceApply() {
 
 UnitField* ModelPage::addField(const QString& id, const QString& label, const QString& unit, double value, int decimals, bool signedValue, bool spinner, double step) {
     auto* f = new UnitField(unit);
+    f->setProperty("fieldId", id);
     f->setShowPlus(signedValue);
     if (spinner) f->setSpinner(true, step);
     f->setValue(value, decimals);

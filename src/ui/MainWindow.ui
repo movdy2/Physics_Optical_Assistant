@@ -109,7 +109,6 @@
             <item><widget class="QLabel" name="sidebarCount"><property name="text"><string>00</string></property></widget></item>
            </layout>
           </item>
-          <item><widget class="QLabel" name="engineReady"><property name="text"><string>● ENGINE READY</string></property></widget></item>
          </layout>
         </widget>
        </item>

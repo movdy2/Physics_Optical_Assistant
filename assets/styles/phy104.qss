@@ -292,6 +292,7 @@ QLineEdit#lcdInput {
     border-radius: 6px;
     padding: 6px 10px;
     min-height: 32px;
+    font-family: 'Inter', 'Noto Sans Arabic', 'DejaVu Sans', 'Segoe UI', 'Arial';
     font-size: 14px;
 }
 
@@ -302,6 +303,7 @@ QLineEdit#lcdInput:focus {
 QLabel#lcdResult {
     background: transparent;
     color: @accentAmber@;
+    font-family: 'Inter', 'Noto Sans Arabic', 'DejaVu Sans', 'Segoe UI', 'Arial';
     font-size: 28px;
     font-weight: 700;
 }
