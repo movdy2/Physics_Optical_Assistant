@@ -16,6 +16,7 @@
 #include <QPushButton>
 #include <QSize>
 #include <QSizePolicy>
+#include <QShowEvent>
 
 namespace phy104 {
 
@@ -60,14 +61,9 @@ MathSolverPage::MathSolverPage(AppContext* context, QWidget* parent)
     m_historyClear->setObjectName("calcHistoryClear");
     ui.historyHint->setObjectName("calcHint");
 
-    const auto refreshPlaceholder = [this] {
-        QPalette palette = m_input->palette();
-        const Theme& theme = ThemeManager::instance().theme();
-        palette.setColor(QPalette::PlaceholderText, theme.dark ? QColor(Qt::white) : theme.text);
-        m_input->setPalette(palette);
-    };
-    refreshPlaceholder();
-    connect(&ThemeManager::instance(), &ThemeManager::themeChanged, this, refreshPlaceholder);
+    refreshInputPlaceholderPalette();
+    connect(&ThemeManager::instance(), &ThemeManager::themeChanged,
+            this, &MathSolverPage::refreshInputPlaceholderPalette);
 
     connect(m_input, &QLineEdit::returnPressed, this, &MathSolverPage::calculate);
     connect(m_keypad, &CalculatorKeypad::equals, this, &MathSolverPage::calculate);
@@ -114,6 +110,19 @@ MathSolverPage::MathSolverPage(AppContext* context, QWidget* parent)
         m_input->setFocus();
     });
     refreshHistory();
+}
+
+void MathSolverPage::showEvent(QShowEvent* event) {
+    BasePage::showEvent(event);
+    refreshInputPlaceholderPalette(); // QSS polishing can reapply the application palette on each page show
+}
+
+void MathSolverPage::refreshInputPlaceholderPalette() {
+    if (!m_input) return;
+    QPalette palette = m_input->palette();
+    const Theme& theme = ThemeManager::instance().theme();
+    palette.setColor(QPalette::PlaceholderText, theme.dark ? QColor(Qt::white) : theme.text);
+    m_input->setPalette(palette);
 }
 
 void MathSolverPage::calculate() {

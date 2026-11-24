@@ -602,12 +602,15 @@ private slots:
         const QString english = MarkdownWorkspace::starterNotes();
         QVERIFY2(w->markdown() == english,
                  qPrintable(QStringLiteral("initial starter mismatch: ") + w->markdown()));
+        QVERIFY2(w->editor()->property("i18nBuiltinContent").toBool(), "the starter note lost its built-in marker");
         auto* language = win().languageButton();
         click(language);
         const QString arabic = QString::fromUtf8(
             "# ملاحظات المختبر\n\n## الانكسار والانعكاس الكلي الداخلي\n\n### قانون سنيل\n"
             "- $n₁ sin θ₁ = n₂ sin θ₂$\n- قارن معامل الانكسار المستخرج بالقيمة المرجعية\n\n"
             "#### تنبيه للاختبار\nتُقاس الزوايا من العمود المقام، لا من السطح.\n");
+        QVERIFY2(LanguageManager::instance().text(english) == arabic,
+                 qPrintable(QStringLiteral("starter catalog text mismatch: ") + LanguageManager::instance().text(english)));
         QVERIFY2(w->markdown() == arabic,
                  qPrintable(QStringLiteral("Arabic starter mismatch: ") + w->markdown()));
         click(language);
@@ -846,7 +849,8 @@ private slots:
         QVERIFY2(allLabelTexts(m_app->thinFilm).contains("Film layers / transmitted beam"), "diagram title did not follow the tab");
         QVERIFY(allLabelTexts(m_app->thinFilm).contains("Transmitted intensity vs thickness"));
         click(modeTab(m_app->thinFilm, "Reflection"));
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->thinFilm), QString("1.0000"), 1500);
+        QVERIFY2(bigValue(m_app->thinFilm) == QString("1.0000"),
+                 qPrintable(QStringLiteral("thin-film reflection after switching back: ") + bigValue(m_app->thinFilm)));
         QVERIFY(allLabelTexts(m_app->thinFilm).contains("Film layers / two reflected rays"));
 
         // --- Michelson: the Fringes tab shows the pattern numbers instead of the displacement numbers
@@ -861,15 +865,18 @@ private slots:
         QVERIFY2(allLabelTexts(m_app->michelson).contains("Optical bench / fringe pattern"), "bench title did not follow the tab");
         // beam balance sets the contrast, not the fringe spacing
         chooseItem(comboWith(m_app->michelson, "Unequal beams · V = 0.60"), 1);
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->michelson), QString("316.4000 nm"), 1500);
+        QVERIFY2(bigValue(m_app->michelson) == QString("316.4000 nm"),
+                 qPrintable(QStringLiteral("Michelson spacing after balance change: ") + bigValue(m_app->michelson)));
         QTRY_VERIFY_WITH_TIMEOUT(allLabelTexts(m_app->michelson).join(QStringLiteral(" ")).contains("contrast V = 0.60"), 1500);
         // M2 drive dropdown: piezo actuator, and the diagram says so
         chooseItem(comboWith(m_app->michelson, "Piezo actuator"), 1);
         QTRY_VERIFY_WITH_TIMEOUT(allLabelTexts(m_app->michelson).contains("Optical bench / piezo scan of M2"), 1500);
         click(modeTab(m_app->michelson, "Displacement"));
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->michelson), QString("+2.3704"), 1500);
+        QVERIFY2(bigValue(m_app->michelson) == QString("+2.3704"),
+                 qPrintable(QStringLiteral("Michelson displacement after switching tabs: ") + bigValue(m_app->michelson)));
         click(findControl(m_app->michelson, "resetParameters"));                                  // return to the default displacement mode
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->michelson), QString("+2.3704"), 1500);
+        QVERIFY2(bigValue(m_app->michelson) == QString("+2.3704"),
+                 qPrintable(QStringLiteral("Michelson displacement after reset: ") + bigValue(m_app->michelson)));
 
         // --- Michelson: dragging M2 syncs slider, field, and display ---
         goTo(m_app->michelson);
@@ -1243,14 +1250,18 @@ private slots:
             auto* calculate = findControl(page, "calculate");
             auto* send = page->findChild<QPushButton*>("sendToNotes");
             QVERIFY(calculate && send && send->isVisibleTo(&win()));
-            QCOMPARE(calculate->geometry().top(), send->geometry().top());
+            QVERIFY2(calculate->geometry().top() == send->geometry().top(),
+                     qPrintable(QStringLiteral("%1 action row geometry: calculate y=%2, notes y=%3")
+                                    .arg(name).arg(calculate->geometry().top()).arg(send->geometry().top())));
 
             auto* reset = findControl(page, "resetParameters");
             QVERIFY(reset);
             click(reset);
             const int before = context.log.savedCalculations();
             click(calculate);
-            QCOMPARE(context.log.savedCalculations(), before + 1);
+            QVERIFY2(context.log.savedCalculations() == before + 1,
+                     qPrintable(QStringLiteral("%1 saved-count delta: before=%2 after=%3")
+                                    .arg(name).arg(before).arg(context.log.savedCalculations())));
             click(send);
             const QString notes = QString::fromStdString(context.log.notes());
             QVERIFY2(notes.contains("### " + name), qPrintable("notes missing for " + name + ": " + notes));
@@ -1578,7 +1589,8 @@ private slots:
                                     .arg(i).arg(navigation[i + 1]->accessibleName())));
             auto* title = experimentPages[i]->findChild<QLabel*>("pageTitle");
             QVERIFY(title);
-            QVERIFY2(title->text() == arabicExperimentTitles[i],
+            const QString expectedPageTitle = i == 3 ? QStringLiteral("تداخل الموجات") : arabicExperimentTitles[i];
+            QVERIFY2(title->text() == expectedPageTitle,
                      qPrintable(QStringLiteral("Arabic page title %1: %2")
                                     .arg(i).arg(title->text())));
         }

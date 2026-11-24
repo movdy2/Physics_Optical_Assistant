@@ -8,6 +8,7 @@ class QLabel;
 class QLineEdit;
 class QListWidget;
 class QPushButton;
+class QShowEvent;
 
 namespace phy104 {
 class AppContext;
@@ -22,6 +23,9 @@ public:
     /// The current result as plain text, e.g. "0.5236" or "1.5708"
     QString resultText() const;
 
+protected:
+    void showEvent(QShowEvent* event) override;
+
 private slots:
     void calculate();
     void clearAll();
@@ -29,6 +33,8 @@ private slots:
     void refreshHistory();
 
 private:
+    void refreshInputPlaceholderPalette();
+
     MathCalculator m_calc;
     QLineEdit* m_input = nullptr;
     QLabel* m_result = nullptr;
