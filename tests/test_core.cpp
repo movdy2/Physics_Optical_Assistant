@@ -398,6 +398,12 @@ int main() {
         CHECK(e.notices[0].error && e.notices[0].title == "Calculation paused / d must be > 0");
         CHECK(e.notices[0].body.find("run 021, not the current inputs") != std::string::npos);
         CHECK(e.statusText == "E_INPUT_RANGE · last valid run 021 retained" && e.headline == "β = 3.1920 mm");
+        SlitInput badRatio; badRatio.intensityRatio = -0.25;
+        const auto ratioError = ER::doubleSlit(badRatio);
+        CHECK(ratioError.paused && ratioError.issues[0].field == FieldIds::intensityRatio);
+        CHECK(std::isnan(ER::doubleSlitSweep(badRatio).rows[0][1]));
+        SlitInput badWidth; badWidth.slitWidthMm = -0.1;
+        CHECK(ER::doubleSlit(badWidth).paused && ER::doubleSlit(badWidth).issues[0].field == FieldIds::slitWidth);
         auto none = ER::doubleSlit(bad);                                          // no previous result to retain
         CHECK(none.paused && none.registers.size() == 1 && none.notices[0].body.find("the last valid result") != std::string::npos);
         RefractionInput rb; rb.theta1 = 95;

@@ -763,6 +763,10 @@ Report doubleSlit(const SlitInput& in, const ReportContext& ctx) {
     if (!std::isfinite(in.separationMm) || in.separationMm <= 0.0) issues.push_back({FieldIds::slitSeparation, "Enter d > 0 mm.", "d"});
     if (!std::isfinite(in.screenM) || in.screenM <= 0.0) issues.push_back({FieldIds::screenDistance, "Enter L > 0 m.", "L"});
     if (!std::isfinite(static_cast<double>(in.order))) issues.push_back({FieldIds::order, "Enter an integer order m.", "m"});
+    if (!std::isfinite(in.slitWidthMm) || in.slitWidthMm < 0.0)
+        issues.push_back({FieldIds::slitWidth, "Enter a ≥ 0 mm.", "a"});
+    if (!std::isfinite(in.intensityRatio) || in.intensityRatio < 0.0)
+        issues.push_back({FieldIds::intensityRatio, "Enter a finite intensity ratio ≥ 0.", "I₂/I₁"});
     validateSigma(issues, FieldIds::sigmaWavelength, in.sigmaWavelengthNm, "σ(λ)");
     validateSigma(issues, FieldIds::sigmaSlitSeparation, in.sigmaSeparationMm, "σ(d)");
     validateSigma(issues, FieldIds::sigmaScreenDistance, in.sigmaScreenM, "σ(L)");
@@ -772,6 +776,8 @@ Report doubleSlit(const SlitInput& in, const ReportContext& ctx) {
             if (i.field == FieldIds::slitSeparation) { lines.push_back(std::string("d = ") + NF::fixed(in.separationMm, 3) + " mm"); lines.push_back("β = λL / d → UNDEFINED"); }
             else if (i.field == FieldIds::wavelength) lines.push_back(std::string("λ = ") + num(in.wavelengthNm) + " nm");
             else if (i.field == FieldIds::screenDistance) lines.push_back(std::string("L = ") + num(in.screenM) + " m");
+            else if (i.field == FieldIds::slitWidth) lines.push_back(std::string("a = ") + num(in.slitWidthMm) + " mm");
+            else if (i.field == FieldIds::intensityRatio) lines.push_back(std::string("I₂/I₁ = ") + num(in.intensityRatio));
             else lines.push_back(std::string("m = ") + std::to_string(in.order));
         }
         const std::string cond = issues.front().message.substr(6, issues.front().message.size() - 6 - 1);     // "d > 0 mm" without "Enter " and "."
@@ -879,14 +885,24 @@ DataSeries doubleSlitSweep(const SlitInput& in) {
     const double slitWidthM = in.slitWidthMm * 1e-3;
     const std::vector<double> values{in.wavelengthNm, in.separationMm, in.screenM};
     const std::vector<double> sigmas{in.sigmaWavelengthNm, in.sigmaSeparationMm, in.sigmaScreenM};
+    const bool physicalInputsValid = std::isfinite(in.wavelengthNm) && in.wavelengthNm > 0.0 &&
+        std::isfinite(in.separationMm) && in.separationMm > 0.0 &&
+        std::isfinite(in.screenM) && in.screenM > 0.0 &&
+        std::isfinite(in.slitWidthMm) && in.slitWidthMm >= 0.0 &&
+        std::isfinite(in.intensityRatio) && in.intensityRatio >= 0.0;
+    if (!physicalInputsValid) {
+        for (int k = -20; k <= 20; ++k) s.rows.push_back({double(k) * 0.5, kNaN, kNaN});
+        return s;
+    }
     for (int k = -20; k <= 20; ++k) {
         const double y = k * 0.5e-3;
         const double env = in.showEnvelope && slitWidthM > 0.0 ? PC::singleSlitEnvelope(y, lam, L, slitWidthM) : 1.0;
         const double intensity = d > 0 ? PC::relativeIntensityUnequal(y, lam, L, d, in.intensityRatio) * env : kNaN;
-        const auto error = propagateUncertainty(values, sigmas, [y, slitWidthM, &in](const std::vector<double>& v) {
-            const double envVal = in.showEnvelope && slitWidthM > 0.0 ? PC::singleSlitEnvelope(y, v[0] * 1e-9, v[2], slitWidthM) : 1.0;
-            return PC::relativeIntensityUnequal(y, v[0] * 1e-9, v[2], v[1] * 1e-3, in.intensityRatio) * envVal;
-        });
+        const auto error = propagateUncertainty(values, sigmas,
+            [y, slitWidthM, showEnvelope = in.showEnvelope, intensityRatio = in.intensityRatio](const std::vector<double>& v) {
+                const double envVal = showEnvelope && slitWidthM > 0.0 ? PC::singleSlitEnvelope(y, v[0] * 1e-9, v[2], slitWidthM) : 1.0;
+                return PC::relativeIntensityUnequal(y, v[0] * 1e-9, v[2], v[1] * 1e-3, intensityRatio) * envVal;
+            });
         s.rows.push_back({double(k) * 0.5, intensity, std::isfinite(intensity) && error.valid ? error.standardUncertainty : kNaN});
     }
     const double betaMm = PC::fringeSpacing(lam, L, d) * 1e3;

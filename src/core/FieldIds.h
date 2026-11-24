@@ -41,6 +41,7 @@ inline constexpr char gratingDensity[] = "N";
 inline constexpr char gratingLambda2[] = "lambda2Grating";
 inline constexpr char illuminatedSlits[] = "M";
 inline constexpr char slitWidth[] = "a";
+inline constexpr char intensityRatio[] = "intensityRatio";
 inline constexpr char incidentIntensity[] = "I";
 inline constexpr char mirrorDisplacement[] = "dx";
 inline constexpr char michelsonFringeCount[] = "michelsonFringeCount";

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <numbers>
 
 namespace phy104::PhysicsCalculator {
@@ -175,12 +176,21 @@ double singleSlitEnvelope(double y, double lambda, double R, double slitWidth) {
 }
 
 double relativeIntensityUnequal(double y, double lambda, double R, double d, double ratio) {
-    if (lambda * R == 0.0) return 0.0;
-    const double phase = 2.0 * std::numbers::pi * d * y / (lambda * R);
+    if (lambda == 0.0 || R == 0.0) return 0.0;
+    if (!std::isfinite(y) || !std::isfinite(lambda) || !std::isfinite(R) ||
+        !std::isfinite(d) || !std::isfinite(ratio) || lambda <= 0.0 || R <= 0.0 ||
+        d < 0.0 || ratio < 0.0)
+        return std::numeric_limits<double>::quiet_NaN();
+    const double opticalScale = lambda * R;
+    if (opticalScale == 0.0) return 0.0;
+    if (!std::isfinite(opticalScale)) return std::numeric_limits<double>::quiet_NaN();
+
+    const double phase = 2.0 * std::numbers::pi * d * y / opticalScale;
     const double c = std::cos(phase);
-    const double i1 = 1.0, i2 = ratio;
-    const double peak = i1 + i2 + 2.0 * std::sqrt(i1 * i2);
-    return peak > 0.0 ? (i1 + i2 + 2.0 * std::sqrt(i1 * i2) * c) / peak : 0.0;
+    if (!std::isfinite(c)) return std::numeric_limits<double>::quiet_NaN();
+    const double amplitudeRatio = std::sqrt(ratio);
+    const double visibility = 2.0 * (amplitudeRatio / (1.0 + amplitudeRatio)) / (1.0 + amplitudeRatio);
+    return std::clamp(1.0 - visibility * (1.0 - c), 0.0, 1.0);
 }
 
 } // namespace phy104::PhysicsCalculator

@@ -1035,7 +1035,11 @@ WavePage::WavePage(AppContext* ctx, QWidget* parent)
     bind(QString::fromLatin1(FieldIds::sigmaScreenDistance), m_sigmaL);
 
     m_slitWidth = new UnitField("mm");  m_slitWidth->setSpinner(true, 0.01);
+    m_slitWidth->setObjectName(FieldIds::slitWidth);
+    bind(QString::fromLatin1(FieldIds::slitWidth), m_slitWidth);
     m_intensityRatio = new UnitField;  m_intensityRatio->setSpinner(true, 0.01);
+    m_intensityRatio->setObjectName(FieldIds::intensityRatio);
+    bind(QString::fromLatin1(FieldIds::intensityRatio), m_intensityRatio);
     m_chkExact = new QCheckBox("Exact formula y = L tan(asin(mλ/d))");  m_chkExact->setObjectName("rayToggle");
     m_chkEnvelope = new QCheckBox("Show diffraction envelope");  m_chkEnvelope->setObjectName("rayToggle");
 
