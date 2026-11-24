@@ -333,7 +333,8 @@ void StudyHubPage::showStudyMaterial(int row) {
     const StudyNote& note = m_studyMaterials[static_cast<std::size_t>(index)];
     const QString chapter = QString::fromStdString(note.chapter);
     const QString type = QString::fromStdString(note.type);
-    m_studyMaterialMeta->setText(chapter + QString(" ") + type.toUpper() + QString(" ") + QString::fromStdString(note.id));
+    m_studyMaterialMeta->setText(chapter + QStringLiteral("  ·  ") + type.toUpper() + QStringLiteral("  ·  ") +
+                                 QString::fromStdString(note.id));
     m_studyMaterialTitle->setText(QString::fromStdString(note.title));
 
     auto* pointsHeading = new QLabel(LanguageManager::instance().text("Key points"));

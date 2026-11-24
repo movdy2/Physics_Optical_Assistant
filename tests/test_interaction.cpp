@@ -1438,12 +1438,13 @@ private slots:
         QVERIFY2(list->count() >= 8, "the Study Hub chapter list is empty");
         QVERIFY(!m_app->studyHub->summaryLabel()->text().isEmpty());
         QVERIFY2(m_app->studyHub->constantTable()->rowCount() > 0, "no constants for the first chapter");
-        bool hasRules = false, hasChapterConstants = false;
-        for (auto* label : m_app->studyHub->findChildren<QLabel*>()) {
-            hasRules |= label->text().startsWith("Rules · ");
+        auto* ruleContent = m_app->studyHub->findChild<QWidget*>("rulesContent");
+        QVERIFY2(ruleContent && !ruleContent->findChildren<LatexWidget*>().isEmpty(),
+                 "the chapter Rules panel has no formulas");
+        bool hasChapterConstants = false;
+        for (auto* label : m_app->studyHub->findChildren<QLabel*>())
             hasChapterConstants |= label->text() == "Constants";
-        }
-        QVERIFY2(hasRules && hasChapterConstants, "the chapter Rules or Constants panel is missing");
+        QVERIFY2(hasChapterConstants, "the chapter Constants panel is missing");
 
         list->setCurrentRow(1);
         QCOMPARE(list->currentRow(), 1);
@@ -1706,6 +1707,7 @@ private slots:
     }
 
     void studyHubNotesArePerChapterJsonAndSeparateFromMarkdownNotes() {
+        goTo(m_app->studyHub);
         m_app->studyHub->selectSection(1);
         auto* noteViews = m_app->studyHub->findChild<QStackedWidget*>("studyHubNoteViews");
         QVERIFY(noteViews);
