@@ -90,6 +90,7 @@ More captures are in [`docs/screenshots/`](docs/screenshots/)
 - A C++20 compiler
 - Qt 6 with **Widgets**, **Svg**, and **PrintSupport**
 - Ninja (recommended)
+- Lua 5.4 (optional; only needed to regenerate the checked-in SVG diagrams)
 
 On Arch Linux, install the build dependencies with:
 
@@ -114,7 +115,14 @@ To capture screenshots after building, run:
 ./build/src/PHY104OpticalAssistant --screenshots build/screenshots
 ```
 
-Linux and Windows Qt builds and the core-only tests run in GitHub Actions.
+Linux and Windows Qt builds and the core-only tests run in GitHub Actions. The standalone Lua generator does not add a Lua runtime dependency to the application; when Lua 5.4 is installed, regenerate the diagrams with:
+
+```sh
+cmake --build build --target generate_diagrams
+# or write to another directory directly:
+mkdir -p /tmp/diagrams
+lua5.4 tools/make_diagrams.lua /tmp/diagrams
+```
 
 ## Project layout
 

@@ -19,6 +19,7 @@
 #include <QPushButton>
 #include <QTableWidget>
 #include <QTextBlock>
+#include <QTimer>
 #include <QToolButton>
 #include <QVBoxLayout>
 

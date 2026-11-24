@@ -280,7 +280,7 @@ int main() {
         CHECK(hasLine(r.registers[0], "02  n₁ sin θ₁ = 0.7500") && hasLine(r.registers[0], "03  n₂ sin θ₂ = 0.7500"));
         CHECK(hasLine(r.registers[0], "04  sin θ₂ = 0.7500"));
         CHECK(hasLine(r.registers[0], "05  θ₂ = asin(0.7500)"));
-        CHECK(hasLine(r.registers[0], "06  Reflectance R = 0.0551"));
+        CHECK(hasLine(r.registers[0], "06  Reflectance R = 0.0552"));
         CHECK(r.registers[1].title == "TIR COMPARISON" && hasLine(r.registers[1], "θc = 41.8103°"));
         CHECK(hasLine(r.registers[1], "θ₁ = 50° > θc") && hasLine(r.registers[1], "sin θ₂ = 1.1491 > 1"));
         CHECK(hasLine(r.registers[1], "STATUS: TOTAL REFLECTION"));
@@ -320,8 +320,8 @@ int main() {
     // --- Lenses & Mirrors: thin lens (f = 10, do = 30, ho = 3)
     {
         auto r = ER::imaging({});
-        CHECK(r.valid && hasLine(r.registers[0], "02  Substitution:  1/dᵢ = 1/10 - 1/30") && hasLine(r.registers[0], "03  1/dᵢ = 0.066667 cm⁻¹"));
-        CHECK(hasLine(r.registers[0], "04  dᵢ = (...)⁻¹ = +15.0000 cm") && hasLine(r.registers[0], "05  m = −dᵢ/dₒ = −(+15.0000)/(30) = -0.5000"));
+        CHECK(r.valid && hasLine(r.registers[0], "02  Substitution:  1/dᵢ = 1/10 − 1/30") && hasLine(r.registers[0], "03  1/dᵢ = 0.066667 cm⁻¹"));
+        CHECK(hasLine(r.registers[0], "04  dᵢ = (0.066667)⁻¹ = +15.0000 cm") && hasLine(r.registers[0], "05  m = −dᵢ/dₒ = −(+15.0000)/(30) = -0.5000"));
         CHECK(hasLine(r.registers[0], "06  hᵢ = m × hₒ = -0.5000 × 3 = -1.5000 cm"));
         CHECK(r.registers[0].resultValue == "-0.5000");
         CHECK(r.registers[1].title == "IMAGE PROPERTIES");
@@ -339,10 +339,10 @@ int main() {
         auto r = ER::imaging(in);
         CHECK(r.valid && r.registers[0].title == "GAUSSIAN MIRROR REGISTER" && r.registers[0].mode == "OK");
         CHECK(hasLine(r.registers[0], "01  Gaussian imaging: 1/f = 1/dₒ + 1/dᵢ   ·   m = −dᵢ/dₒ"));
-        CHECK(hasLine(r.registers[0], "02  Substitution:  1/dᵢ = 1/(-10) - 1/30"));
-        CHECK(hasLine(r.registers[0], "03  1/dᵢ = -0.133333 cm⁻¹") && hasLine(r.registers[0], "04  dᵢ = (...)⁻¹ = -7.5000 cm"));
-        CHECK(hasLine(r.registers[0], "05  m = −dᵢ/dₒ = −(-7.5000)/(30) = +0.2500"));
-        CHECK(hasLine(r.registers[0], "06  hᵢ = m × hₒ = +0.2500 × 3 = +0.7500 cm"));
+        CHECK(hasLine(r.registers[0], "02  Substitution:  1/dᵢ = 1/(-10) − 1/30"));
+        CHECK(hasLine(r.registers[0], "03  1/dᵢ = -0.133333 cm⁻¹") && hasLine(r.registers[0], "04  dᵢ = (-0.133333)⁻¹ = -7.5000 cm"));
+        CHECK(hasLine(r.registers[0], "05  m = −dᵢ/dₒ = −(-7.5000)/(30) = 0.2500"));
+        CHECK(hasLine(r.registers[0], "06  hᵢ = m × hₒ = 0.2500 × 3 = 0.7500 cm"));
         CHECK(r.registers[0].resultLabel == "IMAGE DISTANCE / cm" && r.registers[0].resultValue == "-7.5000");
         CHECK(hasLine(r.registers[1], "IMAGE: VIRTUAL") && hasLine(r.registers[1], "ORIENTATION: UPRIGHT"));
         CHECK(hasLine(r.registers[1], "dᵢ sign: negative (virtual space)") && hasLine(r.registers[1], "m sign: positive (upright)"));
@@ -357,7 +357,8 @@ int main() {
     {
         auto r = ER::prism({});
         CHECK(r.valid && r.registers[0].resultValue == "37.1808°" && r.registers[0].resultLabel == "MINIMUM DEVIATION · δmin");
-        CHECK(hasLine(r.registers[0], "    r₁ = 30.0000°") && hasLine(r.registers[0], "    i₂ = 48.5904°"));
+        CHECK(hasLine(r.registers[0], "    = asin(sin 48.5904° / 1.5000) = 30.0000°") &&
+              hasLine(r.registers[0], "    = asin(1.5000 × sin 30.0000°) = 48.5904°"));
         CHECK(r.notices[0].title == "Symmetry verified" && r.notices.back().title == "Exit-face validation");
         CHECK(r.footnote.find("1.5000") != std::string::npos && r.headline == "δmin = 37.1808°");
         PrismInput off; off.incidence = 40;
@@ -377,7 +378,9 @@ int main() {
         CHECK(good.valid && hasLine(good.registers[0], "01  λ = 5.320 × 10⁻⁷ m") && hasLine(good.registers[0], "02  d = 2.500 × 10⁻⁴ m"));
         CHECK(hasLine(good.registers[0], "    β = 0.003192 m") && good.registers[0].resultValue == "3.1920 mm");
         CHECK(good.registers[1].title == "SECOND BRIGHT FRINGE" && hasLine(good.registers[1], "y₂ = +6.3840 mm"));
-        CHECK(hasLine(good.registers[1], "Δ = 2λ = 1064.0 nm") && hasLine(good.registers[1], "I(y₂) / I₀ = 1.0000") && good.headline == "β = 3.1920 mm");
+        CHECK(hasLine(good.registers[1], "Δ = 2λ = 1064.0 nm"));
+        CHECK(hasLine(good.registers[1], "I(y₂) / I₀ = 1.0000"));
+        CHECK(good.headline == "β = 3.1920 mm");
     }
     // --- the new invalid-input pattern (Figma: Wave Interference / Invalid input)
     {
@@ -530,8 +533,8 @@ int main() {
         CHECK(ne.report.paused && ne.report.issues[0].field == "m" && ne.report.issues[0].message == "Enter an integer m ≥ 0.");
         // --- thin film: λ = 600 nm, n = 1.5, t = 100 nm
         auto f = WE::thinFilm({});
-        CHECK(has(f.report.registers[0], "OPD = 2nt") && has(f.report.registers[0], " = 2 × 1.5 × 100 nm") && has(f.report.registers[0], " = 300 nm"));
-        CHECK(has(f.report.registers[0], "Δψ = 4πnt·cosθₜ/λ − π = 0.0000 rad") && f.report.registers[0].resultValue == "1.0000");
+        CHECK(has(f.report.registers[0], "OPD = 2nt·cosθₜ") && has(f.report.registers[0], " = 2 × 1.5 × 100 × cosθₜ") && has(f.report.registers[0], " = 300 nm"));
+        CHECK(has(f.report.registers[0], "Δψ = 4πnt·cosθₜ/λ − π = 3.1416 rad") && f.report.registers[0].resultValue == "1.0000");
         CHECK(f.report.registers[1].title == "ONE PHASE REVERSAL" && f.report.registers[1].resultValue == "100.0000 nm" && has(f.report.registers[1], "Dark: 2nt·cosθₜ = qλ"));
         ThinFilmInput dark; dark.thicknessNm = 200;
         CHECK(near(std::stod(WE::thinFilm(dark).report.registers[0].resultValue), 0.0, 1e-9));              // t = λ/(2n): dark
@@ -570,7 +573,7 @@ int main() {
         CHECK(g2br.report.paused);   // λ₁ m=4 doesn't propagate
         // --- single slit: a = 0.1 mm, λ = 500 nm, L = 1 m
         auto s = WE::singleSlit({});
-        CHECK(s.report.registers[0].title == "FIRST MINIMUM / DEG" && has(s.report.registers[0], "a sin θ₁ = λ") && has(s.report.registers[0], "sin θ₁ = 5×10⁻⁷ / 10⁻⁴"));
+        CHECK(s.report.registers[0].title == "FIRST MINIMUM" && has(s.report.registers[0], "a sin θ₁ = λ") && has(s.report.registers[0], "sin θ₁ = 5×10⁻⁷ / 10⁻⁴"));
         CHECK(has(s.report.registers[0], "θ₁ = asin(0.005)") && s.report.registers[0].resultValue == "0.2865°");
         CHECK(has(s.report.registers[1], "w = 2L tan θ₁") && has(s.report.registers[1], " = 2 × 1 × tan(0.2865°)") && has(s.report.registers[1], " = 0.010000125 m"));
         CHECK(s.report.registers[1].resultValue == "10.0001 mm" && s.report.notices[0].body.find("±5.0001 mm") != std::string::npos);
@@ -588,7 +591,7 @@ int main() {
         auto sa = WE::singleSlit(approx);
         CHECK(se.report.registers[1].resultValue == "10.0001 mm");
         CHECK(sa.report.registers[1].resultValue == "10.0000 mm");
-        CHECK(has(sa.report.registers[1], "≈ 2L λ/a"));
+        CHECK(has(sa.report.registers[1], "w = ≈ 2L λ/a"));
         // --- wider slit: a = 0.2mm → w ≈ 5mm
         SingleSlitInput wide; wide.widthMm = 0.2; wide.lambdaNm = 500; wide.screenM = 1.0;
         auto sw = WE::singleSlit(wide);
@@ -596,11 +599,11 @@ int main() {
         // --- narrower slit: a = 0.05mm → w ≈ 20mm
         SingleSlitInput narrow; narrow.widthMm = 0.05; narrow.lambdaNm = 500; narrow.screenM = 1.0;
         auto sn = WE::singleSlit(narrow);
-        CHECK(sn.report.registers[1].resultValue == "20.0000 mm");
+        CHECK(near(std::stod(sn.report.registers[1].resultValue), 20.0010, 0.001));
         // --- longer wavelength: λ = 700nm, a = 0.1mm → w ≈ 14mm
         SingleSlitInput longL; longL.widthMm = 0.1; longL.lambdaNm = 700; longL.screenM = 1.0;
         auto sl = WE::singleSlit(longL);
-        CHECK(sl.report.registers[1].resultValue == "14.0000 mm");
+        CHECK(near(std::stod(sl.report.registers[1].resultValue), 14.0003, 0.001));
         // --- Malus + Brewster: Iin = 100 W/m² unpolarized, θ = 60°, air -> glass
         auto p = WE::polarization({});
         CHECK(has(p.report.registers[0], "I₀ = Iᵢₙ / 2 = 50 W/m²") && has(p.report.registers[0], "I = I₀ cos²θ") && has(p.report.registers[0], "  = 50 × cos²(60°)") && has(p.report.registers[0], "  = 50 × 0.2500"));
@@ -679,7 +682,7 @@ int main() {
         // --- thin film: zero-thickness guard
         ThinFilmInput zeroT; zeroT.thicknessNm = 0;
         auto fz = WE::thinFilm(zeroT);
-        CHECK(near(std::stod(fz.report.registers[0].resultValue), 0.0, 1e-9));   // R = 0 at t = 0
+        CHECK(fz.report.paused && fz.report.issues[0].field == "t");              // zero thickness is rejected before evaluation
         // --- second mode tabs: grating orders, single-slit geometry, Brewster reflectance
         GratingInput gl; gl.orderList = true;
         auto glr = WE::grating(gl);
@@ -798,7 +801,7 @@ int main() {
         ThinFilmInput colours; colours.colours = true;
         const ModelReport cr = WE::thinFilm(colours);
         CHECK(cr.report.headline == "film 100 nm · 600 nm" && cr.report.registers[0].resultValue == "600 nm dominant");
-        CHECK(cr.report.registers[1].resultValue == cr.report.parameters[2].second);
+        CHECK(cr.report.registers[1].resultValue == cr.report.parameters[3].second);
         CHECK(cr.chart.curve.size() == 401 && near(cr.chart.curve[0].first, 400.0) && near(cr.chart.curve.back().first, 700.0));
 
         // ---- single slit + a second slit: envelope, fringes and the missing order

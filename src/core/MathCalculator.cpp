@@ -24,7 +24,8 @@ CalcEntry MathCalculator::evaluate(const std::string& expression) {
         entry.ok = true;
         m_ans = value;
     } catch (const std::exception& e) {
-        entry.error = e.what();
+        const std::string message = e.what();
+        entry.error = message.rfind("Math error", 0) == 0 ? message : "Math error: " + message;
     }
     m_history.push_back(entry);
     trim();

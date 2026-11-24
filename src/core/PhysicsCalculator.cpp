@@ -176,10 +176,11 @@ double singleSlitEnvelope(double y, double lambda, double R, double slitWidth) {
 
 double relativeIntensityUnequal(double y, double lambda, double R, double d, double ratio) {
     if (lambda * R == 0.0) return 0.0;
-    const double phase = std::numbers::pi * d * y / (lambda * R);
+    const double phase = 2.0 * std::numbers::pi * d * y / (lambda * R);
     const double c = std::cos(phase);
     const double i1 = 1.0, i2 = ratio;
-    return i1 + i2 + 2.0 * std::sqrt(i1 * i2) * c;
+    const double peak = i1 + i2 + 2.0 * std::sqrt(i1 * i2);
+    return peak > 0.0 ? (i1 + i2 + 2.0 * std::sqrt(i1 * i2) * c) / peak : 0.0;
 }
 
 } // namespace phy104::PhysicsCalculator
