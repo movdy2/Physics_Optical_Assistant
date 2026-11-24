@@ -182,8 +182,8 @@ void ExperimentBase::buildButtons(QVBoxLayout* fields, const QString& hint) {
     m_calc->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     auto* actionRow = new QHBoxLayout;
     actionRow->setSpacing(6);
-    actionRow->addWidget(m_calc, 1);
-    actionRow->addWidget(send, 1);
+    actionRow->addWidget(m_calc, 1, Qt::AlignTop);
+    actionRow->addWidget(send, 1, Qt::AlignTop);
     fields->addLayout(actionRow);
     connect(send, &QPushButton::clicked, this, [this] { sendToNotes(); });
     fields->addWidget(m_reset);

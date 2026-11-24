@@ -299,7 +299,7 @@ QWidget* MarkdownWorkspace::buildToolbar() {
         QAction* a = menu->addAction(f.name);
         connect(a, &QAction::triggered, this, [this, n = QString(f.name), fm = QString(f.formula)] {
             if (m_mode == Preview) setMode(Split);
-            snippet(QString(" ") + LanguageManager::instance().text(n) + QString("$") + fm + "$\n");
+            snippet(QString("### ") + LanguageManager::instance().text(n) + QString("\n- $") + fm + "$\n");
         });
     }
     formulas->setMenu(menu);

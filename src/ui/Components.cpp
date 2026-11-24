@@ -442,6 +442,7 @@ CalculatorKeypad::CalculatorKeypad(QWidget* parent) : QWidget(parent) {
             Q_ASSERT_X(b, "CalculatorKeypad", qPrintable("Missing Designer key: " + uiName));
             if (!b) continue;
             b->setObjectName(k.kind);
+            b->setMaximumHeight(36);
             b->setCursor(Qt::PointingHandCursor);
             const QString label = k.label, text = k.insert;
             connect(b, &QPushButton::clicked, this, [this, label, text] {

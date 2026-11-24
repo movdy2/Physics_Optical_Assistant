@@ -897,7 +897,7 @@ private slots:
         // Slider → field/register: move slider to 0 µm → zero fringe shift
         slider->setValue(0);
         QApplication::processEvents();
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->michelson), QString("+0.0000"), 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->michelson) == QString("+0.0000"), 1500);
 
         // Slider → field/register: move slider to −1 µm → negative fringe shift
         slider->setValue(-10000);
@@ -907,12 +907,12 @@ private slots:
         // --- Michelson wavelength mode: M1 moves vertically while legacy tabs retain M2 behavior
         click(findControl(m_app->michelson, "resetParameters"));
         click(modeTab(m_app->michelson, "Laser wavelength"));
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->michelson), QString("632.8046 nm"), 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->michelson) == QString("632.8046 nm"), 1500);
         const QPoint m1Press = canvas->movableMirrorCenter().toPoint();
         QTest::mousePress(canvas, Qt::LeftButton, Qt::NoModifier, m1Press);
         QTest::mouseMove(canvas, m1Press + QPoint(0, -10));
         QTest::mouseRelease(canvas, Qt::LeftButton, Qt::NoModifier, m1Press + QPoint(0, -10));
-        QTRY_COMPARE_WITH_TIMEOUT(slider->value(), 17500, 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(slider->value() == 17500, 1500);
         QVERIFY2(allLabelTexts(m_app->michelson).contains("Michelson setup / virtual images M1′ and M2"),
                  "wavelength-mode setup title was not shown");
         auto* solveFor = comboWith(m_app->michelson, "Laser wavelength λ");
@@ -921,27 +921,27 @@ private slots:
         QVERIFY(wavelengthFields.size() >= 3);
         chooseItem(solveFor, 1);
         typeInto(wavelengthFields[0], "632.8");
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->michelson), QString("5.5297 fringes"), 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->michelson) == QString("5.5297 fringes"), 1500);
         chooseItem(solveFor, 2);
         typeInto(wavelengthFields[2], "5");
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->michelson), QString("1.5820 µm"), 1500);
-        QTRY_COMPARE_WITH_TIMEOUT(slider->value(), 15820, 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->michelson) == QString("1.5820 µm"), 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(slider->value() == 15820, 1500);
 
         // --- Newton's rings: the viewing-mode dropdown now reaches the physics and the diagram
         goTo(m_app->newton);
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->newton), QString("1.5492 mm"), 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->newton) == QString("1.5492 mm"), 1500);
         chooseItem(comboWith(m_app->newton, "Transmitted light"), 1);
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->newton), QString("1.6432 mm"), 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->newton) == QString("1.6432 mm"), 1500);
         QVERIFY(allLabelTexts(m_app->newton).contains("Lens on plate / transmitted rings"));
         chooseItem(comboWith(m_app->newton, "Reflected light"), 0);
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->newton), QString("1.5492 mm"), 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->newton) == QString("1.5492 mm"), 1500);
     }
     // ------------------------------------------------------------------ v2.8 experiment extras
     void thickLensScreenShowsThePrincipalPlanesAndTheAberration() {
         goTo(m_app->thickLens);
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->thickLens), QString("+10.3448 cm"), 1500);   // the focal length register
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->thickLens) == QString("+10.3448 cm"), 1500);   // the focal length register
         // the magnification register (the second LCD card of the page, the first invisible one is skipped)
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->thickLens, 1), QString("-0.5085"), 1500);    // the magnification register
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->thickLens, 1) == QString("-0.5085"), 1500);    // the magnification register
         QVERIFY2(allLabelTexts(m_app->thickLens).contains("Thick element / principal planes"), "the diagram title is missing");
         QVERIFY2(m_app->thickLens->elementName() == "Biconvex (converging)", "the element type is wrong");
 
@@ -959,78 +959,78 @@ private slots:
 
         // the Spectrum tab: one element, three colours
         click(modeTab(m_app->thickLens, "Spectrum"));
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->thickLens), QString("0.1510 cm"), 1500);     // red-to-blue focal spread
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->thickLens) == QString("0.1510 cm"), 1500);     // red-to-blue focal spread
         QVERIFY(allLabelTexts(m_app->thickLens).join(" ").contains("+10.0628"));              // red focus at 656 nm
         QVERIFY2(allLabelTexts(m_app->thickLens).contains("Thick element / three colours"), "the spectrum title is missing");
         click(modeTab(m_app->thickLens, "Thick lens"));
         click(findControl(m_app->thickLens, "resetParameters"));
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->thickLens), QString("+10.3448 cm"), 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->thickLens) == QString("+10.3448 cm"), 1500);
     }
     void filmColoursTabPaintsTheSwatchOfThePhysics() {
         goTo(m_app->thinFilm);
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->thinFilm), QString("1.0000"), 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->thinFilm) == QString("1.0000"), 1500);
         click(modeTab(m_app->thinFilm, "Colours"));
         QTRY_VERIFY_WITH_TIMEOUT(allLabelTexts(m_app->thinFilm).contains("Film layers / colour by thickness"), 1500);
         QString swatch = m_app->thinFilm->colourSwatch();
         QVERIFY2(swatch.startsWith('#') && swatch.size() == 7, "no swatch colour for the film");
         QTRY_VERIFY_WITH_TIMEOUT(allLabelTexts(m_app->thinFilm).join(" ").contains("600 nm dominant"), 1500);
         click(findControl(m_app->thinFilm, "resetParameters"));                              // back to the reflection tab
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->thinFilm), QString("1.0000"), 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->thinFilm) == QString("1.0000"), 1500);
         QVERIFY(m_app->thinFilm->colourSwatch().isEmpty());
     }
     void envelopeAndResolutionTabsCompleteTheWaveScreens() {
         // single slit: two slits of finite width put fringes inside the envelope
         goTo(m_app->singleSlit);
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->singleSlit), QString("0.2865°"), 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->singleSlit) == QString("0.2865°"), 1500);
         click(modeTab(m_app->singleSlit, "Envelope"));
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->singleSlit, 1), QString("7 bright"), 1500);     // second register: fringe count
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->singleSlit, 1) == QString("7 bright"), 1500);     // second register: fringe count
         QVERIFY2(allLabelTexts(m_app->singleSlit).contains("Two slits / fringes inside the envelope"), "envelope title missing");
         click(findControl(m_app->singleSlit, "resetParameters"));
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->singleSlit), QString("0.2865°"), 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->singleSlit) == QString("0.2865°"), 1500);
 
         // grating: the Resolution tab resolves 600 nm / (1 × 120 lines) in the first order
         goTo(m_app->grating);
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->grating), QString("+17.4576°"), 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->grating) == QString("+17.4576°"), 1500);
         click(modeTab(m_app->grating, "Resolution"));
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->grating), QString("30 nm"), 1500);           // δλ = 600 / (1 × 20 illuminated lines)
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->grating) == QString("30 nm"), 1500);           // δλ = 600 / (1 × 20 illuminated lines)
         QVERIFY2(allLabelTexts(m_app->grating).contains("Grating / two lines one Rayleigh step apart"), "resolution title missing");
         click(findControl(m_app->grating, "resetParameters"));
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->grating), QString("+17.4576°"), 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->grating) == QString("+17.4576°"), 1500);
     }
 
     void remainingSecondTabsShowTheirOwnNumbers() {
         // grating: the Orders tab lists every peak instead of one selected order
         goTo(m_app->grating);
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->grating), QString("+17.4576°"), 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->grating) == QString("+17.4576°"), 1500);
         click(modeTab(m_app->grating, "Orders"));
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->grating), QString("7 orders"), 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->grating) == QString("7 orders"), 1500);
         QVERIFY2(allLabelTexts(m_app->grating).contains("Grating / every propagating order"), "orders title missing");
         click(modeTab(m_app->grating, "Transmission"));
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->grating), QString("+17.4576°"), 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->grating) == QString("+17.4576°"), 1500);
 
         // single slit: Geometry puts the minima on the screen
         goTo(m_app->singleSlit);
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->singleSlit), QString("0.2865°"), 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->singleSlit) == QString("0.2865°"), 1500);
         click(modeTab(m_app->singleSlit, "Geometry"));
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->singleSlit), QString("5.0001 mm"), 1500);
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->singleSlit, 1), QString("7.1501 mm"), 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->singleSlit) == QString("5.0001 mm"), 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->singleSlit, 1) == QString("7.1501 mm"), 1500);
         QVERIFY(allLabelTexts(m_app->singleSlit).contains("Slit / where the minima land"));
         click(modeTab(m_app->singleSlit, "Intensity"));
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->singleSlit), QString("0.2865°"), 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->singleSlit) == QString("0.2865°"), 1500);
 
         // polarization: the Brewster tab replaces Malus' law with the Fresnel reflectances
         goTo(m_app->polarization);
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->polarization), QString("12.5000 W/m²"), 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->polarization) == QString("12.5000 W/m²"), 1500);
         click(modeTab(m_app->polarization, "Brewster"));
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->polarization), QString("56.3099°"), 1500);
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->polarization, 1), QString("0.1479"), 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->polarization) == QString("56.3099°"), 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->polarization, 1) == QString("0.1479"), 1500);
         QVERIFY(allLabelTexts(m_app->polarization).contains("Interface at Brewster / reflected beam s-polarized"));
         auto fields = m_app->polarization->findChildren<UnitField*>();                       // Iᵢₙ, θ, n₁, n₂
         QCOMPARE(fields.size(), 4);
         typeInto(fields[3], "1.333");                                                        // water instead of glass
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->polarization), QString("53.1232°"), 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->polarization) == QString("53.1232°"), 1500);
         click(findControl(m_app->polarization, "resetParameters"));
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->polarization), QString("12.5000 W/m²"), 1500);
+        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->polarization) == QString("12.5000 W/m²"), 1500);
     }
     void newScreensHaveTheSaveExportHeader() {
         for (QWidget* page : QList<QWidget*>{m_app->newton, m_app->michelson, m_app->thinFilm, m_app->grating, m_app->singleSlit, m_app->polarization}) {

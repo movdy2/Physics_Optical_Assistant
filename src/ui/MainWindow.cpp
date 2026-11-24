@@ -18,6 +18,7 @@
 #include <QLabel>
 #include <QListWidget>
 #include <QPainter>
+#include <QPlainTextEdit>
 #include <QPushButton>
 #include <QShortcut>
 #include <QStackedWidget>
@@ -162,6 +163,11 @@ MainWindow::MainWindow(AppContext* ctx, QWidget* parent)
         ThemeManager::instance().setLayoutDirectionForLanguage(language.isArabic());
         refreshStatus();
         language.apply(this);
+        // Built-in Markdown is deliberately localized as a whole only while untouched. Apply the
+        // language pass directly to the editor as well, so the custom workspace keeps its marker
+        // and source text stable across shell-wide polish/layout changes.
+        for (QPlainTextEdit* editor : findChildren<QPlainTextEdit*>())
+            if (editor->property("i18nBuiltinContent").toBool()) language.apply(editor);
         refreshActivityLog();
         refreshLanguageButton();
     });
