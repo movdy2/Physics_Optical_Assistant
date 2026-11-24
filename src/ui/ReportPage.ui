@@ -9,7 +9,7 @@
     <widget class="QWidget" name="optionsColumn">
      <property name="minimumSize"><size><width>252</width><height>0</height></size></property><property name="maximumSize"><size><width>252</width><height>16777215</height></size></property>
      <layout class="QVBoxLayout" name="optionsColumnLayout"><property name="spacing"><number>12</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
-      <item>
+      <item stretch="1">
        <widget class="QFrame" name="optionsPanel">
         <property name="frameShape"><enum>QFrame::NoFrame</enum></property>
         <layout class="QVBoxLayout" name="optionsPanelLayout"><property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
@@ -17,12 +17,12 @@
           <widget class="QFrame" name="optionsHeader">
            <property name="minimumSize"><size><width>0</width><height>36</height></size></property><property name="frameShape"><enum>QFrame::NoFrame</enum></property>
            <layout class="QHBoxLayout" name="optionsHeaderLayout"><property name="spacing"><number>8</number></property><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>4</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>4</number></property>
-            <item><widget class="QLabel" name="optionsTitle"><property name="text"><string>Report contents</string></property><property name="wordWrap"><bool>true</bool></property></widget><property name="stretch"><number>1</number></property></item>
+            <item stretch="1"><widget class="QLabel" name="optionsTitle"><property name="text"><string>Report contents</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
             <item><widget class="QLabel" name="optionsMeta"><property name="text"><string>LIVE</string></property><property name="wordWrap"><bool>true</bool></property><property name="layoutDirection"><enum>Qt::LeftToRight</enum></property></widget></item>
            </layout>
           </widget>
          </item>
-         <item>
+         <item stretch="1">
           <widget class="QWidget" name="optionsBody">
            <layout class="QVBoxLayout" name="optionsBodyLayout"><property name="spacing"><number>8</number></property><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>12</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property>
             <item><widget class="QLabel" name="includeLabel"><property name="text"><string>INCLUDE</string></property></widget></item>
@@ -37,19 +37,19 @@
             <item><spacer name="optionsBodySpacer"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>40</height></size></property></spacer></item>
            </layout>
            </widget>
-         <property name="stretch"><number>1</number></property>
+
           </item>
         </layout>
        </widget>
-       <property name="stretch"><number>1</number></property>
+
       </item>
      </layout>
     </widget>
    </item>
-   <item>
+   <item stretch="1">
     <widget class="QWidget" name="previewColumn">
      <layout class="QVBoxLayout" name="previewColumnLayout"><property name="spacing"><number>12</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
-      <item>
+      <item stretch="1">
        <widget class="QFrame" name="previewPanel">
         <property name="frameShape"><enum>QFrame::NoFrame</enum></property>
         <layout class="QVBoxLayout" name="previewPanelLayout"><property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
@@ -57,32 +57,32 @@
           <widget class="QFrame" name="previewHeader">
            <property name="minimumSize"><size><width>0</width><height>36</height></size></property><property name="frameShape"><enum>QFrame::NoFrame</enum></property>
            <layout class="QHBoxLayout" name="previewHeaderLayout"><property name="spacing"><number>8</number></property><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>4</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>4</number></property>
-            <item><widget class="QLabel" name="previewTitle"><property name="text"><string>Preview</string></property><property name="wordWrap"><bool>true</bool></property></widget><property name="stretch"><number>1</number></property></item>
+            <item stretch="1"><widget class="QLabel" name="previewTitle"><property name="text"><string>Preview</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
             <item><widget class="QLabel" name="previewMeta"><property name="text"><string>PAGE 1</string></property><property name="wordWrap"><bool>true</bool></property><property name="layoutDirection"><enum>Qt::LeftToRight</enum></property></widget></item>
            </layout>
           </widget>
          </item>
-         <item>
+         <item stretch="1">
           <widget class="QWidget" name="previewBody">
            <layout class="QVBoxLayout" name="previewBodyLayout"><property name="spacing"><number>8</number></property><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>8</number></property>
-            <item><widget class="QTextBrowser" name="reportPreview"><property name="openExternalLinks"><bool>false</bool></property><property name="frameShape"><enum>QFrame::NoFrame</enum></property></widget><property name="stretch"><number>1</number></property></item>
+            <item stretch="1"><widget class="QTextBrowser" name="reportPreview"><property name="openExternalLinks"><bool>false</bool></property><property name="frameShape"><enum>QFrame::NoFrame</enum></property></widget></item>
            </layout>
            </widget>
-         <property name="stretch"><number>1</number></property>
+
           </item>
         </layout>
         </widget>
-       <property name="stretch"><number>1</number></property>
+
       </item>
      </layout>
     </widget>
-    <property name="stretch"><number>1</number></property>
+
    </item>
    <item>
     <widget class="QWidget" name="toolsColumn">
      <property name="minimumSize"><size><width>268</width><height>0</height></size></property><property name="maximumSize"><size><width>268</width><height>16777215</height></size></property>
      <layout class="QVBoxLayout" name="toolsColumnLayout"><property name="spacing"><number>12</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
-      <item>
+      <item stretch="1">
        <widget class="QFrame" name="exportPanel">
         <property name="frameShape"><enum>QFrame::NoFrame</enum></property>
         <layout class="QVBoxLayout" name="exportPanelLayout"><property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
@@ -90,12 +90,12 @@
           <widget class="QFrame" name="exportHeader">
            <property name="minimumSize"><size><width>0</width><height>36</height></size></property><property name="frameShape"><enum>QFrame::NoFrame</enum></property>
            <layout class="QHBoxLayout" name="exportHeaderLayout"><property name="spacing"><number>8</number></property><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>4</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>4</number></property>
-            <item><widget class="QLabel" name="exportTitle"><property name="text"><string>Export</string></property><property name="wordWrap"><bool>true</bool></property></widget><property name="stretch"><number>1</number></property></item>
+            <item stretch="1"><widget class="QLabel" name="exportTitle"><property name="text"><string>Export</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
             <item><widget class="QLabel" name="exportMeta"><property name="text"><string>PDF</string></property><property name="wordWrap"><bool>true</bool></property><property name="layoutDirection"><enum>Qt::LeftToRight</enum></property></widget></item>
            </layout>
           </widget>
          </item>
-         <item>
+         <item stretch="1">
           <widget class="QWidget" name="exportBody">
            <layout class="QVBoxLayout" name="exportBodyLayout"><property name="spacing"><number>8</number></property><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>12</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property>
             <item>
@@ -121,11 +121,11 @@
             <item><spacer name="exportBodySpacer"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>40</height></size></property></spacer></item>
            </layout>
            </widget>
-         <property name="stretch"><number>1</number></property>
+
           </item>
         </layout>
         </widget>
-       <property name="stretch"><number>1</number></property>
+
       </item>
       <item><widget class="QWidget" name="recentExportHost"><layout class="QVBoxLayout" name="recentExportLayout"><property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property></layout></widget></item>
      </layout>

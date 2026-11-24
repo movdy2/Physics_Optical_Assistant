@@ -14,13 +14,13 @@
      <layout class="QHBoxLayout" name="headerLayout">
       <property name="spacing"><number>8</number></property>
       <property name="leftMargin"><number>12</number></property><property name="topMargin"><number>4</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>4</number></property>
-      <item>
+      <item stretch="1">
        <widget class="QLabel" name="panelTitle">
         <property name="sizePolicy"><sizepolicy hsizetype="Expanding" vsizetype="Preferred"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property>
         <property name="minimumSize"><size><width>0</width><height>0</height></size></property>
         <property name="text"><string /></property><property name="wordWrap"><bool>true</bool></property>
        </widget>
-       <property name="stretch"><number>1</number></property>
+
       </item>
       <item>
        <widget class="QLabel" name="panelMeta">
@@ -33,14 +33,14 @@
      </layout>
     </widget>
    </item>
-   <item>
+   <item stretch="1">
     <widget class="QWidget" name="panelBody">
      <layout class="QVBoxLayout" name="bodyLayout">
       <property name="spacing"><number>12</number></property>
       <property name="leftMargin"><number>12</number></property><property name="topMargin"><number>12</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property>
      </layout>
      </widget>
-   <property name="stretch"><number>1</number></property>
+
     </item>
   </layout>
  </widget>

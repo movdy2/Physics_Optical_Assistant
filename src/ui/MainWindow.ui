@@ -62,7 +62,7 @@
          </layout>
         </widget>
        </item>
-       <item>
+       <item stretch="1">
         <widget class="QScrollArea" name="navigationScroll">
          <property name="frameShape"><enum>QFrame::NoFrame</enum></property>
          <property name="widgetResizable"><bool>true</bool></property>
@@ -91,7 +91,7 @@
           </layout>
          </widget>
         </widget>
-        <property name="stretch"><number>1</number></property>
+
        </item>
        <item>
         <widget class="QWidget" name="sidebarFooter">
@@ -116,11 +116,11 @@
       </layout>
      </widget>
     </item>
-    <item>
+    <item stretch="1">
      <widget class="QStackedWidget" name="pageStack">
       <property name="currentIndex"><number>-1</number></property>
      </widget>
-     <property name="stretch"><number>1</number></property>
+
     </item>
    </layout>
   </widget>

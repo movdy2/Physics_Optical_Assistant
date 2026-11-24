@@ -6,7 +6,7 @@
    <property name="spacing"><number>12</number></property>
    <property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
    <item><widget class="QLabel" name="pageTitle"><property name="text"><string>Optical Setups</string></property></widget></item>
-   <item>
+   <item stretch="1">
     <layout class="QHBoxLayout" name="bodyLayout">
      <property name="spacing"><number>12</number></property>
      <item>
@@ -15,18 +15,18 @@
        <property name="maximumSize"><size><width>300</width><height>16777215</height></size></property>
       </widget>
      </item>
-     <item>
+     <item stretch="1">
       <widget class="QWidget" name="diagramContent">
        <layout class="QVBoxLayout" name="diagramContentLayout">
         <property name="spacing"><number>10</number></property>
         <item><widget class="QComboBox" name="diagramVariantSelector" /></item>
-        <item>
+        <item stretch="1">
          <widget class="QWidget" name="diagramViewHost">
           <layout class="QVBoxLayout" name="diagramViewLayout">
            <property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
           </layout>
          </widget>
-         <property name="stretch"><number>1</number></property>
+
         </item>
         <item><widget class="QLabel" name="sectionTitle"><property name="text"><string /></property></widget></item>
         <item><widget class="QLabel" name="diagramCaption"><property name="text"><string /></property><property name="minimumSize"><size><width>0</width><height>0</height></size></property><property name="wordWrap"><bool>true</bool></property></widget></item>
@@ -44,10 +44,10 @@
         </item>
        </layout>
        </widget>
-      <property name="stretch"><number>1</number></property>
+
      </item>
     </layout>
-    <property name="stretch"><number>1</number></property>
+
    </item>
   </layout>
  </widget>

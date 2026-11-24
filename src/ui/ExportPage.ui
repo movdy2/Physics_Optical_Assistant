@@ -39,7 +39,7 @@
      </layout>
     </widget>
    </item>
-   <item>
+   <item stretch="1">
     <widget class="QStackedWidget" name="exportWorkspace">
      <widget class="QWidget" name="dataPane">
       <layout class="QHBoxLayout" name="dataPaneLayout">
@@ -88,7 +88,7 @@
           <property name="bottomMargin">
            <number>0</number>
           </property>
-          <item>
+          <item stretch="3">
            <widget class="QFrame" name="seriesPanel">
             <property name="frameShape">
              <enum>QFrame::NoFrame</enum>
@@ -136,7 +136,7 @@
                 <property name="bottomMargin">
                  <number>4</number>
                 </property>
-                <item>
+                <item stretch="1">
                  <widget class="QLabel" name="seriesTitle">
                   <property name="text">
                    <string>Data series</string>
@@ -145,9 +145,7 @@
                    <bool>true</bool>
                   </property>
                  </widget>
-                 <property name="stretch">
-                  <number>1</number>
-                 </property>
+
                 </item>
                 <item>
                  <widget class="QLabel" name="seriesMeta">
@@ -165,7 +163,7 @@
                </layout>
               </widget>
              </item>
-             <item>
+             <item stretch="1">
               <widget class="QWidget" name="seriesBody">
                <layout class="QVBoxLayout" name="seriesBodyLayout">
                 <property name="spacing">
@@ -183,7 +181,7 @@
                 <property name="bottomMargin">
                  <number>12</number>
                 </property>
-                <item>
+                <item stretch="1">
                  <widget class="QListWidget" name="seriesList">
                   <property name="minimumSize">
                    <size>
@@ -192,23 +190,17 @@
                    </size>
                   </property>
                  </widget>
-                 <property name="stretch">
-                  <number>1</number>
-                 </property>
+
                 </item>
                </layout>
               </widget>
-              <property name="stretch">
-               <number>1</number>
-              </property>
+
              </item>
             </layout>
            </widget>
-           <property name="stretch">
-            <number>3</number>
-           </property>
+
           </item>
-          <item>
+          <item stretch="2">
            <widget class="QFrame" name="descriptionPanel">
             <property name="frameShape">
              <enum>QFrame::NoFrame</enum>
@@ -256,7 +248,7 @@
                 <property name="bottomMargin">
                  <number>4</number>
                 </property>
-                <item>
+                <item stretch="1">
                  <widget class="QLabel" name="descriptionTitle">
                   <property name="text">
                    <string>Series description</string>
@@ -265,9 +257,7 @@
                    <bool>true</bool>
                   </property>
                  </widget>
-                 <property name="stretch">
-                  <number>1</number>
-                 </property>
+
                 </item>
                 <item>
                  <widget class="QLabel" name="descriptionMeta">
@@ -282,7 +272,7 @@
                </layout>
               </widget>
              </item>
-             <item>
+             <item stretch="1">
               <widget class="QWidget" name="descriptionBody">
                <layout class="QVBoxLayout" name="descriptionBodyLayout">
                 <property name="spacing">
@@ -368,15 +358,11 @@
                 </item>
                </layout>
               </widget>
-              <property name="stretch">
-               <number>1</number>
-              </property>
+
              </item>
             </layout>
            </widget>
-           <property name="stretch">
-            <number>2</number>
-           </property>
+
           </item>
          </layout>
         </widget>
@@ -399,7 +385,7 @@
           <property name="bottomMargin">
            <number>0</number>
           </property>
-          <item>
+          <item stretch="1">
            <widget class="QFrame" name="previewPanel">
             <property name="frameShape">
              <enum>QFrame::NoFrame</enum>
@@ -447,7 +433,7 @@
                 <property name="bottomMargin">
                  <number>4</number>
                 </property>
-                <item>
+                <item stretch="1">
                  <widget class="QLabel" name="previewTitle">
                   <property name="text">
                    <string>Full preview</string>
@@ -456,9 +442,7 @@
                    <bool>true</bool>
                   </property>
                  </widget>
-                 <property name="stretch">
-                  <number>1</number>
-                 </property>
+
                 </item>
                 <item>
                  <widget class="QLabel" name="previewMeta">
@@ -476,7 +460,7 @@
                </layout>
               </widget>
              </item>
-             <item>
+             <item stretch="1">
               <widget class="QWidget" name="previewBody">
                <layout class="QVBoxLayout" name="previewBodyLayout">
                 <property name="spacing">
@@ -494,15 +478,13 @@
                 <property name="bottomMargin">
                  <number>8</number>
                 </property>
-                <item>
+                <item stretch="1">
                  <widget class="QTableWidget" name="previewTable">
                   <property name="showGrid">
                    <bool>false</bool>
                   </property>
                  </widget>
-                 <property name="stretch">
-                  <number>1</number>
-                 </property>
+
                 </item>
                 <item>
                  <widget class="QLabel" name="previewFoot">
@@ -516,15 +498,11 @@
                 </item>
                </layout>
               </widget>
-              <property name="stretch">
-               <number>1</number>
-              </property>
+
              </item>
             </layout>
            </widget>
-           <property name="stretch">
-            <number>1</number>
-           </property>
+
           </item>
          </layout>
         </widget>
@@ -607,7 +585,7 @@
                 <property name="bottomMargin">
                  <number>4</number>
                 </property>
-                <item>
+                <item stretch="1">
                  <widget class="QLabel" name="settingsTitle">
                   <property name="text">
                    <string>Export settings</string>
@@ -616,9 +594,7 @@
                    <bool>true</bool>
                   </property>
                  </widget>
-                 <property name="stretch">
-                  <number>1</number>
-                 </property>
+
                 </item>
                 <item>
                  <widget class="QLabel" name="settingsMeta">
@@ -633,7 +609,7 @@
                </layout>
               </widget>
              </item>
-             <item>
+             <item stretch="1">
               <widget class="QWidget" name="settingsBody">
                <layout class="QVBoxLayout" name="settingsBodyLayout">
                 <property name="spacing">
@@ -820,9 +796,7 @@
                 </item>
                </layout>
               </widget>
-              <property name="stretch">
-               <number>1</number>
-              </property>
+
              </item>
             </layout>
            </widget>
@@ -854,9 +828,7 @@
       </layout>
      </widget>
     </widget>
-    <property name="stretch">
-     <number>1</number>
-    </property>
+
    </item>
   </layout>
  </widget>

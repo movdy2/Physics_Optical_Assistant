@@ -19,14 +19,14 @@
      </item>
     </layout>
    </item>
-   <item>
+   <item stretch="1">
     <widget class="QWidget" name="editorSlot">
      <layout class="QVBoxLayout" name="editorSlotLayout">
       <property name="spacing"><number>0</number></property>
       <property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
      </layout>
     </widget>
-    <property name="stretch"><number>1</number></property>
+
    </item>
    <item>
     <widget class="QWidget" name="keyboardSlot">
