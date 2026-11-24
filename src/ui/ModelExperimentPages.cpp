@@ -340,7 +340,7 @@ QString NewtonRingsPage::runDescription() const {
 
 // ============================================================================ Michelson
 MichelsonPage::MichelsonPage(AppContext* ctx, QWidget* parent)
-    : ModelPage("Michelson Interferometer — Wavelength of Laser Beam", "Move M1 and count central fringes to determine λ", "Michelson Interferometry", ctx, parent) {
+    : ModelPage("Michelson Interferometry", "Move M1 and count central fringes to determine λ", "Michelson Interferometry", ctx, parent) {
     addTabs({"Displacement", "Fringes", "Laser wavelength"});
     m_lambda = addField(QString::fromLatin1(FieldIds::wavelength), "Laser wavelength · λ", "nm", 632.8, 2);
     m_lambda->setToolTip("Laser wavelength in nm. In Laser wavelength mode select whether λ, N, or d is the unknown.");

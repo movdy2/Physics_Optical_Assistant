@@ -249,7 +249,7 @@ void ExperimentBase::sendToNotes() {
     if (!m_haveLast) { emit m_ctx->message("Nothing to send yet: calculate first"); return; }
     QString md = QString("### ") + m_experiment + "\n\n" + q(m_last.headline) + "\n";
     for (const auto& [name, value] : m_last.parameters)
-        md += QString("- ") + q(name) + ": " + q(value) + "\n";
+        md += QString("- ") + q(name) + " = " + q(value) + "\n";
     for (const LcdRegister& r : m_last.registers) {
         md += QString("- **") + q(r.title) + "**: ";
         QStringList parts;

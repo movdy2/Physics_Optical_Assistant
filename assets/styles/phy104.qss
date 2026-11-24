@@ -8,7 +8,6 @@
 QMainWindow, QWidget#pageArea, QWidget {
     background: @bg@;
     color: @text@;
-    font-family: 'Inter', 'Noto Sans Arabic', 'DejaVu Sans', 'Segoe UI', 'Arial';
     font-size: 12px;
     selection-background-color: @accentPrimary@;
     selection-color: @bg@;
