@@ -3,10 +3,10 @@
 #include "AppContext.h"
 #include "Components.h"
 #include "ThemeManager.h"
+#include "ui_MathSolverPage.h"
 
 #include <QAbstractItemView>
 #include <QColor>
-#include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
@@ -15,7 +15,6 @@
 #include <QPushButton>
 #include <QSize>
 #include <QSizePolicy>
-#include <QVBoxLayout>
 
 namespace phy104 {
 
@@ -23,29 +22,41 @@ MathSolverPage::MathSolverPage(AppContext* context, QWidget* parent)
     : BasePage("Calculator", "", context, parent), m_calc(5) {
     setObjectName("calcPage");
 
-    auto* columns = new QHBoxLayout;
-    columns->setContentsMargins(0, 0, 0, 0);
-    columns->setSpacing(12);
-    columns->addStretch(1);
+    auto* calculatorFormHost = new QWidget;
+    Ui::MathSolverPage ui;
+    ui.setupUi(calculatorFormHost);
+    content()->addWidget(calculatorFormHost, 1);
+    ui.calculatorPanel->setObjectName("panel");
+    ui.calculatorHeader->setObjectName("panelHeader");
+    ui.calculatorBody->setObjectName("panelBody");
+    ui.calculatorTitle->setObjectName("panelTitle");
+    ui.historyPanel->setObjectName("panel");
+    ui.historyHeader->setObjectName("panelHeader");
+    ui.historyBody->setObjectName("panelBody");
+    ui.historyTitle->setObjectName("panelTitle");
 
-    auto* calculatorPanel = new Panel("Expression");
-    calculatorPanel->setMinimumWidth(440);
-    calculatorPanel->setMaximumWidth(820);
-    calculatorPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    auto* modeRow = new QHBoxLayout;
-    m_angleButton = new QPushButton("DEG");
+    m_angleButton = ui.angleModeButton;
     m_angleButton->setObjectName("calcMode");
-    m_angleButton->setCheckable(true);
-    m_angleButton->setChecked(true);                         // the school default; checked = degrees
-    m_angleButton->setToolTip("Switch between degrees and radians");
-    modeRow->addStretch();
-    modeRow->addWidget(m_angleButton);
-    calculatorPanel->body()->addLayout(modeRow);
-
-    m_input = new QLineEdit;
+    m_input = ui.expressionInput;
     m_input->setObjectName("lcdInput");
-    m_input->setLayoutDirection(Qt::LeftToRight);
-    m_input->setPlaceholderText("Expression");
+    m_result = ui.resultValue;
+    m_result->setObjectName("lcdResult");
+    m_status = ui.calculationStatus;
+    m_status->setObjectName("statusError");
+    m_keypad = new CalculatorKeypad;
+    m_keypad->setObjectName("calculatorKeypad");
+    m_keypad->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    ui.keypadLayout->addWidget(m_keypad);
+
+    m_historyEmpty = ui.historyEmpty;
+    m_historyEmpty->setObjectName("calcHistoryEmpty");
+    m_historyList = ui.historyList;
+    m_historyList->setObjectName("calcHistory");
+    m_historyList->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_historyClear = ui.historyClear;
+    m_historyClear->setObjectName("calcHistoryClear");
+    ui.historyHint->setObjectName("calcHint");
+
     const auto refreshPlaceholder = [this] {
         QPalette palette = m_input->palette();
         const Theme& theme = ThemeManager::instance().theme();
@@ -54,62 +65,6 @@ MathSolverPage::MathSolverPage(AppContext* context, QWidget* parent)
     };
     refreshPlaceholder();
     connect(&ThemeManager::instance(), &ThemeManager::themeChanged, this, refreshPlaceholder);
-    calculatorPanel->body()->addWidget(m_input);
-
-    m_result = new QLabel("0");
-    m_result->setObjectName("lcdResult");
-    m_result->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-    m_result->setMinimumHeight(64);
-
-    auto* resultRow = new QHBoxLayout;
-    resultRow->setContentsMargins(0, 0, 0, 0);
-    resultRow->setSpacing(4);
-    resultRow->addWidget(m_result, 1);
-    calculatorPanel->body()->addLayout(resultRow);
-
-    m_status = new QLabel;
-    m_status->setObjectName("statusError");
-    m_status->setWordWrap(true);
-    m_status->hide();
-    calculatorPanel->body()->addWidget(m_status);
-
-    m_keypad = new CalculatorKeypad;
-    m_keypad->setObjectName("calculatorKeypad");
-    m_keypad->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    calculatorPanel->body()->addWidget(m_keypad);
-    columns->addWidget(calculatorPanel, 3);
-
-    auto* historyPanel = new Panel("Recent calculations", "ANS");
-    historyPanel->setMinimumWidth(230);
-    historyPanel->setMaximumWidth(300);
-    historyPanel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
-    auto* historyHint = new QLabel("Click an entry to reuse its expression. Ans keeps the last successful result.");
-    historyHint->setObjectName("calcHint");
-    historyHint->setWordWrap(true);
-    historyPanel->body()->addWidget(historyHint);
-
-    m_historyEmpty = new QLabel("No calculations yet");
-    m_historyEmpty->setObjectName("calcHistoryEmpty");
-    m_historyEmpty->setAlignment(Qt::AlignCenter);
-    m_historyEmpty->setWordWrap(true);
-    historyPanel->body()->addWidget(m_historyEmpty, 1);
-
-    m_historyList = new QListWidget;
-    m_historyList->setObjectName("calcHistory");
-    m_historyList->setSelectionMode(QAbstractItemView::SingleSelection);
-    m_historyList->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    m_historyList->setWordWrap(true);
-    historyPanel->body()->addWidget(m_historyList, 1);
-
-    m_historyClear = new QPushButton("Clear history");
-    m_historyClear->setObjectName("calcHistoryClear");
-    m_historyClear->setToolTip("Clear recent calculations; keep Ans");
-    m_historyClear->setEnabled(false);
-    historyPanel->body()->addWidget(m_historyClear);
-
-    columns->addWidget(historyPanel, 1);
-    columns->addStretch(1);
-    content()->addLayout(columns, 1);
 
     connect(m_input, &QLineEdit::returnPressed, this, &MathSolverPage::calculate);
     connect(m_keypad, &CalculatorKeypad::equals, this, &MathSolverPage::calculate);

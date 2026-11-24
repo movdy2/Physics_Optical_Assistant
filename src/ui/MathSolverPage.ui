@@ -1,0 +1,46 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<ui version="4.0">
+ <class>MathSolverPage</class>
+ <widget class="QWidget" name="MathSolverPage">
+  <layout class="QHBoxLayout" name="calculatorColumnsLayout">
+   <property name="spacing"><number>12</number></property>
+   <property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+   <item><spacer name="leftBalanceSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer><property name="stretch"><number>1</number></property></item>
+   <item>
+    <widget class="QFrame" name="calculatorPanel">
+     <property name="minimumSize"><size><width>440</width><height>0</height></size></property><property name="maximumSize"><size><width>820</width><height>16777215</height></size></property>
+     <property name="sizePolicy"><sizepolicy hsizetype="Expanding" vsizetype="Expanding"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property><property name="frameShape"><enum>QFrame::NoFrame</enum></property>
+     <layout class="QVBoxLayout" name="calculatorPanelLayout"><property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+      <item><widget class="QFrame" name="calculatorHeader"><property name="minimumSize"><size><width>0</width><height>36</height></size></property><property name="frameShape"><enum>QFrame::NoFrame</enum></property><layout class="QHBoxLayout" name="calculatorHeaderLayout"><property name="spacing"><number>8</number></property><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>4</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>4</number></property><item><widget class="QLabel" name="calculatorTitle"><property name="text"><string>Expression</string></property><property name="wordWrap"><bool>true</bool></property></widget><property name="stretch"><number>1</number></property></item></layout></widget></item>
+      <item><widget class="QWidget" name="calculatorBody"><layout class="QVBoxLayout" name="calculatorBodyLayout"><property name="spacing"><number>12</number></property><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>12</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property>
+       <item><layout class="QHBoxLayout" name="angleModeLayout"><item><spacer name="angleModeSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer><property name="stretch"><number>1</number></property></item><item><widget class="QPushButton" name="angleModeButton"><property name="text"><string>DEG</string></property><property name="toolTip"><string>Switch between degrees and radians</string></property><property name="checkable"><bool>true</bool></property><property name="checked"><bool>true</bool></property></widget></item></layout></item>
+       <item><widget class="QLineEdit" name="expressionInput"><property name="layoutDirection"><enum>Qt::LeftToRight</enum></property><property name="placeholderText"><string>Expression</string></property></widget></item>
+       <item><layout class="QHBoxLayout" name="resultLayout"><property name="spacing"><number>4</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property><item><widget class="QLabel" name="resultValue"><property name="minimumSize"><size><width>0</width><height>64</height></size></property><property name="text"><string>0</string></property><property name="alignment"><set>Qt::AlignRight|Qt::AlignVCenter</set></property></widget></item></layout></item>
+       <item><widget class="QLabel" name="calculationStatus"><property name="text"><string /></property><property name="wordWrap"><bool>true</bool></property><property name="visible"><bool>false</bool></property></widget></item>
+       <item><widget class="QWidget" name="keypadHost"><layout class="QVBoxLayout" name="keypadLayout"><property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property></layout></widget><property name="stretch"><number>1</number></property></item>
+      </layout></widget><property name="stretch"><number>1</number></property></item>
+     </layout>
+    </widget>
+    <property name="stretch"><number>3</number></property>
+   </item>
+   <item>
+    <widget class="QFrame" name="historyPanel">
+     <property name="minimumSize"><size><width>230</width><height>0</height></size></property><property name="maximumSize"><size><width>300</width><height>16777215</height></size></property><property name="sizePolicy"><sizepolicy hsizetype="Preferred" vsizetype="Expanding"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property><property name="frameShape"><enum>QFrame::NoFrame</enum></property>
+     <layout class="QVBoxLayout" name="historyPanelLayout"><property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+      <item><widget class="QFrame" name="historyHeader"><property name="minimumSize"><size><width>0</width><height>36</height></size></property><property name="frameShape"><enum>QFrame::NoFrame</enum></property><layout class="QHBoxLayout" name="historyHeaderLayout"><property name="spacing"><number>8</number></property><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>4</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>4</number></property><item><widget class="QLabel" name="historyTitle"><property name="text"><string>Recent calculations</string></property><property name="wordWrap"><bool>true</bool></property></widget><property name="stretch"><number>1</number></property></item><item><widget class="QLabel" name="historyMeta"><property name="text"><string>ANS</string></property><property name="layoutDirection"><enum>Qt::LeftToRight</enum></property></widget></item></layout></widget></item>
+      <item><widget class="QWidget" name="historyBody"><layout class="QVBoxLayout" name="historyBodyLayout"><property name="spacing"><number>12</number></property><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>12</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property>
+       <item><widget class="QLabel" name="historyHint"><property name="text"><string>Click an entry to reuse its expression. Ans keeps the last successful result.</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
+       <item><widget class="QLabel" name="historyEmpty"><property name="text"><string>No calculations yet</string></property><property name="alignment"><set>Qt::AlignCenter</set></property><property name="wordWrap"><bool>true</bool></property></widget><property name="stretch"><number>1</number></property></item>
+       <item><widget class="QListWidget" name="historyList"><property name="horizontalScrollBarPolicy"><enum>Qt::ScrollBarAlwaysOff</enum></property><property name="wordWrap"><bool>true</bool></property><property name="visible"><bool>false</bool></property></widget><property name="stretch"><number>1</number></property></item>
+       <item><widget class="QPushButton" name="historyClear"><property name="text"><string>Clear history</string></property><property name="toolTip"><string>Clear recent calculations; keep Ans</string></property><property name="enabled"><bool>false</bool></property></widget></item>
+      </layout></widget><property name="stretch"><number>1</number></property></item>
+     </layout>
+    </widget>
+    <property name="stretch"><number>1</number></property>
+   </item>
+   <item><spacer name="rightBalanceSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer><property name="stretch"><number>1</number></property></item>
+  </layout>
+ </widget>
+ <resources />
+ <connections />
+</ui>

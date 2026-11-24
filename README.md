@@ -115,7 +115,7 @@ To capture screenshots after building, run:
 
 ## Editing the interface in Qt Creator
 
-Open the repository's top-level `CMakeLists.txt` as a CMake project. Shared Designer forms are in `src/ui/` (`MainWindow.ui`, `BasePage.ui`, `Panel.ui`, `UnitField.ui`, `CalculatorKeypad.ui`, `ModeTabs.ui`, `RegisterView.ui`, `ResultCard.ui`, `NoticeCard.ui`, `NotesPage.ui`, `ConstantsPage.ui`, `DashboardActivity.ui`, `DashboardPage.ui`, `DashboardTools.ui`, `DiagramsPage.ui`, `ReportPage.ui`, and `ExportPage.ui`). CMake AUTOUIC generates their C++ wrappers during the build; edit the `.ui` files rather than generated `ui_*.h` files. Dashboard activity rows and the comparison chart remain data-driven C++ widgets; physics, session logic, and custom-painted diagrams also remain in C++.
+Open the repository's top-level `CMakeLists.txt` as a CMake project. Shared Designer forms are in `src/ui/` (`MainWindow.ui`, `BasePage.ui`, `Panel.ui`, `UnitField.ui`, `CalculatorKeypad.ui`, `ModeTabs.ui`, `MathSolverPage.ui`, `RegisterView.ui`, `ResultCard.ui`, `NoticeCard.ui`, `NotesPage.ui`, `ConstantsPage.ui`, `DashboardActivity.ui`, `DashboardPage.ui`, `DashboardTools.ui`, `DiagramsPage.ui`, `ReportPage.ui`, and `ExportPage.ui`). CMake AUTOUIC generates their C++ wrappers during the build; edit the `.ui` files rather than generated `ui_*.h` files. Dashboard activity rows and the comparison chart remain data-driven C++ widgets; physics, session logic, and custom-painted diagrams also remain in C++.
 
 Linux and Windows Qt builds and the core-only tests run in GitHub Actions. The standalone Lua generator does not add a Lua runtime dependency to the application; when Lua 5.4 is installed, regenerate the diagrams with:
 
