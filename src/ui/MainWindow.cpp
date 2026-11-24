@@ -21,6 +21,7 @@
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QShortcut>
+#include <QSignalBlocker>
 #include <QStackedWidget>
 #include <QStatusBar>
 #include <QStyle>
@@ -166,8 +167,16 @@ MainWindow::MainWindow(AppContext* ctx, QWidget* parent)
         // Built-in Markdown is deliberately localized as a whole only while untouched. Apply the
         // language pass directly to the editor as well, so the custom workspace keeps its marker
         // and source text stable across shell-wide polish/layout changes.
-        for (QPlainTextEdit* editor : findChildren<QPlainTextEdit*>())
-            if (editor->property("i18nBuiltinContent").toBool()) language.apply(editor);
+        for (QPlainTextEdit* editor : findChildren<QPlainTextEdit*>()) {
+            if (!editor->property("i18nBuiltinContent").toBool()) continue;
+            language.apply(editor);
+            const QString source = editor->property("i18nBuiltinSource").toString();
+            const QString translated = language.text(source);
+            if (!source.isEmpty() && editor->toPlainText() != translated) {
+                const QSignalBlocker blocker(editor);
+                editor->setPlainText(translated);
+            }
+        }
         refreshActivityLog();
         refreshLanguageButton();
     });

@@ -35,6 +35,7 @@
 #include <QCheckBox>
 #include <QDate>
 #include <QComboBox>
+#include <QElapsedTimer>
 #include <QImage>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -612,7 +613,10 @@ private slots:
         QVERIFY2(LanguageManager::instance().text(english) == arabic,
                  qPrintable(QStringLiteral("starter catalog text mismatch: ") + LanguageManager::instance().text(english)));
         QVERIFY2(w->markdown() == arabic,
-                 qPrintable(QStringLiteral("Arabic starter mismatch: ") + w->markdown()));
+                 qPrintable(QStringLiteral("Arabic starter mismatch (isArabic=%1, marker=%2, source=%3): %4")
+                                .arg(LanguageManager::instance().isArabic())
+                                .arg(w->editor()->property("i18nBuiltinContent").toBool())
+                                .arg(w->editor()->property("i18nBuiltinSource").toString(), w->markdown())));
         click(language);
         QVERIFY2(w->markdown() == english,
                  qPrintable(QStringLiteral("starter did not return to English: ") + w->markdown()));
@@ -839,6 +843,16 @@ private slots:
         QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->newton, 1), QString("3.0984 mm"), 1500);
     }
     void secondTabsAndDropdownsDriveTheDiagram() {
+        const auto waitForBigValue = [](QWidget* page, const QString& expected, int timeoutMs = 1500) {
+            QElapsedTimer timer;
+            timer.start();
+            do {
+                QApplication::processEvents();
+                if (bigValue(page) == expected) return true;
+                QTest::qWait(10);
+            } while (timer.elapsed() < timeoutMs);
+            return bigValue(page) == expected;
+        };
         // --- thin film: the Transmission tab flips to the complementary intensity and re-captions both panels
         goTo(m_app->thinFilm);
         QVERIFY2(bigValue(m_app->thinFilm) == QString("1.0000"),
@@ -921,7 +935,11 @@ private slots:
         QVERIFY(wavelengthFields.size() >= 3);
         chooseItem(solveFor, 1);
         typeInto(wavelengthFields[0], "632.8");
-        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->michelson) == QString("5.5297 fringes"), 1500);
+        const bool fringeCountUpdated = waitForBigValue(m_app->michelson, QString("5.5297 fringes"));
+        QVERIFY2(fringeCountUpdated,
+                 qPrintable(QStringLiteral("solve-for fringe count actual=%1, wavelength=%2 nm, displacement=%3 µm, target=%4")
+                                .arg(bigValue(m_app->michelson), wavelengthFields[0]->text(),
+                                     m_app->michelson->findChildren<UnitField*>()[1]->text(), solveFor->currentText())));
         chooseItem(solveFor, 2);
         typeInto(wavelengthFields[2], "5");
         QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->michelson) == QString("1.5820 µm"), 1500);

@@ -1014,7 +1014,7 @@ void PrismsPage::apply(bool record) {
 
 // ============================================================================ Wave interference
 WavePage::WavePage(AppContext* ctx, QWidget* parent)
-    : ExperimentPage("Wave Interference", "Young's double-slit experiment · coherent monochromatic light", "Wave Interference", ctx, parent) {
+    : ExperimentPage("Wave Interference", "Young's double-slit · coherent monochromatic light", "Wave Interference", ctx, parent) {
     setCompactLayout();
     auto cols = addThreeColumns(232, 250);
     auto* row = qobject_cast<QHBoxLayout*>(content()->itemAt(content()->count() - 1)->layout());

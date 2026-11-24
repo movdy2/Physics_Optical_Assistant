@@ -345,7 +345,6 @@ QPushButton#calcEquals {
     border-radius: 5px;
     padding: 1px 4px;
     min-height: 30px;
-    max-height: 36px;
     font-size: 11px;
 }
 
