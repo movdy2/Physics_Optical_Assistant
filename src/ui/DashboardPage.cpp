@@ -6,20 +6,20 @@
 #include "OpticsCanvases.h"
 #include "Plots.h"
 #include "ThemeManager.h"
+#include "ui_DashboardActivity.h"
+#include "ui_DashboardPage.h"
+#include "ui_DashboardTools.h"
 
 #include <QAction>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QEvent>
-#include <QGridLayout>
+#include <QFrame>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QSizePolicy>
 #include <QMouseEvent>
 #include <QPalette>
 #include <QPushButton>
-#include <QScrollArea>
-#include <QSignalBlocker>
 #include <QToolButton>
 #include <QMenu>
 #include <QVBoxLayout>
@@ -30,32 +30,13 @@
 namespace phy104 {
 namespace {
 
-/// A card that behaves like a button.
-class ClickableCard : public QFrame {
-    Q_OBJECT
-public:
-    explicit ClickableCard(QWidget* parent = nullptr) : QFrame(parent) {
-        setObjectName("cardHot");
-        setCursor(Qt::PointingHandCursor);
-    }
-signals:
-    void clicked();
-protected:
-    void mouseReleaseEvent(QMouseEvent* e) override {
-        if (e->button() == Qt::LeftButton && rect().contains(e->pos())) emit clicked();
-    }
-};
-
-struct CardInfo {
-    const char* kicker; const char* title; const char* text;
-    PreviewIcon::Kind kind; const char* experiment; int page;
-};
+struct CardInfo { PreviewIcon::Kind kind; const char* experiment; int page; };
 
 const CardInfo kCards[4] = {
-    {"01 / GEOMETRICAL OPTICS", "Refraction & TIR", "Snell's law, critical angle and total internal reflection.", PreviewIcon::Refraction, "Refraction & TIR", 1},
-    {"02 / IMAGE FORMATION", "Lenses & Mirrors", "Thin lenses, spherical mirrors and principal-ray tracing.", PreviewIcon::Lens, "Lenses & Mirrors", 2},
-    {"03 / MINIMUM DEVIATION", "Prisms", "Trace an optical path and determine the refractive index.", PreviewIcon::Prism, "Prisms", 3},
-    {"04 / WAVE OPTICS", "Wave Interference (Double-Slit)", "Young's experiment, fringe spacing and intensity profiles.", PreviewIcon::Waves, "Wave Interference", 4}};
+    {PreviewIcon::Refraction, "Refraction & TIR", 1},
+    {PreviewIcon::Lens, "Lenses & Mirrors", 2},
+    {PreviewIcon::Prism, "Prisms", 3},
+    {PreviewIcon::Waves, "Wave Interference", 4}};
 
 struct ExperimentLink { const char* title; const char* description; const char* icon; int page; };
 const ExperimentLink kAllExperiments[11] = {
@@ -70,30 +51,6 @@ const ExperimentLink kAllExperiments[11] = {
     {"Michelson Interferometry", "Fringes, mirror motion and wavelength.", "git-merge", 9},
     {"Newton's Rings", "Ring radii, contact and wavelength.", "circle-dot", 10},
     {"Thick Lens & Aberration", "Principal planes, focal lengths and spherical aberration.", "aperture", 11}};
-
-QWidget* metricCard(const QString& value, const QString& title, const QString& text, QLabel** valueOut = nullptr) {
-    auto* card = new QFrame;
-    card->setObjectName("card");
-    auto* l = new QHBoxLayout(card);
-    l->setContentsMargins(16, 14, 16, 14);
-    l->setSpacing(14);
-    auto* v = new QLabel(value);
-    v->setObjectName("metricValue");
-    auto* box = new QVBoxLayout;
-    box->setSpacing(2);
-    auto* t = new QLabel(title);
-    t->setObjectName("metricTitle");
-    auto* d = new QLabel(text);
-    d->setObjectName("metricText");
-    box->addStretch();
-    box->addWidget(t);
-    box->addWidget(d);
-    box->addStretch();
-    l->addWidget(v);
-    l->addLayout(box, 1);
-    if (valueOut) *valueOut = v;
-    return card;
-}
 
 /// One row of the activity log sidebar: run number, experiment, result, status.
 class LogRow : public QFrame {
@@ -160,62 +117,75 @@ DashboardPage::DashboardPage(AppContext* ctx, QWidget* parent)
     //   right (fixed): lab notebook + recent export
     auto cols = addThreeColumns(260, 260);
 
-    // ===================================================================== left: activity log sidebar
-    auto* logPanel = new Panel("ACTIVITY LOG", QString(" ") + QString::number(ctx->log.sessionNumber()).rightJustified(2, '0'));
-    logPanel->body()->setSpacing(8);
-    logPanel->body()->setContentsMargins(0, 0, 0, 0);
-
-    auto* logHint = new QLabel("Recent calculations — tap a row to reopen");
-    logHint->setObjectName("caption");
-    logHint->setWordWrap(true);
-    logPanel->body()->addWidget(logHint);
-
-    // scrollable log list
-    m_logScroll = new QScrollArea;
-    m_logScroll->setWidgetResizable(true);
-    m_logScroll->setFrameShape(QFrame::NoFrame);
-    m_logScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-
-    m_logList = new QWidget;
-    m_logLayout = new QVBoxLayout(m_logList);
-    m_logLayout->setSpacing(2);
-    m_logLayout->setContentsMargins(0, 0, 0, 0);
+    // ===================================================================== left: Designer-defined activity panel with data-driven log rows
+    auto* logPanel = new QFrame;
+    Ui::DashboardActivity activityForm;
+    activityForm.setupUi(logPanel);
+    activityForm.panelTitle->setObjectName("panelTitle");
+    activityForm.activitySessionMeta->setObjectName("panelMeta");
+    activityForm.activityHint->setObjectName("caption");
+    activityForm.activitySessionMeta->setText(QString(" ") + QString::number(ctx->log.sessionNumber()).rightJustified(2, '0'));
+    m_logLayout = activityForm.activityLogLayout;
     m_logLayout->addStretch();
-    m_logScroll->setWidget(m_logList);
-    logPanel->body()->addWidget(m_logScroll, 1);
-
-    auto* logButtons = new QHBoxLayout;
-    logButtons->setSpacing(6);
-    m_deleteRun = new QPushButton("Delete selected");
+    m_deleteRun = activityForm.deleteRunButton;
     m_deleteRun->setObjectName("secondary");
-    m_deleteRun->setEnabled(false);
-    m_clearLog = new QPushButton("Clear all");
+    m_clearLog = activityForm.clearLogButton;
     m_clearLog->setObjectName("flat");
-    logButtons->addWidget(m_deleteRun);
-    logButtons->addWidget(m_clearLog);
-    logPanel->body()->addLayout(logButtons);
-
     cols.left->addWidget(logPanel, 1);
 
-    // ===================================================================== center: experiments
-    // --- metrics
-    auto* metrics = new QHBoxLayout;
-    metrics->setSpacing(12);
-    QLabel* experimentCount = nullptr;
-    metrics->addWidget(metricCard("11", "EXPERIMENTS", "Geometrical & wave optics", &experimentCount));
-    experimentCount->setObjectName("experimentCount");
-    metrics->addWidget(metricCard("00", "SAVED CALCULATIONS", "Current lab session", &m_savedValue));
-    metrics->addWidget(metricCard("00", "DATA SERIES", "Ready for Excel / CSV", &m_seriesValue));
-    cols.center->addLayout(metrics);
+    // ===================================================================== center: Designer-defined metrics and featured experiment cards
+    auto* dashboardCenter = new QWidget;
+    Ui::DashboardPage form;
+    form.setupUi(dashboardCenter);
+
+    m_savedValue = form.savedValue;
+    m_seriesValue = form.seriesValue;
+    form.experimentCount->setObjectName("metricValue");
+    m_browseExperiments = form.browseExperiments;
+    QFrame* metricCards[] = {form.metricExperimentsCard, form.savedMetricCard, form.seriesMetricCard};
+    QLabel* metricTitles[] = {form.experimentsMetricTitle, form.savedMetricTitle, form.seriesMetricTitle};
+    QLabel* metricDescriptions[] = {form.experimentsMetricDescription, form.savedMetricDescription, form.seriesMetricDescription};
+    for (QFrame* card : metricCards) card->setObjectName("card");
+    for (QLabel* label : metricTitles) label->setObjectName("metricTitle");
+    for (QLabel* label : metricDescriptions) label->setObjectName("metricText");
+    m_savedValue->setObjectName("metricValue");
+    m_seriesValue->setObjectName("metricValue");
+    form.featuredGridLayout->setColumnStretch(0, 1);
+    form.featuredGridLayout->setColumnStretch(1, 1);
+
+    QFrame* featureCards[] = {form.featureCard1, form.featureCard2, form.featureCard3, form.featureCard4};
+    QVBoxLayout* previewLayouts[] = {form.previewIconLayout1, form.previewIconLayout2,
+                                     form.previewIconLayout3, form.previewIconLayout4};
+    QLabel* kickers[] = {form.featureKicker1, form.featureKicker2, form.featureKicker3, form.featureKicker4};
+    QLabel* titles[] = {form.featureTitle1, form.featureTitle2, form.featureTitle3, form.featureTitle4};
+    QLabel* descriptions[] = {form.featureDescription1, form.featureDescription2,
+                              form.featureDescription3, form.featureDescription4};
+    QLabel* results[] = {form.featureResult1, form.featureResult2, form.featureResult3, form.featureResult4};
+    QLabel* arrows[] = {form.featureArrow1, form.featureArrow2, form.featureArrow3, form.featureArrow4};
+    for (int i = 0; i < 4; ++i) {
+        QFrame* card = featureCards[i];
+        card->setObjectName("cardHot");
+        card->setCursor(Qt::PointingHandCursor);
+        card->installEventFilter(this);
+        for (QWidget* child : card->findChildren<QWidget*>()) {
+            child->setCursor(Qt::PointingHandCursor);
+            child->installEventFilter(this);
+        }
+        kickers[i]->setObjectName("cardKicker");
+        titles[i]->setObjectName("cardTitle");
+        descriptions[i]->setObjectName("cardText");
+        results[i]->setObjectName("cardResult");
+        auto* previewIcon = new PreviewIcon(kCards[i].kind);
+        previewIcon->setCursor(Qt::PointingHandCursor);
+        previewIcon->installEventFilter(this);
+        previewLayouts[i]->addWidget(previewIcon, 0, Qt::AlignTop);
+        arrows[i]->setPixmap(Icons::pixmap("arrow-up-right", ThemeManager::instance().theme().amber, 14));
+        m_featuredCards << card;
+        m_results << results[i];
+    }
+    cols.center->addWidget(dashboardCenter, 1);
 
     // --- browse all experiments
-    auto* browseRow = new QHBoxLayout;
-    browseRow->addStretch();
-    m_browseExperiments = new QToolButton;
-    m_browseExperiments->setObjectName("browseExperiments");
-    m_browseExperiments->setText("Browse all 11");
-    m_browseExperiments->setPopupMode(QToolButton::InstantPopup);
-    m_browseExperiments->setToolTip("Open any of the 11 experiment screens");
     auto* experimentMenu = new QMenu(m_browseExperiments);
     experimentMenu->setObjectName("allExperimentsMenu");
     for (int i = 0; i < 11; ++i) {
@@ -237,118 +207,42 @@ DashboardPage::DashboardPage(AppContext* ctx, QWidget* parent)
             actions[i]->setIcon(Icons::get(experiment.icon, theme.text, theme.amber, 18));
         }
     });
-    browseRow->addWidget(m_browseExperiments);
-    cols.center->addLayout(browseRow);
 
-    // --- four featured experiment cards
-    auto* grid = new QGridLayout;
-    grid->setSpacing(12);
-    for (int i = 0; i < 4; ++i) {
-        const CardInfo& info = kCards[i];
-        auto* card = new ClickableCard;
-        auto* l = new QHBoxLayout(card);
-        l->setContentsMargins(15, 15, 15, 15);
-        l->setSpacing(15);
-        l->addWidget(new PreviewIcon(info.kind), 0, Qt::AlignTop);
-        auto* text = new QVBoxLayout;
-        text->setSpacing(6);
-        auto* kicker = new QLabel(info.kicker);
-        kicker->setObjectName("cardKicker");
-        auto* title = new QLabel(info.title);
-        title->setObjectName("cardTitle");
-        title->setWordWrap(true);
-        auto* desc = new QLabel(info.text);
-        desc->setObjectName("cardText");
-        desc->setWordWrap(true);
-        auto* result = new QLabel("—");
-        result->setObjectName("cardResult");
-        m_results << result;
-        text->addWidget(kicker);
-        text->addWidget(title);
-        text->addWidget(desc);
-        text->addWidget(result);
-        text->addStretch();
-        auto* arrow = new QLabel;
-        arrow->setPixmap(Icons::pixmap("arrow-up-right", ThemeManager::instance().theme().amber, 14));
-        l->addLayout(text, 1);
-        auto* arrowCol = new QVBoxLayout;
-        arrowCol->addStretch();
-        arrowCol->addWidget(arrow);
-        l->addLayout(arrowCol);
-        const int page = info.page;
-        connect(card, &ClickableCard::clicked, this, [this, page] { emit openPageRequested(page); });
-        card->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-        grid->addWidget(card, i / 2, i % 2);
-    }
-    grid->setColumnStretch(0, 1);
-    grid->setColumnStretch(1, 1);
-    cols.center->addLayout(grid, 1);
-
-    // ===================================================================== right: lab notebook + export
-    auto* notebook = new Panel("LAB NOTEBOOK", "AUTOSAVED");
-    notebook->body()->setSpacing(10);
-    notebook->body()->setContentsMargins(0, 0, 0, 0);
-    auto* blurb = new QLabel("Review formula references, record observations and export your measured data.");
-    blurb->setObjectName("cardText");
-    blurb->setWordWrap(true);
-    auto* openNotes = new QPushButton("Open notes");
-    openNotes->setObjectName("secondary");
-    auto* exportData = new QPushButton("Export data");
-    exportData->setObjectName("primary");
-    auto* buttons = new QHBoxLayout;
-    buttons->addWidget(openNotes);
-    buttons->addWidget(exportData);
-    m_lastSaved = new QLabel;
+    // ===================================================================== right: Designer-defined notebook and run-comparison panels
+    auto* dashboardTools = new QWidget;
+    Ui::DashboardTools toolsForm;
+    toolsForm.setupUi(dashboardTools);
+    toolsForm.notebookPanel->setObjectName("panel");
+    toolsForm.notebookHeader->setObjectName("panelHeader");
+    toolsForm.notebookBody->setObjectName("panelBody");
+    toolsForm.notebookTitle->setObjectName("panelTitle");
+    toolsForm.notebookMeta->setObjectName("panelMeta");
+    toolsForm.notebookBlurb->setObjectName("cardText");
+    toolsForm.openNotesButton->setObjectName("secondary");
+    toolsForm.exportDataButton->setObjectName("primary");
+    m_lastSaved = toolsForm.lastSavedLabel;
     m_lastSaved->setObjectName("hint");
-    notebook->body()->addWidget(blurb);
-    notebook->body()->addLayout(buttons);
-    notebook->body()->addWidget(m_lastSaved);
-    notebook->body()->addStretch();
-    cols.right->addWidget(notebook, 1);
 
-    // ===================================================================== right: run comparison chart
-    auto* comparisonPanel = new Panel("RUN COMPARISON", "OVERLAY MULTIPLE RUNS");
-    comparisonPanel->body()->setSpacing(8);
-    comparisonPanel->body()->setContentsMargins(0, 0, 0, 0);
-
-    auto* filterHint = new QLabel("Experiment");
-    filterHint->setObjectName("caption");
-    filterHint->setWordWrap(true);
-    comparisonPanel->body()->addWidget(filterHint);
-
-    m_comparisonFilter = new QComboBox;
+    toolsForm.comparisonPanel->setObjectName("panel");
+    toolsForm.comparisonHeader->setObjectName("panelHeader");
+    toolsForm.comparisonBody->setObjectName("panelBody");
+    toolsForm.comparisonTitle->setObjectName("panelTitle");
+    toolsForm.comparisonMeta->setObjectName("panelMeta");
+    toolsForm.experimentFilterLabel->setObjectName("caption");
+    toolsForm.runSelectionHint->setObjectName("caption");
+    m_comparisonFilter = toolsForm.comparisonFilter;
     m_comparisonFilter->addItem("All experiments", "");
-    comparisonPanel->body()->addWidget(m_comparisonFilter);
-
-    auto* listHint = new QLabel("Select runs to overlay");
-    listHint->setObjectName("caption");
-    listHint->setWordWrap(true);
-    comparisonPanel->body()->addWidget(listHint);
-
-    m_runScroll = new QScrollArea;
-    m_runScroll->setWidgetResizable(true);
-    m_runScroll->setFrameShape(QFrame::NoFrame);
-    m_runScroll->setMaximumHeight(150);
-    m_runScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-
-    m_runListContainer = new QWidget;
-    m_runListLayout = new QVBoxLayout(m_runListContainer);
-    m_runListLayout->setSpacing(2);
-    m_runListLayout->setContentsMargins(0, 0, 0, 0);
+    m_runListLayout = toolsForm.runListLayout;
     m_runListLayout->addStretch();
-    m_runScroll->setWidget(m_runListContainer);
-    comparisonPanel->body()->addWidget(m_runScroll, 1);
-
     m_comparisonChart = new LineChart;
     m_comparisonChart->setMinimumHeight(180);
-    comparisonPanel->body()->addWidget(m_comparisonChart, 1);
-
-    cols.right->addWidget(comparisonPanel, 1);
+    toolsForm.comparisonChartLayout->addWidget(m_comparisonChart, 1);
+    cols.right->addWidget(dashboardTools, 1);
 
     // ===================================================================== connections
     connect(m_comparisonFilter, &QComboBox::currentIndexChanged, this, &DashboardPage::refreshComparison);
-    connect(openNotes, &QPushButton::clicked, this, [this] { emit openPageRequested(m_notesPage); });
-    connect(exportData, &QPushButton::clicked, this, [this] { emit openPageRequested(m_exportPage); });
+    connect(toolsForm.openNotesButton, &QPushButton::clicked, this, [this] { emit openPageRequested(m_notesPage); });
+    connect(toolsForm.exportDataButton, &QPushButton::clicked, this, [this] { emit openPageRequested(m_exportPage); });
     connect(m_deleteRun, &QPushButton::clicked, this, &DashboardPage::deleteSelectedRun);
     connect(m_clearLog, &QPushButton::clicked, this, [this] {
         // delete from newest to oldest so indices stay valid
@@ -413,6 +307,20 @@ void DashboardPage::refreshLog() {
 }
 
 bool DashboardPage::eventFilter(QObject* obj, QEvent* event) {
+    if (event->type() == QEvent::MouseButtonRelease) {
+        auto* widget = qobject_cast<QWidget*>(obj);
+        auto* mouse = static_cast<QMouseEvent*>(event);
+        if (widget && mouse->button() == Qt::LeftButton) {
+            for (int i = 0; i < m_featuredCards.size(); ++i) {
+                QFrame* card = m_featuredCards[i];
+                if (widget == card || card->isAncestorOf(widget)) {
+                    const QPoint local = card->mapFromGlobal(mouse->globalPosition().toPoint());
+                    if (card->rect().contains(local)) emit openPageRequested(kCards[i].page);
+                    return true;
+                }
+            }
+        }
+    }
     if (event->type() == QEvent::MouseButtonPress) {
         if (auto* row = qobject_cast<LogRow*>(obj)) {
             const int id = row->property("runId").toInt();
