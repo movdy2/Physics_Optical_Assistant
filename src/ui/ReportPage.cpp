@@ -22,6 +22,7 @@
 #include <QLabel>
 #include <QPageLayout>
 #include <QPageSize>
+#include <QPalette>
 #include <QPainter>
 #include <QPen>
 #include <QPrintDialog>
@@ -111,7 +112,18 @@ ReportPage::ReportPage(AppContext* ctx, QWidget* parent)
     m_preview = new QTextBrowser;
     m_preview->setObjectName("reportPreview");
     m_preview->setOpenExternalLinks(false);
-    m_preview->setStyleSheet("QTextBrowser#reportPreview { background: #ffffff; border: 1px solid #d5c4a1; }");
+    const auto applyPreviewTheme = [this] {
+        const Theme& theme = ThemeManager::instance().theme();
+        m_preview->setStyleSheet(QStringLiteral(
+            "QTextBrowser#reportPreview { background: %1; color: %2; border: 1px solid %3; }")
+            .arg(theme.surface.name(), theme.text.name(), theme.border.name()));
+        QPalette palette = m_preview->palette();
+        palette.setColor(QPalette::Base, theme.surface);
+        palette.setColor(QPalette::Text, theme.text);
+        m_preview->setPalette(palette);
+    };
+    applyPreviewTheme();
+    connect(&ThemeManager::instance(), &ThemeManager::themeChanged, this, applyPreviewTheme);
     m_previewPanel->body()->setContentsMargins(12, 0, 12, 8);
     m_previewPanel->body()->addWidget(m_preview, 1);
     cols.center->addWidget(m_previewPanel, 1);

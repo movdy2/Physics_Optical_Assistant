@@ -158,6 +158,7 @@ ThickLensPage::ThickLensPage(AppContext* ctx, QWidget* parent)
     setPanels(m_diagram, m_chartPanel, m_results, "SCALE: cm", "");
 
     connect(m_tabs, &ModeTabs::currentChanged, this, [this] { apply(false); });
+    connect(&ThemeManager::instance(), &ThemeManager::themeChanged, this, [this] { apply(false); });
     connect(m_type, &QComboBox::activated, this, [this] { onTypeChosen(); });
     for (auto* field : {m_n, m_nMedium, m_r1, m_r2, m_thickness, m_diameter, m_object}) {
         connect(field, &UnitField::edited, this, [this] { apply(false); });
@@ -248,7 +249,11 @@ void ThickLensPage::apply(bool record) {
     if (in.spectrum) {
         // three markers: the focal length in the red, green and blue line (same Cauchy pairs as the report)
         struct Line { const char* name; double nm; QColor colour; };
-        const Line lines[] = {{"Red 656 nm", 656.3, QColor("#e05c4b")}, {"Green 588 nm", 587.6, QColor("#7bc96f")}, {"Blue 486 nm", 486.1, QColor("#5aa9e6")}};
+        const Line lines[] = {
+            {"Red 656 nm", 656.3, t.dark ? QColor("#fb4934") : QColor("#9d0006")},
+            {"Green 588 nm", 587.6, t.dark ? QColor("#b8bb26") : QColor("#79740e")},
+            {"Blue 486 nm", 486.1, t.dark ? QColor("#8ec07c") : QColor("#076678")}
+        };
         const auto cauchy = [&] {
             if (in.n < 1.45) return std::pair<double, double>{1.4750, 0.0140};
             if (in.n < 1.62) return std::pair<double, double>{1.5046, 0.0042};

@@ -14,6 +14,41 @@ QString displayText(const QString& source) {
     return LanguageManager::instance().text(source);
 }
 
+QStringList wrapText(const QFontMetricsF& metrics, const QString& source, int maxWidth) {
+    const QString normalized = source.simplified();
+    if (normalized.isEmpty()) return {};
+    const int width = std::max(1, maxWidth);
+    QStringList lines;
+    QString current;
+    const QStringList words = normalized.split(QLatin1Char(' '), Qt::SkipEmptyParts);
+    for (const QString& word : words) {
+        const QString candidate = current.isEmpty() ? word : current + QLatin1Char(' ') + word;
+        if (metrics.horizontalAdvance(candidate) <= width) {
+            current = candidate;
+            continue;
+        }
+        if (!current.isEmpty()) {
+            lines << current;
+            current.clear();
+        }
+        if (metrics.horizontalAdvance(word) <= width) {
+            current = word;
+            continue;
+        }
+        QString chunk;
+        for (const QChar ch : word) {
+            if (!chunk.isEmpty() && metrics.horizontalAdvance(chunk + ch) > width) {
+                lines << chunk;
+                chunk.clear();
+            }
+            chunk += ch;
+        }
+        current = chunk;
+    }
+    if (!current.isEmpty()) lines << current;
+    return lines;
+}
+
 void drawIsolatedText(QPainter& painter, const QPointF& baseline, const QString& value) {
     bool containsArabic = false;
     for (const QChar ch : value) {
@@ -105,45 +140,44 @@ void LineChart::paintEvent(QPaintEvent*) {
     p.setFont(mono);
     const QFontMetricsF fm(mono);
 
-    struct LegendDrawItem { QString label; bool marker = false; int row = 0; double x = 0.0; };
-    QList<LegendDrawItem> legendItems;
+    const double plotWidth = std::max(1.0, double(width() - 64));
     const double legendLeft = 46.0;
-    const double legendRight = std::max(legendLeft + 1.0, double(width()) - 10.0);
-    const double legendWidth = std::max(1.0, legendRight - legendLeft);
-    double legendX = legendLeft;
-    int legendRow = 0;
-    auto placeLegendItem = [&](const QString& source, bool marker) {
+    const double legendWidth = std::max(1.0, double(width()) - legendLeft - 10.0);
+    struct LegendDrawItem { QStringList lines; bool marker = false; };
+    QList<LegendDrawItem> legendItems;
+    int legendLineCount = 0;
+    auto addLegendItem = [&](const QString& source, bool marker) {
         if (source.isEmpty()) return;
-        QString label = displayText(source);
-        const double markerWidth = marker ? 24.0 : 0.0;
-        const double maxTextWidth = std::max(1.0, legendWidth - markerWidth);
-        label = fm.elidedText(label, Qt::ElideRight, static_cast<int>(std::floor(maxTextWidth)));
-        double itemWidth = markerWidth + fm.horizontalAdvance(label) + 10.0;
-        if (legendX > legendLeft && legendX + itemWidth > legendRight && legendRow == 0) {
-            legendRow = 1;
-            legendX = legendLeft;
-        }
-        const double remaining = std::max(1.0, legendRight - legendX - markerWidth - 8.0);
-        if (legendX + itemWidth > legendRight) {
-            label = fm.elidedText(label, Qt::ElideRight, static_cast<int>(std::floor(remaining)));
-            itemWidth = markerWidth + fm.horizontalAdvance(label) + 8.0;
-        }
-        legendItems.push_back({label, marker, legendRow, legendX});
-        legendX = std::min(legendRight, legendX + itemWidth + 8.0);
+        const int textWidth = std::max(1, static_cast<int>(std::floor(legendWidth - (marker ? 24.0 : 0.0))));
+        QStringList lines = wrapText(fm, displayText(source), textWidth);
+        if (lines.isEmpty()) return;
+        legendLineCount += lines.size();
+        legendItems.push_back({lines, marker});
     };
-    for (const QString& item : m_legend) placeLegendItem(item, true);
-    if (!m_caption.isEmpty()) placeLegendItem(m_caption, false);
-    const int legendRows = legendItems.isEmpty() ? 0 : legendRow + 1;
-    const double lowerReserve = legendRows == 0 ? 42.0 : (legendRows == 1 ? 54.0 : 68.0);
-    const QRectF plot(46, 24, std::max(1, width() - 64), std::max(1, height() - 24 - lowerReserve));
+    for (const QString& item : m_legend) addLegendItem(item, true);
+    addLegendItem(m_caption, false);
+
+    const QStringList yLabelLines = wrapText(fm, displayText(m_yLabel), std::max(1, width() - 16));
+    const QStringList xLabelLines = wrapText(fm, displayText(m_xLabel), static_cast<int>(std::floor(plotWidth)));
+    const int lineHeight = std::max(12, fm.height() + 2);
+    const int xLineCount = std::max(1, xLabelLines.size());
+    const int lowerReserve = legendLineCount > 0
+        ? 54 + (xLineCount + legendLineCount - 2) * lineHeight
+        : 42 + (xLineCount - 1) * lineHeight;
+    const int plotTop = 12 + std::max(1, yLabelLines.size()) * lineHeight;
+    const QRectF plot(46, plotTop,
+                      std::max(1.0, static_cast<double>(width() - 64)),
+                      std::max(1.0, static_cast<double>(height() - plotTop - lowerReserve)));
     auto X = [&](double x) { return plot.left() + (x - m_xMin) / (m_xMax - m_xMin) * plot.width(); };
     auto Y = [&](double y) { return plot.bottom() - (y - m_yMin) / (m_yMax - m_yMin) * plot.height(); };
 
-    const QString yLabel = fm.elidedText(displayText(m_yLabel), Qt::ElideRight, 38);
-    const QString xLabel = fm.elidedText(displayText(m_xLabel), Qt::ElideRight, std::max(1, static_cast<int>(plot.width())));
-    p.setPen(t.dim);
-    drawIsolatedText(p, QPointF(8, 14), yLabel);
-    drawIsolatedText(p, QPointF(plot.right() - fm.horizontalAdvance(xLabel), plot.bottom() + 30), xLabel);
+    p.setPen(t.muted);
+    for (int i = 0; i < yLabelLines.size(); ++i)
+        drawIsolatedText(p, QPointF(8, 14 + i * lineHeight), yLabelLines[i]);
+    for (int i = 0; i < xLabelLines.size(); ++i) {
+        const QString& line = xLabelLines[i];
+        drawIsolatedText(p, QPointF(plot.right() - fm.horizontalAdvance(line), plot.bottom() + 30 + i * lineHeight), line);
+    }
 
     for (const ChartRegion& r : m_regions) {                              // shaded regions behind the data
         QColor fill = r.color.isValid() ? r.color : t.amber;
@@ -155,17 +189,30 @@ void LineChart::paintEvent(QPaintEvent*) {
         }
     }
     p.setPen(QPen(t.border, 1));
-    for (int i = 0; i <= m_xTicks; ++i) {                                 // x tick labels
-        const double v = m_xMin + (m_xMax - m_xMin) * i / m_xTicks;
-        p.setPen(t.dim);
-        const QString s = QString::number(v, 'f', m_xDec);
-        drawIsolatedText(p, QPointF(X(v) - fm.horizontalAdvance(s) / 2, plot.bottom() + 14), s);
+    const int xDivisions = std::max(1, m_xTicks);
+    double widestXTick = 1.0;
+    for (int i = 0; i <= xDivisions; ++i) {
+        const double value = m_xMin + (m_xMax - m_xMin) * i / xDivisions;
+        widestXTick = std::max(widestXTick, fm.horizontalAdvance(QString::number(value, 'f', m_xDec)));
     }
-    for (int i = 0; i <= m_yTicks; ++i) {                                 // y tick labels
-        const double v = m_yMin + (m_yMax - m_yMin) * i / m_yTicks;
+    const int xLabelSlots = std::max(1, static_cast<int>(plot.width() / (widestXTick + 8.0)));
+    const int xStride = std::max(1, static_cast<int>(std::ceil(double(xDivisions) / xLabelSlots)));
+    for (int i = 0; i <= xDivisions; ++i) {                               // thin tick labels to prevent overlap
+        if (i % xStride != 0 && i != xDivisions) continue;
+        const double value = m_xMin + (m_xMax - m_xMin) * i / xDivisions;
         p.setPen(t.dim);
-        const QString s = QString::number(v, 'f', m_yDec);
-        drawIsolatedText(p, QPointF(plot.left() - 6 - fm.horizontalAdvance(s), Y(v) + 3), s);
+        const QString label = QString::number(value, 'f', m_xDec);
+        drawIsolatedText(p, QPointF(X(value) - fm.horizontalAdvance(label) / 2.0, plot.bottom() + 14), label);
+    }
+    const int yDivisions = std::max(1, m_yTicks);
+    const int yLabelSlots = std::max(1, static_cast<int>(plot.height() / (fm.height() + 4.0)));
+    const int yStride = std::max(1, static_cast<int>(std::ceil(double(yDivisions) / yLabelSlots)));
+    for (int i = 0; i <= yDivisions; ++i) {                               // thin tick labels to prevent overlap
+        if (i % yStride != 0 && i != yDivisions) continue;
+        const double value = m_yMin + (m_yMax - m_yMin) * i / yDivisions;
+        p.setPen(t.dim);
+        const QString label = QString::number(value, 'f', m_yDec);
+        drawIsolatedText(p, QPointF(plot.left() - 6 - fm.horizontalAdvance(label), Y(value) + 3), label);
     }
     p.setPen(QPen(t.border, 1));
     p.setBrush(Qt::NoBrush);
@@ -270,17 +317,20 @@ void LineChart::paintEvent(QPaintEvent*) {
         }
     }
 
-    // Legend gets its own reserved rows below the x-axis title. Long labels are elided
-    // inside their assigned space; wrapping to a second row avoids collisions at narrow widths.
+    // Legend items occupy their own wrapped rows below the x-axis title; every label stays visible.
+    double legendY = plot.bottom() + 30 + (xLineCount - 1) * lineHeight + 16;
     for (const LegendDrawItem& item : legendItems) {
-        const double y = height() - 8.0 - (legendRows - 1 - item.row) * 14.0;
-        if (item.marker) {
-            p.setPen(Qt::NoPen);
-            p.setBrush(t.sage);
-            p.drawEllipse(QPointF(item.x + 3.0, y - 3.0), 3.0, 3.0);
+        for (int line = 0; line < item.lines.size(); ++line) {
+            if (item.marker && line == 0) {
+                p.setPen(Qt::NoPen);
+                p.setBrush(t.sage);
+                p.drawEllipse(QPointF(legendLeft + 3.0, legendY - 3.0), 3.0, 3.0);
+            }
+            p.setPen(t.muted);
+            const double indent = item.marker ? (line == 0 ? 12.0 : 24.0) : 0.0;
+            drawIsolatedText(p, QPointF(legendLeft + indent, legendY), item.lines[line]);
+            legendY += lineHeight;
         }
-        p.setPen(t.muted);
-        drawIsolatedText(p, QPointF(item.x + (item.marker ? 12.0 : 0.0), y), item.label);
     }
 }
 

@@ -870,3 +870,19 @@ QPushButton#guidedLabLaunch {
 }
 QPushButton#guidedLabLaunch:hover { background: @surfaceHover@; }
 
+/* Keyboard focus is visible without changing the calm Gruvbox hierarchy. */
+QPushButton:focus, QToolButton:focus {
+    border: 2px solid @accentPrimaryHover@;
+}
+QPushButton#primary:focus, QPushButton#secondary:focus, QPushButton#outlineAmber:focus,
+QPushButton#sendToNotes:focus, QPushButton#presetBtn:focus, QPushButton#modeTab:focus,
+QPushButton#guidedLabLaunch:focus {
+    border: 2px solid @accentPrimaryHover@;
+}
+QPushButton#primary:focus { border-color: @text@; }
+QCheckBox:focus::indicator {
+    border: 2px solid @accentPrimaryHover@;
+}
+QSlider:focus::handle:horizontal {
+    border: 2px solid @text@;
+}
