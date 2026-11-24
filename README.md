@@ -115,7 +115,7 @@ To capture screenshots after building, run:
 
 ## Editing the interface in Qt Creator
 
-Open the repository's top-level `CMakeLists.txt` as a CMake project. Shared Designer forms are in `src/ui/` (`MainWindow.ui`, `BasePage.ui`, `Panel.ui`, `UnitField.ui`, `CalculatorKeypad.ui`, `ModeTabs.ui`, `RegisterView.ui`, `ResultCard.ui`, and `NoticeCard.ui`). CMake AUTOUIC generates their C++ wrappers during the build; edit the `.ui` files rather than generated `ui_*.h` files. Page-specific controls and custom-painted diagrams are still being migrated in stages; physics and session logic remain in C++.
+Open the repository's top-level `CMakeLists.txt` as a CMake project. Shared Designer forms are in `src/ui/` (`MainWindow.ui`, `BasePage.ui`, `Panel.ui`, `UnitField.ui`, `CalculatorKeypad.ui`, `ModeTabs.ui`, `RegisterView.ui`, `ResultCard.ui`, `NoticeCard.ui`, `NotesPage.ui`, `ConstantsPage.ui`, and `DiagramsPage.ui`). CMake AUTOUIC generates their C++ wrappers during the build; edit the `.ui` files rather than generated `ui_*.h` files. Page-specific controls and custom-painted diagrams are still being migrated in stages; physics and session logic remain in C++.
 
 Linux and Windows Qt builds and the core-only tests run in GitHub Actions. The standalone Lua generator does not add a Lua runtime dependency to the application; when Lua 5.4 is installed, regenerate the diagrams with:
 
