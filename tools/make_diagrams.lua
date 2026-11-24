@@ -1,0 +1,402 @@
+#!/usr/bin/env lua
+-- Generate theme-aware SVG diagrams for assets/diagrams/*.svg.
+-- Geometry is calculated here; the Qt application substitutes the @color@ tokens at runtime.
+-- Run from the repository: lua tools/make_diagrams.lua [output-directory]
+
+local function script_directory()
+    local source = debug.getinfo(1, "S").source
+    if source:sub(1, 1) == "@" then source = source:sub(2) end
+    return source:match("^(.*)[/\\][^/\\]*$") or "."
+end
+
+local script_dir = script_directory()
+local out_dir = (arg and arg[1]) or (script_dir .. "/../assets/diagrams")
+assert(os.setlocale("C", "numeric"), "cannot set a stable C numeric locale for SVG output")
+local SANS = "DejaVu Sans, Arial, Helvetica, sans-serif"
+local SERIF = "DejaVu Serif, Times New Roman, serif"
+local pi = math.pi
+local rad, deg = math.rad, math.deg
+local function fmt(v, nd)
+    assert(v == v and math.abs(v) < math.huge, "cannot emit a non-finite SVG coordinate")
+    return string.format("%." .. (nd or 2) .. "f", v)
+end
+local function signed(v, nd)
+    return (v < 0 and "−" or "") .. fmt(math.abs(v), nd or 2)
+end
+local function vec(x, y) return {x = x, y = y} end
+local function unit(dx, dy)
+    local n = math.sqrt(dx * dx + dy * dy)
+    assert(n > 1e-12, "cannot normalize a zero-length SVG vector")
+    return vec(dx / n, dy / n)
+end
+local function pt(p, d, length) return vec(p.x + d.x * length, p.y + d.y * length) end
+local function line(p, q, color, width, dash, opacity)
+    color, width = color or "@fg@", width or 2.0
+    local extra = (dash and (' stroke-dasharray="' .. dash .. '"') or "") ..
+                  (opacity and (' stroke-opacity="' .. opacity .. '"') or "")
+    return string.format('<line x1="%s" y1="%s" x2="%s" y2="%s" stroke="%s" stroke-width="%s" stroke-linecap="round"%s/>',
+        fmt(p.x), fmt(p.y), fmt(q.x), fmt(q.y), color, fmt(width, 2), extra)
+end
+local function head(tip, direction, color, size)
+    size = size or 15
+    local bx, by = tip.x - direction.x * size, tip.y - direction.y * size
+    local nx, ny = -direction.y, direction.x
+    local ax, ay = bx + nx * size * 0.38, by + ny * size * 0.38
+    local cx, cy = bx - nx * size * 0.38, by - ny * size * 0.38
+    return string.format('<polygon points="%s,%s %s,%s %s,%s" fill="%s"/>',
+        fmt(tip.x), fmt(tip.y), fmt(ax), fmt(ay), fmt(cx), fmt(cy), color)
+end
+local function ray(p, q, color, width, at, dash)
+    width, at = width or 3.5, at or 0.55
+    local direction = unit(q.x - p.x, q.y - p.y)
+    local length = math.sqrt((q.x - p.x)^2 + (q.y - p.y)^2)
+    local tip = pt(p, direction, length * at + 7)
+    return line(p, q, color, width, dash) .. head(tip, direction, color, 14)
+end
+local function arrow(p, q, color, width)
+    local direction = unit(q.x - p.x, q.y - p.y)
+    return line(p, pt(q, direction, -10), color or "@fg@", width or 2.5) .. head(q, direction, color or "@fg@", 14)
+end
+local function dimension(p, q, color, width)
+    local direction = unit(q.x - p.x, q.y - p.y)
+    return line(pt(p, direction, 9), pt(q, direction, -9), color or "@muted@", width or 2) ..
+           head(q, direction, color or "@muted@", 11) .. head(p, vec(-direction.x, -direction.y), color or "@muted@", 11)
+end
+local function text(x, y, value, size, color, anchor, italic, bold, serif)
+    size, color, anchor = size or 18, color or "@fg@", anchor or "start"
+    local family = (italic or serif) and SERIF or SANS
+    local style = italic and ' font-style="italic"' or ""
+    local weight = bold and ' font-weight="bold"' or ""
+    return string.format('<text x="%s" y="%s" font-family="%s" font-size="%s" fill="%s" text-anchor="%s"%s%s>%s</text>',
+        fmt(x), fmt(y), family, tostring(size), color, anchor, style, weight, value)
+end
+local function sym(x, y, base, sub, size, color, anchor, bold)
+    size = size or 22
+    local value = base .. (sub and string.format('<tspan dy="%.1f" font-size="%.1f">%s</tspan>', size * 0.28, size * 0.68, sub) or "")
+    return text(x, y, value, size, color, anchor, true, bold)
+end
+local function arc(center, u, v, radius, color, width)
+    local p, q = pt(center, u, radius), pt(center, v, radius)
+    local sweep = (u.x * v.y - u.y * v.x) > 0 and 1 or 0
+    return string.format('<path d="M %s %s A %s %s 0 0 %d %s %s" fill="none" stroke="%s" stroke-width="%s" stroke-linecap="round"/>',
+        fmt(p.x), fmt(p.y), fmt(radius, 2), fmt(radius, 2), sweep, fmt(q.x), fmt(q.y), color, fmt(width or 2.5, 2))
+end
+local function mid_dir(u, v) return unit(u.x + v.x, u.y + v.y) end
+local function dot(p, radius, color)
+    return string.format('<circle cx="%s" cy="%s" r="%s" fill="%s"/>', fmt(p.x), fmt(p.y), fmt(radius or 4.5, 2), color or "@fg@")
+end
+local titles = {
+    refraction = "Refraction and reflection",
+    tir = "Total internal reflection",
+    thin_lens = "Thin-lens ray diagram",
+    spherical_mirror = "Spherical-mirror ray diagram",
+    double_slit = "Double-slit interference",
+    prism = "Prism deviation",
+    polarization = "Polarization and Malus's law",
+    single_slit = "Single-slit diffraction",
+    grating = "Diffraction grating",
+    thin_film = "Thin-film interference",
+    michelson = "Michelson interferometer",
+    newton_rings = "Newton's rings",
+    thick_lens = "Thick lens and spherical aberration"
+}
+
+local descriptions = {
+    refraction = "Incident light reflects and refracts at an air-glass boundary according to Snell's law.",
+    tir = "Three incidence angles illustrate refraction, the critical angle, and total internal reflection.",
+    thin_lens = "Principal rays show image formation by a converging thin lens.",
+    spherical_mirror = "Principal rays show image formation by a concave spherical mirror.",
+    double_slit = "Coherent light from two slits forms bright and dark interference fringes on a screen.",
+    prism = "A ray refracts at both faces of a glass prism and emerges with angular deviation.",
+    polarization = "Two polarizers illustrate Malus's law and the Brewster angle.",
+    single_slit = "A single slit produces a diffraction pattern with a broad central maximum.",
+    grating = "A diffraction grating separates light into principal orders on an observation screen.",
+    thin_film = "Reflections from the two surfaces of a thin film interfere.",
+    michelson = "A Michelson interferometer splits, reflects, and recombines light along perpendicular arms.",
+    newton_rings = "A curved lens over a flat plate forms concentric Newton's rings.",
+    thick_lens = "Marginal and paraxial rays focus at different positions because of spherical aberration."
+}
+
+local function write(name, width, height, body)
+    local path = out_dir .. "/" .. name .. ".svg"
+    local file, err = io.open(path, "wb")
+    assert(file, "cannot write " .. path .. ": " .. tostring(err))
+    local header = '<?xml version="1.0" encoding="UTF-8"?>\n<!-- ' .. name .. ': generated by tools/make_diagrams.lua - do not edit by hand -->\n'
+    local root = string.format('<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d" preserveAspectRatio="xMidYMid meet" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" role="img" aria-labelledby="diagram-title diagram-description">\n', width, height, width, height)
+    assert(file:write(header, root, '<title id="diagram-title">' .. titles[name] .. '</title>\n<desc id="diagram-description">' .. descriptions[name] .. '</desc>\n', table.concat(body, "\n"), "\n</svg>\n"), "failed writing " .. path)
+    local ok, closeError = file:close()
+    assert(ok, "failed closing " .. path .. ": " .. tostring(closeError))
+end
+
+local function refraction()
+    local W, H = 800, 520
+    local O, n1, n2, th1 = vec(400, 270), 1.0, 1.5, 40.0
+    local t1 = rad(th1); local t2 = math.asin(n1 * math.sin(t1) / n2); local L = 235
+    local inc = vec(-math.sin(t1), -math.cos(t1))
+    local reflected, refracted = vec(math.sin(t1), -math.cos(t1)), vec(math.sin(t2), math.cos(t2))
+    local b = {
+        '<rect x="0" y="0" width="800" height="270" fill="@blue@" fill-opacity="0.07"/>',
+        '<rect x="0" y="270" width="800" height="250" fill="@blue@" fill-opacity="0.20"/>',
+        line(vec(40,270), vec(760,270), "@fg@", 3.5), line(vec(400,36), vec(400,500), "@muted@", 2, "9 7"),
+        text(412,50,"Normal",17,"@muted@")
+    }
+    b[#b+1] = ray(pt(O,inc,L),O,"@red@")
+    b[#b+1] = ray(O,pt(O,reflected,L),"@blue@")
+    b[#b+1] = ray(O,pt(O,refracted,L),"@green@")
+    local up, down = vec(0,-1), vec(0,1)
+    b[#b+1] = arc(O,up,inc,85,"@red@")
+    b[#b+1] = arc(O,up,reflected,85,"@blue@")
+    b[#b+1] = arc(O,down,refracted,85,"@green@")
+    local m = pt(O,mid_dir(up,inc),118); b[#b+1] = sym(m.x-10,m.y+4,"θ","1",22,"@red@","end")
+    m = pt(O,mid_dir(up,reflected),118); b[#b+1] = sym(m.x-2,m.y+4,"θ","r",22,"@blue@")
+    m = pt(O,mid_dir(down,refracted),122); b[#b+1] = sym(m.x-4,m.y+12,"θ","2",22,"@green@","start")
+    local s = pt(O,inc,L); b[#b+1] = text(s.x-8,s.y-6,"Incident ray",18,"@red@","end")
+    local e = pt(O,reflected,L); b[#b+1] = text(e.x+10,e.y+22,"Reflected ray",18,"@blue@")
+    e = pt(O,refracted,L); b[#b+1] = text(e.x+10,e.y+6,"Refracted ray",18,"@green@")
+    b[#b+1] = sym(22,38,"n","1",24,"@fg@")
+    b[#b+1] = text(54,38,"= 1.00  (air)",20)
+    b[#b+1] = sym(22,500,"n","2",24,"@fg@")
+    b[#b+1] = text(54,500,"= 1.50  (glass)",20)
+    b[#b+1] = text(778,38,"n₁ sin θ₁ = n₂ sin θ₂",21,"@yellow@","end",false,true)
+    b[#b+1] = text(778,64,string.format("θr = θ₁   ·   θ₂ = %.1f°  (θ₁ = %.0f°)",deg(t2),th1),16,"@muted@","end")
+    b[#b+1] = dot(O)
+    write("refraction",W,H,b)
+end
+
+local function tir()
+    local W,H=900,540; local O=vec(400,250); local n1,n2=1.5,1.0
+    local critical=deg(math.asin(n2/n1)); local L=215
+    local b={'<rect x="0" y="0" width="900" height="250" fill="@blue@" fill-opacity="0.06"/>','<rect x="0" y="250" width="900" height="290" fill="@blue@" fill-opacity="0.22"/>',
+        line(vec(40,250),vec(860,250),"@fg@",3.5),line(vec(400,40),vec(400,520),"@muted@",2,"9 7"),text(412,58,"Normal",17,"@muted@")}
+    local cases={{25.0,"θ₁ &lt; θc"},{critical,"θ₁ = θc"},{60.0,"θ₁ &gt; θc"}}
+    for _,item in ipairs(cases) do
+        local ang,label=item[1],item[2]; local t=rad(ang); local inc=vec(-math.sin(t),math.cos(t)); local refl=vec(math.sin(t),math.cos(t))
+        local S=pt(O,inc,L); local E=pt(O,refl,L*(ang<30 and 0.7 or 1.0))
+        b[#b+1]=ray(S,O,"@red@"); b[#b+1]=ray(O,E,"@blue@"); b[#b+1]=text(S.x-8,S.y+5,label,19,"@red@","end",false,true)
+    end
+    local t=rad(25.0); local exit=math.asin(n1*math.sin(t)/n2); local E=pt(O,vec(math.sin(exit),-math.cos(exit)),235)
+    b[#b+1]=ray(O,E,"@green@"); b[#b+1]=text(E.x+8,E.y+4,"refracted ray",18,"@green@")
+    b[#b+1]=ray(O,vec(O.x+235,O.y-4),"@green@",3.5,0.6,"10 6"); b[#b+1]=text(O.x+240,O.y+20,"refracted at 90°",17,"@green@")
+    t=rad(60.0); E=pt(O,vec(math.sin(t),math.cos(t)),L); b[#b+1]=text(E.x+10,E.y+6,"Total internal reflection",17,"@orange@","start",false,true)
+    b[#b+1]=text(22,40,"Air   n₂ = 1.00",20); b[#b+1]=text(22,522,"Glass   n₁ = 1.50",20)
+    b[#b+1]=text(878,470,string.format("sin θc = n₂ / n₁   →   θc = %.1f°",critical),21,"@yellow@","end",false,true)
+    b[#b+1]=text(878,498,"possible only when light goes from n₁ to a smaller n₂",16,"@muted@","end"); b[#b+1]=dot(O)
+    write("tir",W,H,b)
+end
+
+local function thin_lens()
+    local W,H=900,480; local axis=240; local lx=450; local fl=120; local s=300
+    local sp=1/(1/fl-1/s); local magnification=-sp/s; local ox=lx-s; local hobj=90
+    local tip=vec(ox,axis-hobj); local ix=lx+sp; local itip=vec(ix,axis-magnification*hobj)
+    local b={line(vec(30,axis),vec(870,axis),"@muted@",2),
+        '<path d="M 450 96 Q 488 240 450 384 Q 412 240 450 96 Z" fill="@blue@" fill-opacity="0.28" stroke="@blue@" stroke-width="3.5"/>',
+        head(vec(lx,88),vec(0,-1),"@blue@",16),head(vec(lx,392),vec(0,1),"@blue@",16)}
+    for _,item in ipairs({{lx-fl,"F"},{lx+fl,"F′"},{lx-2*fl,"2F"},{lx+2*fl,"2F′"}}) do
+        b[#b+1]=dot(vec(item[1],axis),4.5,"@yellow@"); b[#b+1]=text(item[1],axis+26,item[2],18,"@yellow@","middle",false,true)
+    end
+    b[#b+1]=arrow(vec(ox,axis),tip,"@red@",4); b[#b+1]=text(ox,tip.y-12,"Object",18,"@red@","middle",false,true)
+    b[#b+1]=arrow(vec(ix,axis),itip,"@green@",4); b[#b+1]=text(ix,itip.y+28,"Image",18,"@green@","middle",false,true)
+    local r1,r2,r3=vec(lx,tip.y),vec(lx,axis),vec(lx,itip.y)
+    for _,hit in ipairs({r1,r2,r3}) do b[#b+1]=ray(tip,hit,"@yellow@",2.8); b[#b+1]=ray(hit,itip,"@yellow@",2.8) end
+    local yd=430
+    for _,x in ipairs({ox,lx,ix}) do b[#b+1]=line(vec(x,axis+6),vec(x,yd+8),"@muted@",1.2,"4 4") end
+    b[#b+1]=dimension(vec(ox,yd),vec(lx,yd)); b[#b+1]=sym((ox+lx)/2,yd-8,"s",nil,22,"@fg@","middle")
+    b[#b+1]=dimension(vec(lx,yd),vec(ix,yd)); b[#b+1]=sym((lx+ix)/2,yd-8,"s′",nil,22,"@fg@","middle")
+    b[#b+1]=text(870,48,"1/s + 1/s′ = 1/f",22,"@yellow@","end",false,true)
+    b[#b+1]=text(870,78,"m = −s′/s = "..signed(magnification),20,"@yellow@","end",false,true)
+    b[#b+1]=text(870,106,"Real, inverted, reduced image",17,"@muted@","end"); b[#b+1]=text(870,130,"(object beyond 2F)",15,"@muted@","end")
+    write("thin_lens",W,H,b)
+end
+
+local function mirror()
+    local W,H=900,480; local axis=240; local R=300; local Vx=700; local Cx=Vx-R; local fl=R/2
+    local Fx=Vx-fl; local s=350; local ox=Vx-s; local hobj=80
+    local sp=1/(1/fl-1/s); local magnification=-sp/s; local ix=Vx-sp; local tip=vec(ox,axis-hobj); local itip=vec(ix,axis-magnification*hobj)
+    local a=rad(34); local top=vec(Cx+R*math.cos(a),axis-R*math.sin(a)); local bot=vec(top.x,axis+R*math.sin(a))
+    local b={line(vec(30,axis),vec(860,axis),"@muted@",2)}
+    for k=-4,4 do local ang=rad(k*8); local p=vec(Cx+R*math.cos(ang),axis+R*math.sin(ang)); b[#b+1]=line(p,vec(p.x+15*math.cos(ang),p.y+15*math.sin(ang)),"@blue@",2) end
+    b[#b+1]=string.format('<path d="M %s %s A %d %d 0 0 1 %s %s" fill="none" stroke="@blue@" stroke-width="6" stroke-linecap="round"/>',fmt(top.x),fmt(top.y),R,R,fmt(bot.x),fmt(bot.y))
+    for _,item in ipairs({{Cx,"C"},{Fx,"F"},{Vx,"V"}}) do b[#b+1]=dot(vec(item[1],axis),4.5,"@yellow@"); b[#b+1]=text(item[1],axis+26,item[2],19,"@yellow@","middle",false,true) end
+    b[#b+1]=arrow(vec(ox,axis),tip,"@red@",4); b[#b+1]=text(ox,tip.y-12,"Object",18,"@red@","middle",false,true)
+    b[#b+1]=arrow(vec(ix,axis),itip,"@green@",4); b[#b+1]=text(ix,itip.y+28,"Image",18,"@green@","middle",false,true)
+    local h1=vec(Cx+math.sqrt(R*R-hobj*hobj),tip.y); local h3y=itip.y; local h3=vec(Cx+math.sqrt(R*R-(h3y-axis)^2),h3y)
+    for _,hit in ipairs({h1,vec(Vx,axis),h3}) do b[#b+1]=ray(tip,hit,"@yellow@",2.8); b[#b+1]=ray(hit,itip,"@yellow@",2.8) end
+    local y1,y2=398,440
+    for _,x in ipairs({ix,Vx}) do b[#b+1]=line(vec(x,axis+6),vec(x,y2+8),"@muted@",1.2,"4 4") end
+    b[#b+1]=line(vec(ox,axis+6),vec(ox,y2+8),"@muted@",1.2,"4 4")
+    b[#b+1]=dimension(vec(ix,y1),vec(Vx,y1)); b[#b+1]=sym((ix+Vx)/2,y1-8,"s′",nil,22,"@fg@","middle")
+    b[#b+1]=dimension(vec(ox,y2),vec(Vx,y2)); b[#b+1]=sym((ox+Vx)/2,y2-8,"s",nil,22,"@fg@","middle")
+    b[#b+1]=text(40,48,"1/s + 1/s′ = 1/f",22,"@yellow@","start",false,true); b[#b+1]=text(40,78,"f = R / 2",20,"@yellow@","start",false,true)
+    b[#b+1]=text(40,106,"m = −s′/s = "..signed(magnification),20,"@yellow@","start",false,true)
+    b[#b+1]=text(40,134,"Real, inverted, reduced image",17,"@muted@"); b[#b+1]=text(40,158,"(concave mirror, object beyond C)",15,"@muted@")
+    write("spherical_mirror",W,H,b)
+end
+
+local function double_slit()
+    local W,H=960,540; local bx,sx=250,750; local yc=260; local d=100
+    local S1,S2=vec(bx,yc-d/2),vec(bx,yc+d/2); local R=sx-bx; local lam=8.0; local dy=lam*R/d
+    local b={}
+    for _,y in ipairs({200,260,320}) do b[#b+1]=arrow(vec(40,y),vec(200,y),"@aqua@",3) end
+    b[#b+1]=line(vec(215,175),vec(215,345),"@aqua@",1.5,"3 5")
+    b[#b+1]=string.format('<rect x="%d" y="40" width="10" height="%.0f" fill="@fg@"/>',bx-5,S1.y-45)
+    b[#b+1]=string.format('<rect x="%d" y="%.0f" width="10" height="%.0f" fill="@fg@"/>',bx-5,S1.y+5,S2.y-S1.y-10)
+    b[#b+1]=string.format('<rect x="%d" y="%.0f" width="10" height="%.0f" fill="@fg@"/>',bx-5,S2.y+5,480-S2.y-5)
+    b[#b+1]=line(vec(sx,40),vec(sx,480),"@fg@",4)
+    for y=40,478,2 do local I=math.cos(pi*(y+1-yc)/dy)^2; b[#b+1]=string.format('<rect x="%d" y="%d" width="26" height="2" fill="@yellow@" fill-opacity="%.2f"/>',sx+6,y,I) end
+    local pts={}; for y=40,480,2 do local I=math.cos(pi*(y-yc)/dy)^2; pts[#pts+1]=fmt(sx+44+I*62)..","..tostring(y) end
+    b[#b+1]='<polyline points="'..table.concat(pts," ")..'" fill="none" stroke="@yellow@" stroke-width="2.2"/>'
+    b[#b+1]=text(sx+75,28,"I(y)",18,"@yellow@","middle",false,true)
+    local P,P0=vec(sx,yc-dy),vec(sx,yc)
+    b[#b+1]=ray(S1,P,"@aqua@",2.6); b[#b+1]=ray(S2,P,"@aqua@",2.6); b[#b+1]=line(S1,P0,"@muted@",1.6,"7 6"); b[#b+1]=line(S2,P0,"@muted@",1.6,"7 6")
+    local u=unit(P.x-S2.x,P.y-S2.y); local t=(S1.x-S2.x)*u.x+(S1.y-S2.y)*u.y; local Fq=pt(S2,u,t)
+    b[#b+1]=line(S1,Fq,"@orange@",2,"4 3"); b[#b+1]=line(S2,Fq,"@orange@",4.2); b[#b+1]=text(Fq.x+4,Fq.y+38,"Δr = d sin θ",17,"@orange@")
+    for m=-2,2 do local y=yc-m*dy; local label=tostring(m):gsub("-","−"); b[#b+1]=line(vec(sx-12,y),vec(sx,y),"@fg@",2.5); b[#b+1]=text(sx+116,y+6,"m = "..label,15,"@muted@") end
+    b[#b+1]=dimension(vec(bx-38,S1.y),vec(bx-38,S2.y)); b[#b+1]=sym(bx-48,yc+7,"d",nil,22,"@fg@","end")
+    b[#b+1]=dimension(vec(bx,508),vec(sx,508)); b[#b+1]=sym((bx+sx)/2,500,"R",nil,22,"@fg@","middle")
+    b[#b+1]=line(vec(bx,482),vec(bx,516),"@muted@",1.2,"4 4"); b[#b+1]=line(vec(sx,482),vec(sx,516),"@muted@",1.2,"4 4")
+    b[#b+1]=dimension(vec(sx-34,yc-dy),vec(sx-34,yc),"@yellow@"); b[#b+1]=sym(sx-44,yc-dy/2+7,"Δy",nil,20,"@yellow@","end")
+    b[#b+1]=text(bx+20,66,"Δy = λR / d",22,"@yellow@","start",false,true); b[#b+1]=text(bx+20,96,"yₘ = m λ R / d",22,"@yellow@","start",false,true)
+    b[#b+1]=text(bx+20,124,"bright fringes: d sin θ = m λ",16,"@muted@"); b[#b+1]=text(40,150,"coherent",16,"@aqua@"); b[#b+1]=text(40,170,"light",16,"@aqua@")
+    b[#b+1]=text(bx,30,"double slit",16,"@muted@","middle"); b[#b+1]=text(sx,30,"screen",16,"@muted@","middle")
+    write("double_slit",W,H,b)
+end
+
+local function refract(d,n,eta)
+    local cosi=-(n.x*d.x+n.y*d.y); local k=1-eta*eta*(1-cosi*cosi)
+    if k<0 then return nil end
+    local c=eta*cosi-math.sqrt(k); return vec(eta*d.x+c*n.x,eta*d.y+c*n.y)
+end
+local function intersect(p,d,q,e)
+    local det=d.x*(-e.y)-d.y*(-e.x)
+    assert(math.abs(det) > 1e-12, "cannot intersect parallel SVG rays")
+    local s=((q.x-p.x)*(-e.y)-(q.y-p.y)*(-e.x))/det
+    return vec(p.x+s*d.x,p.y+s*d.y)
+end
+local function prism()
+    local W,H=800,520; local n,th1=1.5,50.0; local Ap,Lf,Rt=vec(400,80),vec(250,340),vec(550,340)
+    local eL=unit(Lf.x-Ap.x,Lf.y-Ap.y); local eR=unit(Rt.x-Ap.x,Rt.y-Ap.y)
+    local nL,nR=vec(-0.8660254,-0.5),vec(0.8660254,-0.5)
+    local A=deg(math.acos(eL.x*eR.x+eL.y*eR.y)); local P1=vec(Ap.x+0.55*(Lf.x-Ap.x),Ap.y+0.55*(Lf.y-Ap.y))
+    local ang=rad(30-th1); local d0=vec(math.cos(ang),math.sin(ang)); local d1=refract(d0,nL,1/n)
+    local P2=intersect(P1,d1,Ap,eR); local d2=refract(d1,vec(-nR.x,-nR.y),n); local X=intersect(P1,d0,P2,d2)
+    local cosine=math.max(-1,math.min(1,d0.x*d2.x+d0.y*d2.y)); local delta=deg(math.acos(cosine))
+    local th4=deg(math.acos(-(d2.x*-nR.x+d2.y*-nR.y)))
+    local b={string.format('<polygon points="400,80 250,340 550,340" fill="@blue@" fill-opacity="0.22" stroke="@blue@" stroke-width="4" stroke-linejoin="round"/>'),
+        line(pt(P1,nL,95),pt(P1,nL,-60),"@muted@",2,"8 6"),line(pt(P2,nR,95),pt(P2,nR,-60),"@muted@",2,"8 6")}
+    local S,E=pt(P1,d0,-170),pt(P2,d2,200)
+    b[#b+1]=ray(S,P1,"@red@",4); b[#b+1]=ray(P1,P2,"@yellow@",4); b[#b+1]=ray(P2,E,"@green@",4)
+    b[#b+1]=line(P1,X,"@muted@",2,"3 6"); b[#b+1]=line(X,pt(X,d0,0),"@muted@",2); b[#b+1]=line(X,P2,"@muted@",2,"3 6")
+    b[#b+1]=arc(P1,nL,vec(-d0.x,-d0.y),52,"@red@"); b[#b+1]=arc(P2,nR,d2,52,"@green@"); b[#b+1]=arc(Ap,eL,eR,50,"@orange@"); b[#b+1]=arc(X,d0,d2,58,"@orange@")
+    local m=pt(P1,mid_dir(nL,vec(-d0.x,-d0.y)),80); b[#b+1]=sym(m.x-6,m.y+6,"θ","1",22,"@red@","end")
+    m=pt(P2,mid_dir(nR,d2),82); b[#b+1]=sym(m.x+4,m.y+2,"θ","2",22,"@green@")
+    m=pt(Ap,mid_dir(eL,eR),78); b[#b+1]=sym(m.x-8,m.y+8,"A",nil,24,"@orange@")
+    m=pt(X,mid_dir(d0,d2),86); b[#b+1]=sym(m.x-2,m.y+8,"δ",nil,24,"@orange@")
+    b[#b+1]=text(S.x+4,S.y-12,"Incident ray",18,"@red@"); b[#b+1]=text(E.x-4,E.y+24,"Emergent ray",18,"@green@","end")
+    b[#b+1]=text(400,372,"n = 1.50",20,"@fg@","middle"); b[#b+1]=text(780,58,"δ = θ₁ + θ₂ − A",22,"@yellow@","end",false,true)
+    b[#b+1]=text(780,88,string.format("A = %.0f°   θ₁ = %.0f°   θ₂ = %.1f°   δ = %.1f°",A,th1,th4,delta),16,"@muted@","end")
+    b[#b+1]=text(780,112,"sin((A + δmin)/2) = n sin(A/2) at minimum deviation",15,"@muted@","end")
+    write("prism",W,H,b)
+end
+
+local function polarization()
+    local W,H=840,500; local y=250
+    local b={line(vec(35,y),vec(805,y),"@muted@",1.6),text(24,35,"POLARIZATION · MALUS AND BREWSTER",17,"@yellow@","start",false,true),
+        ray(vec(55,y),vec(180,y),"@red@",3),text(70,y-24,"Unpolarized",16,"@muted@"),
+        '<rect x="185" y="180" width="20" height="140" fill="@card@" stroke="@blue@" stroke-width="3"/>',line(vec(195,195),vec(195,305),"@blue@",3),text(195,160,"P₁ · vertical axis",17,"@blue@","middle")}
+    b[#b+1]=ray(vec(205,y),vec(420,y),"@yellow@",3.5)
+    local theta=rad(50); local ux,uy=math.cos(theta),-math.sin(theta); local cx,cy=440,y
+    b[#b+1]='<rect x="430" y="180" width="20" height="140" fill="@card@" stroke="@green@" stroke-width="3"/>'
+    b[#b+1]=line(vec(cx-ux*58,cy-uy*58),vec(cx+ux*58,cy+uy*58),"@green@",3); b[#b+1]=text(cx,160,"Analyzer · axis θ",17,"@green@","middle")
+    b[#b+1]=arc(vec(cx,cy),vec(0,-1),vec(ux,uy),52,"@orange@"); b[#b+1]=sym(cx+40,cy-52,"θ",nil,22,"@orange@")
+    b[#b+1]=ray(vec(450,y),vec(650,y),"@green@",3*math.cos(theta)^2)
+    b[#b+1]='<rect x="662" y="195" width="28" height="110" fill="@card@" stroke="@muted@" stroke-width="3"/>'
+    b[#b+1]=text(676,170,"Detector",16,"@muted@","middle"); b[#b+1]=text(805,385,"I = I₀ cos²θ",24,"@yellow@","end",false,true)
+    b[#b+1]=text(805,415,"Brewster: reflected ⟂ refracted",17,"@muted@","end"); b[#b+1]=text(805,442,"tan θB = n₂ / n₁",20,"@yellow@","end",false,true)
+    write("polarization",W,H,b)
+end
+
+local function single_slit()
+    local W,H=840,500; local sx,screen=280,700; local cy=255; local gap=74
+    local b={text(24,35,"SINGLE-SLIT DIFFRACTION",18,"@yellow@","start",false,true),line(vec(sx,70),vec(sx,cy-gap/2),"@blue@",8),line(vec(sx,cy+gap/2),vec(sx,445),"@blue@",8),
+        line(vec(screen,70),vec(screen,445),"@muted@",4),text(sx,465,"Slit width a",17,"@muted@","middle"),text(screen,465,"Screen · distance L",16,"@muted@","middle")}
+    for _,yy in ipairs({125,190,255,320,385}) do b[#b+1]=ray(vec(55,yy),vec(sx-12,yy),"@red@",2.2) end
+    b[#b+1]=ray(vec(sx+5,cy-gap/2),vec(screen-4,cy-142),"@yellow@",2.3)
+    b[#b+1]=ray(vec(sx+5,cy+gap/2),vec(screen-4,cy+142),"@yellow@",2.3)
+    b[#b+1]=ray(vec(sx,cy),vec(screen-4,cy),"@green@",2.5)
+    for _,item in ipairs({{cy-142,"@red@",5},{cy-72,"@yellow@",5},{cy,"@green@",8},{cy+72,"@yellow@",5},{cy+142,"@red@",5}}) do b[#b+1]=line(vec(screen-18,item[1]),vec(screen+18,item[1]),item[2],item[3]) end
+    b[#b+1]=text(805,65,"Minima",17,"@muted@","end"); b[#b+1]=text(805,92,"a sin θ = mλ",22,"@yellow@","end",false,true)
+    b[#b+1]=text(805,125,"Central width",17,"@muted@","end"); b[#b+1]=text(805,153,"w₀ ≈ 2Lλ / a",22,"@yellow@","end",false,true)
+    b[#b+1]=dimension(vec(screen+35,cy-142),vec(screen+35,cy+142),"@muted@",1.6); b[#b+1]=text(screen+48,cy+6,"central maximum",15,"@muted@")
+    write("single_slit",W,H,b)
+end
+
+local function grating()
+    local W,H=840,500; local gx,gy,screen=260,260,720
+    local b={text(24,35,"DIFFRACTION GRATING",18,"@yellow@","start",false,true),line(vec(screen,70),vec(screen,450),"@muted@",4),text(gx,455,"Grating · spacing d",17,"@muted@","middle"),text(screen,455,"Observation screen",16,"@muted@","middle")}
+    for y=115,405,24 do b[#b+1]=line(vec(gx,y),vec(gx,y+13),"@blue@",2.5) end
+    b[#b+1]=ray(vec(45,gy),vec(gx-10,gy),"@red@",3)
+    for _,order in ipairs({{-2,126},{-1,190},{0,gy},{1,330},{2,394}}) do
+        local m,targetY=order[1],order[2]
+        local color=m==0 and "@green@" or "@yellow@"
+        b[#b+1]=ray(vec(gx+5,gy),vec(screen-8,targetY),color,2.5)
+        b[#b+1]=line(vec(screen-14,targetY),vec(screen+14,targetY),color,m==0 and 6 or 4)
+        b[#b+1]=text(screen+25,targetY+6,"m = "..tostring(m),16,color)
+    end
+    b[#b+1]=text(810,66,"Principal maxima",17,"@muted@","end"); b[#b+1]=text(810,96,"d sin θₘ = mλ",23,"@yellow@","end",false,true)
+    b[#b+1]=text(810,128,"d = 1 / N",21,"@yellow@","end",false,true); b[#b+1]=text(810,158,"Higher N separates close wavelengths",15,"@muted@","end")
+    write("grating",W,H,b)
+end
+
+local function thin_film()
+    local W,H=840,500; local top,bottom=230,330
+    local b={text(24,35,"THIN-FILM INTERFERENCE",18,"@yellow@","start",false,true),string.format('<rect x="255" y="%d" width="450" height="%d" fill="@blue@" fill-opacity="0.16" stroke="@blue@" stroke-width="3"/>',top,bottom-top),
+        line(vec(255,top),vec(705,top),"@blue@",3),line(vec(255,bottom),vec(705,bottom),"@blue@",3),text(480,top+30,"Film · index n · thickness t",17,"@blue@","middle"),text(480,bottom+28,"Substrate",16,"@muted@","middle")}
+    local p0,p1,p2,p3,p4,p5=vec(340,70),vec(400,top),vec(475,top),vec(550,bottom),vec(640,bottom),vec(700,430)
+    b[#b+1]=ray(p0,p1,"@red@",3); b[#b+1]=ray(p1,p2,"@yellow@",3); b[#b+1]=ray(p2,p3,"@yellow@",3); b[#b+1]=ray(p3,p4,"@yellow@",3); b[#b+1]=ray(p4,p5,"@green@",3)
+    b[#b+1]=ray(p1,vec(220,70),"@orange@",3); b[#b+1]=line(vec(400,120),vec(400,205),"@muted@",1.5,"7 5")
+    b[#b+1]=text(260,98,"Incident",16,"@red@"); b[#b+1]=text(190,72,"Reflected rays",16,"@orange@"); b[#b+1]=text(655,450,"Transmitted",16,"@green@"); b[#b+1]=dimension(vec(745,top),vec(745,bottom),"@muted@",1.6); b[#b+1]=sym(758,286,"t",nil,20,"@muted@")
+    b[#b+1]=text(810,65,"Optical path difference",16,"@muted@","end"); b[#b+1]=text(810,95,"Δ = 2nt cos θₜ",22,"@yellow@","end",false,true)
+    b[#b+1]=text(810,130,"One phase reversal",16,"@muted@","end"); b[#b+1]=text(810,160,"2nt cos θₜ = (q + ½)λ",20,"@yellow@","end",false,true)
+    write("thin_film",W,H,b)
+end
+
+local function michelson()
+    local W,H=840,500; local bs,m1,m2,det=vec(390,255),vec(390,95),vec(650,255),vec(390,430)
+    local b={text(24,35,"MICHELSON INTERFEROMETER · TOP VIEW",17,"@yellow@","start",false,true),ray(vec(65,bs.y),vec(bs.x-16,bs.y),"@red@",3),
+        ray(vec(bs.x-5,bs.y-16),vec(bs.x-5,m1.y+8),"@yellow@",2.7),ray(vec(bs.x+5,m1.y+8),vec(bs.x+5,bs.y-16),"@yellow@",2.7),
+        ray(vec(bs.x+16,bs.y-5),vec(m2.x-8,bs.y-5),"@green@",2.7),ray(vec(m2.x-8,bs.y+5),vec(bs.x+16,bs.y+5),"@green@",2.7),ray(vec(bs.x,bs.y+16),vec(det.x,det.y-12),"@yellow@",3),
+        '<rect x="374" y="239" width="32" height="32" fill="@card@" stroke="@aqua@" stroke-width="2.5"/>',line(vec(bs.x-15,bs.y+15),vec(bs.x+15,bs.y-15),"@aqua@",3),
+        line(vec(m1.x-25,m1.y),vec(m1.x+25,m1.y),"@yellow@",5),line(vec(m2.x,m2.y-25),vec(m2.x,m2.y+25),"@green@",5),line(vec(m2.x-18,m2.y-34),vec(m2.x-18,m2.y+34),"@muted@",1.5,"6 5")}
+    b[#b+1]=text(bs.x+22,bs.y+28,"BS",17,"@aqua@"); b[#b+1]=text(m1.x,m1.y-18,"M₁ · fixed",17,"@yellow@","middle"); b[#b+1]=text(m2.x+30,m2.y+5,"M₂ · movable",16,"@green@"); b[#b+1]=text(det.x+18,det.y+5,"Detector",16,"@muted@"); b[#b+1]=text(180,bs.y-18,"Source",16,"@red@");
+    b[#b+1]=text(810,90,"Perpendicular arms",18,"@muted@","end"); b[#b+1]=text(810,125,"ΔOPD = 2nΔx",23,"@yellow@","end",false,true); b[#b+1]=text(810,160,"m = 2nΔx / λ",22,"@yellow@","end",false,true); b[#b+1]=text(810,195,"One fringe per λ / (2n)",16,"@muted@","end")
+    write("michelson",W,H,b)
+end
+
+local function newton_rings()
+    local W,H=840,500; local b={text(24,35,"NEWTON’S RINGS · REFLECTED LIGHT",18,"@yellow@","start",false,true),line(vec(65,330),vec(425,330),"@muted@",4),
+        '<path d="M 95 185 Q 245 365 405 185" fill="@blue@" fill-opacity="0.16" stroke="@blue@" stroke-width="4"/>',text(250,150,"Plano-convex lens",17,"@blue@","middle"),text(250,360,"Flat glass plate",16,"@muted@","middle"),line(vec(250,245),vec(250,328),"@orange@",2,"5 4"),dimension(vec(250,300),vec(340,300),"@muted@",1.5),sym(295,290,"r",nil,20,"@muted@"),text(265,318,"t(r)",17,"@orange@")}
+    b[#b+1]=ray(vec(115,75),vec(215,235),"@red@",2.6); b[#b+1]=ray(vec(215,235),vec(165,82),"@yellow@",2.5); b[#b+1]=ray(vec(215,235),vec(275,82),"@green@",2.5); b[#b+1]=text(95,65,"Monochromatic light",15,"@muted@");
+    local cx,cy=645,255
+    for i,radius in ipairs({22,42,63,84,105}) do local color=(i%2==0) and "@yellow@" or "@green@"; b[#b+1]=string.format('<circle cx="%d" cy="%d" r="%d" fill="none" stroke="%s" stroke-width="5"/>',cx,cy,radius,color) end
+    b[#b+1]=dot(vec(cx,cy),6,"@red@"); b[#b+1]=text(cx,125,"Concentric fringes",17,"@muted@","middle"); b[#b+1]=text(810,405,"rₘ² = mλR / n",23,"@yellow@","end",false,true); b[#b+1]=text(810,435,"t(r) ≈ r² / (2R)",19,"@muted@","end")
+    write("newton_rings",W,H,b)
+end
+
+local function thick_lens()
+    local W,H=840,500; local axis=270
+    local b={text(24,35,"THICK LENS · SPHERICAL ABERRATION",17,"@yellow@","start",false,true),line(vec(45,axis),vec(795,axis),"@muted@",1.8),
+        '<path d="M 350 105 Q 300 270 350 435 L 455 435 Q 505 270 455 105 Z" fill="@blue@" fill-opacity="0.18" stroke="@blue@" stroke-width="4"/>',text(402,465,"Thick lens · centre thickness d",16,"@blue@","middle")}
+    for _,y in ipairs({160,215,270,325,380}) do b[#b+1]=ray(vec(70,y),vec(345,y),"@red@",2.3) end
+    for _,rayPath in ipairs({{160,640},{215,605},{325,605},{380,640}}) do
+        b[#b+1]=ray(vec(350,rayPath[1]),vec(rayPath[2],axis),"@yellow@",2.7)
+    end
+    b[#b+1]=ray(vec(350,axis),vec(575,axis),"@green@",2.7)
+    b[#b+1]=line(vec(575,245),vec(575,295),"@green@",2.5); b[#b+1]=line(vec(640,245),vec(640,295),"@orange@",2.5)
+    b[#b+1]=text(575,230,"Paraxial focus",15,"@green@","middle"); b[#b+1]=text(640,315,"Marginal focus",15,"@orange@","middle")
+    b[#b+1]=text(810,75,"Different rays, different foci",16,"@muted@","end"); b[#b+1]=text(810,105,"Spherical aberration",20,"@yellow@","end",false,true)
+    b[#b+1]=text(810,405,"Thick lens-maker relation",16,"@muted@","end"); b[#b+1]=text(810,435,"1/f = (n−1)[1/R₁−1/R₂+…]",19,"@yellow@","end",false,true)
+    write("thick_lens",W,H,b)
+end
+
+for _,generator in ipairs({refraction,tir,thin_lens,mirror,double_slit,prism,polarization,single_slit,grating,thin_film,michelson,newton_rings,thick_lens}) do generator() end
+print("written to " .. out_dir)

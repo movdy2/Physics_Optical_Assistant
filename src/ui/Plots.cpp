@@ -151,7 +151,7 @@ void LineChart::paintEvent(QPaintEvent*) {
         const int textWidth = std::max(1, static_cast<int>(std::floor(legendWidth - (marker ? 24.0 : 0.0))));
         QStringList lines = wrapText(fm, displayText(source), textWidth);
         if (lines.isEmpty()) return;
-        legendLineCount += lines.size();
+        legendLineCount += static_cast<int>(lines.size());
         legendItems.push_back({lines, marker});
     };
     for (const QString& item : m_legend) addLegendItem(item, true);
@@ -159,12 +159,12 @@ void LineChart::paintEvent(QPaintEvent*) {
 
     const QStringList yLabelLines = wrapText(fm, displayText(m_yLabel), std::max(1, width() - 16));
     const QStringList xLabelLines = wrapText(fm, displayText(m_xLabel), static_cast<int>(std::floor(plotWidth)));
-    const int lineHeight = std::max(12, fm.height() + 2);
-    const int xLineCount = std::max(1, xLabelLines.size());
+    const int lineHeight = std::max(12, static_cast<int>(std::ceil(fm.height())) + 2);
+    const int xLineCount = std::max(1, static_cast<int>(xLabelLines.size()));
     const int lowerReserve = legendLineCount > 0
         ? 54 + (xLineCount + legendLineCount - 2) * lineHeight
         : 42 + (xLineCount - 1) * lineHeight;
-    const int plotTop = 12 + std::max(1, yLabelLines.size()) * lineHeight;
+    const int plotTop = 12 + std::max(1, static_cast<int>(yLabelLines.size())) * lineHeight;
     const QRectF plot(46, plotTop,
                       std::max(1.0, static_cast<double>(width() - 64)),
                       std::max(1.0, static_cast<double>(height() - plotTop - lowerReserve)));

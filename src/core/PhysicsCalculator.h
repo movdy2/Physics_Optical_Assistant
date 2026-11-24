@@ -67,7 +67,8 @@ double fringePositionExact(int order, double wavelength, double screenDistance, 
 double relativeIntensity(double y, double wavelength, double screenDistance, double slitSeparation);
 /// Single-slit diffraction envelope sinc²(beta), beta = pi * a * y / (lambda * L).
 double singleSlitEnvelope(double y, double wavelength, double screenDistance, double slitWidth);
-/// Two-slit intensity with unequal slit intensities: I = I1 + I2 + 2*sqrt(I1*I2)*cos(delta).
+/// Normalized two-slit intensity (I/Imax, in [0, 1]) for unequal slit intensities.
+/// Uses (I1 + I2 + 2*sqrt(I1*I2)*cos(delta)) / (sqrt(I1) + sqrt(I2))²;
 /// ratio = I2/I1, default 1.0 (equal intensities, perfect nulls).
 double relativeIntensityUnequal(double y, double wavelength, double screenDistance, double slitSeparation, double ratio);
 

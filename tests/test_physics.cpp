@@ -295,12 +295,12 @@ static void testWaveInterference() {
     {
         double yExact = fringePositionExact(1, 600e-9, 1.5, 0.25e-3);
         double yApprox = fringePosition(1, 600e-9, 1.5, 0.25e-3);
-        CHECK(near(yExact, yApprox, 1e-9));  // small-angle: tan(asin(x)) ≈ x
+        CHECK(near(yExact, yApprox, 3e-8));  // small-angle approximation differs by only O(θ³)
     }
 
     // Edge case: mλ/d > 1 → order doesn't propagate → return 0
     {
-        double y = fringePositionExact(100, 600e-9, 1.5, 0.25e-3);
+        double y = fringePositionExact(500, 600e-9, 1.5, 0.25e-3);
         CHECK(near(y, 0.0));
     }
 
@@ -352,11 +352,11 @@ static void testWaveInterference() {
     }
 
     // ---- relativeIntensityUnequal: I = I1 + I2 + 2√(I1I₂)cos(δ) ----
-    // Equal intensities, at constructive interference (δ = 0): I = 1 + 1 + 2 = 4 (normalized to 1)
-    // The function returns unnormalized: i1 + i2 + 2*sqrt(i1*i2)*cos(phase)
+    // Equal intensities, at constructive interference (δ = 0): the normalized intensity is 1.
+    // The function normalizes the constructive maximum to 1.0, matching the chart's I/Imax scale.
     {
         double I = relativeIntensityUnequal(0.0, 600e-9, 1.5, 0.25e-3, 1.0);
-        CHECK(near(I, 4.0, 1e-6));  // 1 + 1 + 2*1*1*cos(0) = 4
+        CHECK(near(I, 1.0, 1e-6));
     }
 
     // At destructive interference (δ = π): I = 1 + 1 + 2*cos(π) = 0
@@ -489,7 +489,7 @@ static void testGrating() {
 
     // Normal incidence, λ > d → only m = 0
     {
-        auto orders = allowedGratingOrders(1000.0, 2000.0, 0.0);  // d = 10µm, λ = 2µm
+        auto orders = allowedGratingOrders(1000.0, 20000.0, 0.0);  // d = 10µm, λ = 20µm > d
         CHECK(orders.size() == 1);
         CHECK(orders[0] == 0);
     }

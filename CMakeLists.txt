@@ -8,6 +8,16 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 option(PHY104_BUILD_GUI   "Build the Qt6 desktop application" ON)
 option(PHY104_BUILD_TESTS "Build unit tests"                  ON)
 
+# Optional asset-generation helper. Lua is only needed when regenerating diagrams;
+# the application and its build do not embed or depend on a Lua runtime.
+find_program(PHY104_LUA_EXECUTABLE NAMES lua lua5.4 lua5.3 lua5.2 lua5.1 luajit)
+if(PHY104_LUA_EXECUTABLE)
+    add_custom_target(generate_diagrams
+        COMMAND "${PHY104_LUA_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tools/make_diagrams.lua"
+        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        COMMENT "Generate the theme-aware SVG optics diagrams")
+endif()
+
 # ------------------------------------------------------------------
 # Version / build identity (used by the About dialog and version.json)
 # ------------------------------------------------------------------

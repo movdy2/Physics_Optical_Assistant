@@ -24,11 +24,44 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            build-essential cmake ninja-build qt6-base-dev qt6-svg-dev \
+            build-essential cmake ninja-build lua5.4 qt6-base-dev qt6-svg-dev \
             libgl1-mesa-dev libegl1-mesa-dev
 
       - name: Configure
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Verify standalone Lua diagram generator
+        run: |
+          test ! -e tools/make_diagrams.py
+          generated="$RUNNER_TEMP/diagrams"
+          mkdir -p "$generated"
+          lua5.4 tools/make_diagrams.lua "$generated"
+          python3 - "$generated" <<'PY'
+          from pathlib import Path
+          import sys
+          import xml.etree.ElementTree as ET
+
+          generated = Path(sys.argv[1])
+          assets = Path("assets/diagrams")
+          outputs = sorted(generated.glob("*.svg"))
+          tracked = sorted(assets.glob("*.svg"))
+          if len(outputs) != 13 or [p.name for p in outputs] != [p.name for p in tracked]:
+              raise SystemExit("Expected 13 Lua outputs matching assets/diagrams")
+          ns = "{http://www.w3.org/2000/svg}"
+          for output, asset in zip(outputs, tracked):
+              root = ET.parse(output).getroot()
+              title = root.find(ns + "title")
+              desc = root.find(ns + "desc")
+              if (root.tag != ns + "svg" or title is None or desc is None
+                      or title.get("id") != "diagram-title" or desc.get("id") != "diagram-description"
+                      or root.get("role") != "img"):
+                  raise SystemExit(f"{output} is missing accessible SVG metadata")
+              if root.get("shape-rendering") != "geometricPrecision":
+                  raise SystemExit(f"{output} is missing high-quality rendering settings")
+              if output.read_bytes() != asset.read_bytes():
+                  raise SystemExit(f"{asset} is stale; regenerate with tools/make_diagrams.lua")
+          print(f"Validated {len(outputs)} reproducible SVG diagrams")
+          PY
 
       - name: Build
         id: build
