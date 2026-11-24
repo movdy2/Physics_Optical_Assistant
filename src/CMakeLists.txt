@@ -6,7 +6,7 @@ set(CMAKE_AUTORCC ON)
 add_subdirectory(data)          # defines the phy104_data library (JSON repositories)
 
 set(PHY104_UI_SOURCES
-    ui/BasePage.ui ui/CalculatorKeypad.ui ui/ConstantsPage.ui ui/DashboardActivity.ui ui/DashboardPage.ui ui/DashboardTools.ui ui/DiagramsPage.ui ui/MainWindow.ui ui/ModeTabs.ui ui/NotesPage.ui ui/NoticeCard.ui ui/Panel.ui ui/RegisterView.ui ui/ResultCard.ui ui/UnitField.ui
+    ui/BasePage.ui ui/CalculatorKeypad.ui ui/ConstantsPage.ui ui/DashboardActivity.ui ui/DashboardPage.ui ui/DashboardTools.ui ui/DiagramsPage.ui ui/MainWindow.ui ui/ModeTabs.ui ui/NotesPage.ui ui/NoticeCard.ui ui/Panel.ui ui/RegisterView.ui ui/ReportPage.ui ui/ResultCard.ui ui/UnitField.ui
     App.cpp
     ui/ThemeManager.cpp ui/GuidedLabDialog.cpp ui/Icons.cpp ui/Components.cpp ui/Plots.cpp ui/OpticsCanvases.cpp
     ui/AppContext.cpp ui/BasePage.cpp ui/ExperimentBase.cpp ui/ExperimentPages.cpp ui/ModelExperimentPages.cpp ui/ScientificKeyboard.cpp ui/EquationLabPage.cpp ui/DashboardPage.cpp ui/NotesPage.cpp ui/ExportService.cpp ui/RecentExportPanel.cpp ui/ExportPage.cpp ui/ReportPage.cpp ui/StudyHubPage.cpp ui/ThickLensPage.cpp

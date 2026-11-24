@@ -7,6 +7,7 @@
 #include "LanguageManager.h"
 #include "RecentExportPanel.h"
 #include "ThemeManager.h"
+#include "ui_ReportPage.h"
 
 #include <QCheckBox>
 #include <QColor>
@@ -71,47 +72,38 @@ QImage grabWidget(QWidget* widget) {
 ReportPage::ReportPage(AppContext* ctx, QWidget* parent)
     : BasePage("PDF Report", "PRINT / Notes, registers, diagrams and charts of every experiment in one document",
                ctx, parent, false) {
-    auto cols = addThreeColumns(252, 268);
+    // ---------------------------------------------------------------- Designer-defined report workspaces; live widgets plug into explicit form slots
+    auto* reportFormHost = new QWidget;
+    Ui::ReportPage ui;
+    ui.setupUi(reportFormHost);
+    content()->addWidget(reportFormHost, 1);
 
-    // ---------------------------------------------------------------- left: what goes into the document
-    m_optionsPanel = new Panel("Report contents", "LIVE");
-    auto* options = m_optionsPanel->body();
-    options->setSpacing(8);
-    auto checkbox = [this](const QString& text, bool on = true) {
-        auto* c = new QCheckBox(text);
-        c->setChecked(on);
-        connect(c, &QCheckBox::toggled, this, [this] { refreshPreview(); });
-        return c;
-    };
-    m_chkDiagrams = checkbox("Diagrams of every experiment");
-    m_chkCharts = checkbox("Charts (intensity, fringes, sweeps)");
-    m_chkRegs = checkbox("Parameters and LCD registers");
-    m_chkNotes = checkbox("Session notes");
-    m_chkRuns = checkbox("Saved calculations");
+    ui.optionsPanel->setObjectName("panel");
+    ui.optionsHeader->setObjectName("panelHeader");
+    ui.optionsBody->setObjectName("panelBody");
+    ui.optionsTitle->setObjectName("panelTitle");
+    ui.optionsMeta->setObjectName("panelMeta");
+    ui.includeLabel->setObjectName("caption");
+    ui.paperLabel->setObjectName("caption");
+    ui.optionsHint->setObjectName("hint");
+    m_chkDiagrams = ui.diagramsCheck;
+    m_chkCharts = ui.chartsCheck;
+    m_chkRegs = ui.registersCheck;
+    m_chkNotes = ui.notesCheck;
+    m_chkRuns = ui.runsCheck;
+    for (QCheckBox* check : {m_chkDiagrams, m_chkCharts, m_chkRegs, m_chkNotes, m_chkRuns})
+        connect(check, &QCheckBox::toggled, this, [this] { refreshPreview(); });
     m_paper = new ModeTabs({"A4 portrait", "A4 landscape"});
+    ui.paperTabsLayout->addWidget(m_paper);
     connect(m_paper, &ModeTabs::currentChanged, this, [this] { refreshPreview(); });
 
-    auto* include = new QLabel("INCLUDE");
-    include->setObjectName("caption");
-    auto* pageLabel = new QLabel("PAPER");
-    pageLabel->setObjectName("caption");
-    options->addWidget(include);
-    for (QCheckBox* c : {m_chkDiagrams, m_chkCharts, m_chkRegs, m_chkNotes, m_chkRuns}) options->addWidget(c);
-    options->addSpacing(4);
-    options->addWidget(pageLabel);
-    options->addWidget(m_paper);
-    auto* hint = new QLabel("The whole document is built from the session: nothing leaves this computer.");
-    hint->setObjectName("hint");
-    hint->setWordWrap(true);
-    options->addWidget(hint);
-    options->addStretch();
-    cols.left->addWidget(m_optionsPanel, 1);
-
-    // ---------------------------------------------------------------- centre: the page as it will print
-    m_previewPanel = new Panel("Preview", "PAGE 1");
-    m_preview = new QTextBrowser;
-    m_preview->setObjectName("reportPreview");
-    m_preview->setOpenExternalLinks(false);
+    ui.previewPanel->setObjectName("panel");
+    ui.previewHeader->setObjectName("panelHeader");
+    ui.previewBody->setObjectName("panelBody");
+    ui.previewTitle->setObjectName("panelTitle");
+    ui.previewMeta->setObjectName("panelMeta");
+    m_previewMeta = ui.previewMeta;
+    m_preview = ui.reportPreview;
     const auto applyPreviewTheme = [this] {
         const Theme& theme = ThemeManager::instance().theme();
         m_preview->setStyleSheet(QStringLiteral(
@@ -124,17 +116,19 @@ ReportPage::ReportPage(AppContext* ctx, QWidget* parent)
     };
     applyPreviewTheme();
     connect(&ThemeManager::instance(), &ThemeManager::themeChanged, this, applyPreviewTheme);
-    m_previewPanel->body()->setContentsMargins(12, 0, 12, 8);
-    m_previewPanel->body()->addWidget(m_preview, 1);
-    cols.center->addWidget(m_previewPanel, 1);
 
-    // ---------------------------------------------------------------- right: where it goes
-    m_exportPanel = new Panel("Export", "PDF");
-    auto* body = m_exportPanel->body();
-    body->setSpacing(8);
+    ui.exportPanel->setObjectName("panel");
+    ui.exportHeader->setObjectName("panelHeader");
+    ui.exportBody->setObjectName("panelBody");
+    ui.exportTitle->setObjectName("panelTitle");
+    ui.exportMeta->setObjectName("panelMeta");
+    ui.fileNameLabel->setObjectName("fieldLabel");
+    ui.folderLabel->setObjectName("fieldLabel");
+    ui.exportHint->setObjectName("hint");
     m_fileName = new UnitField(".pdf");
     m_fileName->setText(suggestedName());
-    m_folder = new QComboBox;
+    ui.fileNameFieldLayout->addWidget(m_fileName);
+    m_folder = ui.folderCombo;
     m_folder->addItem("Documents / PHY104", QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/PHY104");
     m_folder->addItem("Desktop", QStandardPaths::writableLocation(QStandardPaths::DesktopLocation));
     m_folder->addItem("Choose folder…", QString());
@@ -150,24 +144,13 @@ ReportPage::ReportPage(AppContext* ctx, QWidget* parent)
         }
     });
     m_ready = new NoticeCard;
-    m_save = new QPushButton("Save PDF");
+    ui.readyCardLayout->addWidget(m_ready);
+    m_save = ui.savePdfButton;
     m_save->setObjectName("primary");
-    m_print = new QPushButton("Print…");
+    m_print = ui.printButton;
     m_print->setObjectName("secondary");
-    auto* footer = new QLabel("Save PDF writes the file directly into the folder above; Print… opens the system dialog.");
-    footer->setObjectName("hint");
-    footer->setWordWrap(true);
-    body->addWidget(labeled("File name", m_fileName));
-    body->addWidget(labeled("Destination folder", m_folder));
-    body->addWidget(m_ready);
-    body->addWidget(m_save);
-    body->addWidget(m_print);
-    body->addWidget(footer);
-    body->addStretch();
-    cols.right->addWidget(m_exportPanel, 1);
-
     m_recent = new RecentExportPanel;
-    cols.right->addWidget(m_recent, 0);
+    ui.recentExportLayout->addWidget(m_recent);
 
     connect(m_save, &QPushButton::clicked, this, &ReportPage::savePdf);
     connect(m_print, &QPushButton::clicked, this, &ReportPage::printReport);
@@ -308,7 +291,7 @@ void ReportPage::refreshPreview() {
     QTextCursor cursor(doc);
     cursor.insertHtml(m_html);
 
-    m_previewPanel->setMeta(m_sections == 1 ? "1 EXPERIMENT" : QString("%1 EXPERIMENTS").arg(m_sections));
+    m_previewMeta->setText(m_sections == 1 ? "1 EXPERIMENT" : QString("%1 EXPERIMENTS").arg(m_sections));
     const bool anything = m_sections > 0 || (m_chkNotes->isChecked() && !content.notes.empty()) ||
                           (m_chkRuns->isChecked() && !content.runs.empty());
     m_save->setEnabled(anything);

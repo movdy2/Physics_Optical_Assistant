@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ReportPage</class>
+ <widget class="QWidget" name="ReportPage">
+  <layout class="QHBoxLayout" name="reportColumnsLayout">
+   <property name="spacing"><number>12</number></property>
+   <property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+   <item>
+    <widget class="QWidget" name="optionsColumn">
+     <property name="minimumSize"><size><width>252</width><height>0</height></size></property><property name="maximumSize"><size><width>252</width><height>16777215</height></size></property>
+     <layout class="QVBoxLayout" name="optionsColumnLayout"><property name="spacing"><number>12</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+      <item>
+       <widget class="QFrame" name="optionsPanel">
+        <property name="frameShape"><enum>QFrame::NoFrame</enum></property>
+        <layout class="QVBoxLayout" name="optionsPanelLayout"><property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+         <item>
+          <widget class="QFrame" name="optionsHeader">
+           <property name="minimumSize"><size><width>0</width><height>36</height></size></property><property name="frameShape"><enum>QFrame::NoFrame</enum></property>
+           <layout class="QHBoxLayout" name="optionsHeaderLayout"><property name="spacing"><number>8</number></property><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>4</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>4</number></property>
+            <item><widget class="QLabel" name="optionsTitle"><property name="text"><string>Report contents</string></property><property name="wordWrap"><bool>true</bool></property></widget><property name="stretch"><number>1</number></property></item>
+            <item><widget class="QLabel" name="optionsMeta"><property name="text"><string>LIVE</string></property><property name="wordWrap"><bool>true</bool></property><property name="layoutDirection"><enum>Qt::LeftToRight</enum></property></widget></item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QWidget" name="optionsBody">
+           <layout class="QVBoxLayout" name="optionsBodyLayout"><property name="spacing"><number>8</number></property><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>12</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property>
+            <item><widget class="QLabel" name="includeLabel"><property name="text"><string>INCLUDE</string></property></widget></item>
+            <item><widget class="QCheckBox" name="diagramsCheck"><property name="text"><string>Diagrams of every experiment</string></property><property name="checked"><bool>true</bool></property></widget></item>
+            <item><widget class="QCheckBox" name="chartsCheck"><property name="text"><string>Charts (intensity, fringes, sweeps)</string></property><property name="checked"><bool>true</bool></property></widget></item>
+            <item><widget class="QCheckBox" name="registersCheck"><property name="text"><string>Parameters and LCD registers</string></property><property name="checked"><bool>true</bool></property></widget></item>
+            <item><widget class="QCheckBox" name="notesCheck"><property name="text"><string>Session notes</string></property><property name="checked"><bool>true</bool></property></widget></item>
+            <item><widget class="QCheckBox" name="runsCheck"><property name="text"><string>Saved calculations</string></property><property name="checked"><bool>true</bool></property></widget></item>
+            <item><widget class="QLabel" name="paperLabel"><property name="text"><string>PAPER</string></property></widget></item>
+            <item><widget class="QWidget" name="paperTabsHost"><layout class="QVBoxLayout" name="paperTabsLayout"><property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property></layout></widget></item>
+            <item><widget class="QLabel" name="optionsHint"><property name="text"><string>The whole document is built from the session: nothing leaves this computer.</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
+            <item><spacer name="optionsBodySpacer"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>40</height></size></property></spacer></item>
+           </layout>
+           <property name="stretch"><number>1</number></property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <property name="stretch"><number>1</number></property>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QWidget" name="previewColumn">
+     <layout class="QVBoxLayout" name="previewColumnLayout"><property name="spacing"><number>12</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+      <item>
+       <widget class="QFrame" name="previewPanel">
+        <property name="frameShape"><enum>QFrame::NoFrame</enum></property>
+        <layout class="QVBoxLayout" name="previewPanelLayout"><property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+         <item>
+          <widget class="QFrame" name="previewHeader">
+           <property name="minimumSize"><size><width>0</width><height>36</height></size></property><property name="frameShape"><enum>QFrame::NoFrame</enum></property>
+           <layout class="QHBoxLayout" name="previewHeaderLayout"><property name="spacing"><number>8</number></property><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>4</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>4</number></property>
+            <item><widget class="QLabel" name="previewTitle"><property name="text"><string>Preview</string></property><property name="wordWrap"><bool>true</bool></property></widget><property name="stretch"><number>1</number></property></item>
+            <item><widget class="QLabel" name="previewMeta"><property name="text"><string>PAGE 1</string></property><property name="wordWrap"><bool>true</bool></property><property name="layoutDirection"><enum>Qt::LeftToRight</enum></property></widget></item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QWidget" name="previewBody">
+           <layout class="QVBoxLayout" name="previewBodyLayout"><property name="spacing"><number>8</number></property><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>8</number></property>
+            <item><widget class="QTextBrowser" name="reportPreview"><property name="openExternalLinks"><bool>false</bool></property><property name="frameShape"><enum>QFrame::NoFrame</enum></property></widget><property name="stretch"><number>1</number></property></item>
+           </layout>
+           <property name="stretch"><number>1</number></property>
+          </widget>
+         </item>
+        </layout>
+        <property name="stretch"><number>1</number></property>
+       </widget>
+       <property name="stretch"><number>1</number></property>
+      </item>
+     </layout>
+    </widget>
+    <property name="stretch"><number>1</number></property>
+   </item>
+   <item>
+    <widget class="QWidget" name="toolsColumn">
+     <property name="minimumSize"><size><width>268</width><height>0</height></size></property><property name="maximumSize"><size><width>268</width><height>16777215</height></size></property>
+     <layout class="QVBoxLayout" name="toolsColumnLayout"><property name="spacing"><number>12</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+      <item>
+       <widget class="QFrame" name="exportPanel">
+        <property name="frameShape"><enum>QFrame::NoFrame</enum></property>
+        <layout class="QVBoxLayout" name="exportPanelLayout"><property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+         <item>
+          <widget class="QFrame" name="exportHeader">
+           <property name="minimumSize"><size><width>0</width><height>36</height></size></property><property name="frameShape"><enum>QFrame::NoFrame</enum></property>
+           <layout class="QHBoxLayout" name="exportHeaderLayout"><property name="spacing"><number>8</number></property><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>4</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>4</number></property>
+            <item><widget class="QLabel" name="exportTitle"><property name="text"><string>Export</string></property><property name="wordWrap"><bool>true</bool></property></widget><property name="stretch"><number>1</number></property></item>
+            <item><widget class="QLabel" name="exportMeta"><property name="text"><string>PDF</string></property><property name="wordWrap"><bool>true</bool></property><property name="layoutDirection"><enum>Qt::LeftToRight</enum></property></widget></item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QWidget" name="exportBody">
+           <layout class="QVBoxLayout" name="exportBodyLayout"><property name="spacing"><number>8</number></property><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>12</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property>
+            <item>
+             <widget class="QWidget" name="fileNameGroup">
+              <layout class="QVBoxLayout" name="fileNameGroupLayout"><property name="spacing"><number>4</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+               <item><widget class="QLabel" name="fileNameLabel"><property name="text"><string>File name</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
+               <item><widget class="QWidget" name="fileNameFieldHost"><layout class="QVBoxLayout" name="fileNameFieldLayout"><property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property></layout></widget></item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QWidget" name="folderGroup">
+              <layout class="QVBoxLayout" name="folderGroupLayout"><property name="spacing"><number>4</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+               <item><widget class="QLabel" name="folderLabel"><property name="text"><string>Destination folder</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
+               <item><widget class="QComboBox" name="folderCombo"/></item>
+              </layout>
+             </widget>
+            </item>
+            <item><widget class="QWidget" name="readyCardHost"><layout class="QVBoxLayout" name="readyCardLayout"><property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property></layout></widget></item>
+            <item><widget class="QPushButton" name="savePdfButton"><property name="text"><string>Save PDF</string></property></widget></item>
+            <item><widget class="QPushButton" name="printButton"><property name="text"><string>Print…</string></property></widget></item>
+            <item><widget class="QLabel" name="exportHint"><property name="text"><string>Save PDF writes the file directly into the folder above; Print… opens the system dialog.</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
+            <item><spacer name="exportBodySpacer"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>40</height></size></property></spacer></item>
+           </layout>
+           <property name="stretch"><number>1</number></property>
+          </widget>
+         </item>
+        </layout>
+        <property name="stretch"><number>1</number></property>
+       </widget>
+       <property name="stretch"><number>1</number></property>
+      </item>
+      <item><widget class="QWidget" name="recentExportHost"><layout class="QVBoxLayout" name="recentExportLayout"><property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property></layout></widget></item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

@@ -8,6 +8,7 @@
 
 class QCheckBox;
 class QComboBox;
+class QLabel;
 class QPrinter;
 class QPushButton;
 class QShowEvent;
@@ -19,7 +20,6 @@ namespace phy104 {
 class ExperimentPage;
 class ModeTabs;
 class NoticeCard;
-class Panel;
 class RecentExportPanel;
 class UnitField;
 struct ReportContent;
@@ -65,7 +65,7 @@ private:
     QCheckBox *m_chkNotes = nullptr, *m_chkRegs = nullptr, *m_chkDiagrams = nullptr, *m_chkCharts = nullptr, *m_chkRuns = nullptr;
     ModeTabs* m_paper = nullptr;
     QTextBrowser* m_preview = nullptr;
-    Panel *m_optionsPanel = nullptr, *m_previewPanel = nullptr, *m_exportPanel = nullptr;
+    QLabel* m_previewMeta = nullptr;
     UnitField* m_fileName = nullptr;
     QComboBox* m_folder = nullptr;
     QPushButton *m_save = nullptr, *m_print = nullptr;
