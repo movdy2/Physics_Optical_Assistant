@@ -38,9 +38,9 @@
           </layout>
          </widget>
         </item>
-        <item>
+        <item alignment="Qt::AlignRight">
          <widget class="QPushButton" name="exportDiagramButton"><property name="text"><string>Export PNG…</string></property></widget>
-         <property name="alignment"><set>Qt::AlignRight</set></property>
+
         </item>
        </layout>
        </widget>
