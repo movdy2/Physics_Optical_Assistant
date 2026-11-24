@@ -4,22 +4,20 @@
 //   * Gruvbox dark/light palettes and application fonts are valid
 #include "Icons.h"
 #include "MarkdownHighlighter.h"
-#include "MarkdownWorkspace.h"
-#include "ScientificKeyboard.h"
 #include "JsonRepositories.h"
 #include "LatexRenderer.h"
 #include "SvgDiagramView.h"
 #include "ThemeManager.h"
 
 #include <QApplication>
+#include <QColor>
 #include <QDir>
-#include <QFontDatabase>
 #include <QFile>
-#include <QRegularExpression>
-#include <QSvgRenderer>
+#include <QFontDatabase>
 #include <algorithm>
+#include <cmath>
 #include <iostream>
-#include <set>
+#include <utility>
 
 using namespace phy104;
 
@@ -30,7 +28,7 @@ static void check(bool ok, const QString& what) {
 
 int main(int argc, char** argv) {
     QApplication app(argc, argv);
-    const QString data = DATA_DIR, assets = ASSETS_DIR;
+    const QString data = DATA_DIR;
 
     // ---- LaTeX ----
     int latexCount = 0;
@@ -57,6 +55,7 @@ int main(int argc, char** argv) {
             }
         }
     } catch (const std::exception& e) { check(false, e.what()); }
+    check(latexCount > 0, "at least one LaTeX source was checked");
     for (const char* broken : {"\\frac{1}", "\\frac{", "\\sqrt", "x^", "x_", "\\left(", "{{", "}}", "\\frac{}{}", "^{}", "\\operatorname{min}()"}) {   // half-typed formulas must never crash
         const QPixmap p = LatexRenderer::render(broken, QFont(), Qt::white, 1.0);
         check(!p.isNull(), QString("renders without crashing: ") + broken);
@@ -72,12 +71,12 @@ int main(int argc, char** argv) {
     // ---- theme colours: classic Gruvbox dark & light ----
     const Theme dark = Theme::gruvboxDark();
     check(dark.bg.isValid() && dark.card.isValid() && dark.text.isValid(), "dark theme core colours valid");
-    check(dark.bg == QColor("#282828") && dark.sidebar == QColor("#3c3836") &&
-          dark.text == QColor("#ebdbb2") && dark.accentAmber == QColor("#d79921") &&
-          dark.accentPrimary == QColor("#d79921"), "classic Gruvbox dark palette is restored");
+    check(dark.bg == QColor(0x28, 0x28, 0x28) && dark.sidebar == QColor(0x3c, 0x38, 0x36) &&
+          dark.text == QColor(0xeb, 0xdb, 0xb2) && dark.accentAmber == QColor(0xd7, 0x99, 0x21) &&
+          dark.accentPrimary == QColor(0xd7, 0x99, 0x21), "classic Gruvbox dark palette is restored");
     const Theme light = Theme::gruvboxLight();
-    check(light.bg == QColor("#fbf1c7") && light.sidebar == QColor("#ebdbb2") &&
-          light.text == QColor("#282828"), "classic Gruvbox light palette is restored");
+    check(light.bg == QColor(0xfb, 0xf1, 0xc7) && light.sidebar == QColor(0xeb, 0xdb, 0xb2) &&
+          light.text == QColor(0x28, 0x28, 0x28), "classic Gruvbox light palette is restored");
     check(dark.amber.isValid() && dark.sage.isValid() && dark.accentAmberHover.isValid() && dark.accentAmberPressed.isValid(), "Gruvbox amber/sage theme colors are valid");
     check(dark.border.isValid() && dark.error.isValid(), "border and error colours valid");
     const QStringList diagramFiles = QDir(":/diagrams").entryList({"*.svg"}, QDir::Files);
@@ -135,8 +134,8 @@ int main(int argc, char** argv) {
             auto ranges = first(line);
             std::sort(ranges.begin(), ranges.end(), [](const auto& a, const auto& b) { return a.start < b.start; });
             QStringList found;
-            for (const auto& r : ranges)
-                if (r.format.foreground().color() == QColor("#b8bb26") && r.format.fontFamilies().toStringList().contains("JetBrains Mono"))
+            for (const auto& r : std::as_const(ranges))
+                if (r.format.foreground().color() == QColor(0xb8, 0xbb, 0x26) && r.format.fontFamilies().toStringList().contains("JetBrains Mono"))
                     found << line.mid(r.start, r.length);
             return found;
         };
