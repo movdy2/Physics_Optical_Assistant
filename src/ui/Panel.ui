@@ -3,7 +3,7 @@
  <class>Panel</class>
  <widget class="QFrame" name="panel">
   <property name="frameShape"><enum>QFrame::NoFrame</enum></property>
-  <layout class="QVBoxLayout" name="panelLayout">
+  <layout class="QVBoxLayout" name="panelLayout" stretch="0,1">
    <property name="spacing"><number>0</number></property>
    <property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
    <item>
@@ -11,10 +11,10 @@
      <property name="minimumSize"><size><width>0</width><height>36</height></size></property>
      <property name="sizePolicy"><sizepolicy hsizetype="Preferred" vsizetype="Minimum"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property>
      <property name="frameShape"><enum>QFrame::NoFrame</enum></property>
-     <layout class="QHBoxLayout" name="headerLayout">
+     <layout class="QHBoxLayout" name="headerLayout" stretch="1,0">
       <property name="spacing"><number>8</number></property>
       <property name="leftMargin"><number>12</number></property><property name="topMargin"><number>4</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>4</number></property>
-      <item stretch="1">
+      <item>
        <widget class="QLabel" name="panelTitle">
         <property name="sizePolicy"><sizepolicy hsizetype="Expanding" vsizetype="Preferred"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property>
         <property name="minimumSize"><size><width>0</width><height>0</height></size></property>
@@ -33,7 +33,7 @@
      </layout>
     </widget>
    </item>
-   <item stretch="1">
+   <item>
     <widget class="QWidget" name="panelBody">
      <layout class="QVBoxLayout" name="bodyLayout">
       <property name="spacing"><number>12</number></property>

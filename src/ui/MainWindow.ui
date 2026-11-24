@@ -10,7 +10,7 @@
   </property>
   <property name="windowTitle"><string/></property>
   <widget class="QWidget" name="central">
-   <layout class="QHBoxLayout" name="rootLayout">
+   <layout class="QHBoxLayout" name="rootLayout" stretch="0,1">
     <property name="spacing"><number>0</number></property>
     <property name="leftMargin"><number>0</number></property>
     <property name="topMargin"><number>0</number></property>
@@ -21,7 +21,7 @@
       <property name="minimumSize"><size><width>224</width><height>0</height></size></property>
       <property name="maximumSize"><size><width>224</width><height>16777215</height></size></property>
       <property name="frameShape"><enum>QFrame::NoFrame</enum></property>
-      <layout class="QVBoxLayout" name="sidebarLayout">
+      <layout class="QVBoxLayout" name="sidebarLayout" stretch="0,1,0">
        <property name="spacing"><number>0</number></property>
        <property name="leftMargin"><number>0</number></property>
        <property name="topMargin"><number>0</number></property>
@@ -62,7 +62,7 @@
          </layout>
         </widget>
        </item>
-       <item stretch="1">
+       <item>
         <widget class="QScrollArea" name="navigationScroll">
          <property name="frameShape"><enum>QFrame::NoFrame</enum></property>
          <property name="widgetResizable"><bool>true</bool></property>
@@ -116,7 +116,7 @@
       </layout>
      </widget>
     </item>
-    <item stretch="1">
+    <item>
      <widget class="QStackedWidget" name="pageStack">
       <property name="currentIndex"><number>-1</number></property>
      </widget>

@@ -2,23 +2,23 @@
 <ui version="4.0">
  <class>DashboardTools</class>
  <widget class="QWidget" name="DashboardTools">
-  <layout class="QVBoxLayout" name="toolsColumnLayout">
+  <layout class="QVBoxLayout" name="toolsColumnLayout" stretch="1,1">
    <property name="spacing"><number>8</number></property>
    <property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
-   <item stretch="1">
+   <item>
     <widget class="QFrame" name="notebookPanel">
      <property name="frameShape"><enum>QFrame::NoFrame</enum></property>
-     <layout class="QVBoxLayout" name="notebookPanelLayout"><property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+     <layout class="QVBoxLayout" name="notebookPanelLayout" stretch="0,1"><property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
       <item>
        <widget class="QFrame" name="notebookHeader">
         <property name="minimumSize"><size><width>0</width><height>36</height></size></property><property name="frameShape"><enum>QFrame::NoFrame</enum></property>
-        <layout class="QHBoxLayout" name="notebookHeaderLayout"><property name="spacing"><number>8</number></property><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>4</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>4</number></property>
-         <item stretch="1"><widget class="QLabel" name="notebookTitle"><property name="text"><string>LAB NOTEBOOK</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
+        <layout class="QHBoxLayout" name="notebookHeaderLayout" stretch="1,0"><property name="spacing"><number>8</number></property><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>4</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>4</number></property>
+         <item><widget class="QLabel" name="notebookTitle"><property name="text"><string>LAB NOTEBOOK</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
          <item><widget class="QLabel" name="notebookMeta"><property name="text"><string>AUTOSAVED</string></property><property name="wordWrap"><bool>true</bool></property><property name="layoutDirection"><enum>Qt::LeftToRight</enum></property></widget></item>
         </layout>
        </widget>
       </item>
-      <item stretch="1">
+      <item>
        <widget class="QWidget" name="notebookBody">
         <layout class="QVBoxLayout" name="notebookBodyLayout"><property name="spacing"><number>10</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
          <item><widget class="QLabel" name="notebookBlurb"><property name="text"><string>Review formula references, record observations and export your measured data.</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
@@ -38,26 +38,26 @@
      </widget>
 
    </item>
-   <item stretch="1">
+   <item>
     <widget class="QFrame" name="comparisonPanel">
      <property name="frameShape"><enum>QFrame::NoFrame</enum></property>
-     <layout class="QVBoxLayout" name="comparisonPanelLayout"><property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+     <layout class="QVBoxLayout" name="comparisonPanelLayout" stretch="0,1"><property name="spacing"><number>0</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
       <item>
        <widget class="QFrame" name="comparisonHeader">
         <property name="minimumSize"><size><width>0</width><height>36</height></size></property><property name="frameShape"><enum>QFrame::NoFrame</enum></property>
-        <layout class="QHBoxLayout" name="comparisonHeaderLayout"><property name="spacing"><number>8</number></property><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>4</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>4</number></property>
-         <item stretch="1"><widget class="QLabel" name="comparisonTitle"><property name="text"><string>RUN COMPARISON</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
+        <layout class="QHBoxLayout" name="comparisonHeaderLayout" stretch="1,0"><property name="spacing"><number>8</number></property><property name="leftMargin"><number>12</number></property><property name="topMargin"><number>4</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>4</number></property>
+         <item><widget class="QLabel" name="comparisonTitle"><property name="text"><string>RUN COMPARISON</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
          <item><widget class="QLabel" name="comparisonMeta"><property name="text"><string>OVERLAY MULTIPLE RUNS</string></property><property name="wordWrap"><bool>true</bool></property><property name="layoutDirection"><enum>Qt::LeftToRight</enum></property></widget></item>
         </layout>
        </widget>
       </item>
-      <item stretch="1">
+      <item>
        <widget class="QWidget" name="comparisonBody">
-        <layout class="QVBoxLayout" name="comparisonBodyLayout"><property name="spacing"><number>8</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+        <layout class="QVBoxLayout" name="comparisonBodyLayout" stretch="0,0,0,1,1"><property name="spacing"><number>8</number></property><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
          <item><widget class="QLabel" name="experimentFilterLabel"><property name="text"><string>Experiment</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
          <item><widget class="QComboBox" name="comparisonFilter" /></item>
          <item><widget class="QLabel" name="runSelectionHint"><property name="text"><string>Select runs to overlay</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
-         <item stretch="1">
+         <item>
           <widget class="QScrollArea" name="runListScroll">
            <property name="maximumSize"><size><width>16777215</width><height>150</height></size></property>
            <property name="frameShape"><enum>QFrame::NoFrame</enum></property><property name="widgetResizable"><bool>true</bool></property><property name="horizontalScrollBarPolicy"><enum>Qt::ScrollBarAlwaysOff</enum></property>
@@ -65,7 +65,7 @@
           </widget>
 
          </item>
-         <item stretch="1">
+         <item>
           <widget class="QWidget" name="comparisonChartHost">
            <layout class="QVBoxLayout" name="comparisonChartLayout"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property></layout>
           </widget>

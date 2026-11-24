@@ -2,12 +2,12 @@
 <ui version="4.0">
  <class>DiagramsPage</class>
  <widget class="QWidget" name="DiagramsPage">
-  <layout class="QVBoxLayout" name="rootLayout">
+  <layout class="QVBoxLayout" name="rootLayout" stretch="0,1">
    <property name="spacing"><number>12</number></property>
    <property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
    <item><widget class="QLabel" name="pageTitle"><property name="text"><string>Optical Setups</string></property></widget></item>
-   <item stretch="1">
-    <layout class="QHBoxLayout" name="bodyLayout">
+   <item>
+    <layout class="QHBoxLayout" name="bodyLayout" stretch="0,1">
      <property name="spacing"><number>12</number></property>
      <item>
       <widget class="QListWidget" name="diagramList">
@@ -15,12 +15,12 @@
        <property name="maximumSize"><size><width>300</width><height>16777215</height></size></property>
       </widget>
      </item>
-     <item stretch="1">
+     <item>
       <widget class="QWidget" name="diagramContent">
-       <layout class="QVBoxLayout" name="diagramContentLayout">
+       <layout class="QVBoxLayout" name="diagramContentLayout" stretch="0,1,0,0,0,0">
         <property name="spacing"><number>10</number></property>
         <item><widget class="QComboBox" name="diagramVariantSelector" /></item>
-        <item stretch="1">
+        <item>
          <widget class="QWidget" name="diagramViewHost">
           <layout class="QVBoxLayout" name="diagramViewLayout">
            <property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>

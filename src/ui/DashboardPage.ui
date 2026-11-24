@@ -2,19 +2,19 @@
 <ui version="4.0">
  <class>DashboardPage</class>
  <widget class="QWidget" name="DashboardPage">
-  <layout class="QVBoxLayout" name="dashboardCenterLayout">
+  <layout class="QVBoxLayout" name="dashboardCenterLayout" stretch="0,0,1">
    <property name="spacing"><number>12</number></property>
    <property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
    <item>
-    <layout class="QHBoxLayout" name="metricsLayout">
+    <layout class="QHBoxLayout" name="metricsLayout" stretch="1,1,1">
      <property name="spacing"><number>12</number></property>
-     <item stretch="1">
+     <item>
       <widget class="QFrame" name="metricExperimentsCard">
        <property name="frameShape"><enum>QFrame::NoFrame</enum></property>
-       <layout class="QHBoxLayout" name="experimentsMetricLayout">
+       <layout class="QHBoxLayout" name="experimentsMetricLayout" stretch="0,1">
         <property name="spacing"><number>14</number></property><property name="leftMargin"><number>16</number></property><property name="topMargin"><number>14</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>14</number></property>
         <item><widget class="QLabel" name="experimentCount"><property name="text"><string>11</string></property></widget></item>
-        <item stretch="1">
+        <item>
          <layout class="QVBoxLayout" name="experimentsMetricTextLayout">
           <property name="spacing"><number>2</number></property>
           <item><spacer name="experimentsMetricTopSpacer"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>10</height></size></property></spacer></item>
@@ -28,13 +28,13 @@
       </widget>
 
      </item>
-     <item stretch="1">
+     <item>
       <widget class="QFrame" name="savedMetricCard">
        <property name="frameShape"><enum>QFrame::NoFrame</enum></property>
-       <layout class="QHBoxLayout" name="savedMetricLayout">
+       <layout class="QHBoxLayout" name="savedMetricLayout" stretch="0,1">
         <property name="spacing"><number>14</number></property><property name="leftMargin"><number>16</number></property><property name="topMargin"><number>14</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>14</number></property>
         <item><widget class="QLabel" name="savedValue"><property name="text"><string>00</string></property></widget></item>
-        <item stretch="1">
+        <item>
          <layout class="QVBoxLayout" name="savedMetricTextLayout">
           <property name="spacing"><number>2</number></property>
           <item><spacer name="savedMetricTopSpacer"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>10</height></size></property></spacer></item>
@@ -48,13 +48,13 @@
       </widget>
 
      </item>
-     <item stretch="1">
+     <item>
       <widget class="QFrame" name="seriesMetricCard">
        <property name="frameShape"><enum>QFrame::NoFrame</enum></property>
-       <layout class="QHBoxLayout" name="seriesMetricLayout">
+       <layout class="QHBoxLayout" name="seriesMetricLayout" stretch="0,1">
         <property name="spacing"><number>14</number></property><property name="leftMargin"><number>16</number></property><property name="topMargin"><number>14</number></property><property name="rightMargin"><number>16</number></property><property name="bottomMargin"><number>14</number></property>
         <item><widget class="QLabel" name="seriesValue"><property name="text"><string>00</string></property></widget></item>
-        <item stretch="1">
+        <item>
          <layout class="QVBoxLayout" name="seriesMetricTextLayout">
           <property name="spacing"><number>2</number></property>
           <item><spacer name="seriesMetricTopSpacer"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>10</height></size></property></spacer></item>
@@ -82,15 +82,15 @@
      </item>
     </layout>
    </item>
-   <item stretch="1">
+   <item>
     <layout class="QGridLayout" name="featuredGridLayout">
      <property name="spacing"><number>12</number></property>
      <item row="0" column="0">
       <widget class="QFrame" name="featureCard1">
        <property name="sizePolicy"><sizepolicy hsizetype="Expanding" vsizetype="Expanding"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property><property name="frameShape"><enum>QFrame::NoFrame</enum></property>
-       <layout class="QHBoxLayout" name="featureCard1Layout"><property name="spacing"><number>15</number></property><property name="leftMargin"><number>15</number></property><property name="topMargin"><number>15</number></property><property name="rightMargin"><number>15</number></property><property name="bottomMargin"><number>15</number></property>
+       <layout class="QHBoxLayout" name="featureCard1Layout" stretch="0,1,0"><property name="spacing"><number>15</number></property><property name="leftMargin"><number>15</number></property><property name="topMargin"><number>15</number></property><property name="rightMargin"><number>15</number></property><property name="bottomMargin"><number>15</number></property>
         <item><widget class="QWidget" name="previewIconSlot1"><property name="minimumSize"><size><width>130</width><height>132</height></size></property><layout class="QVBoxLayout" name="previewIconLayout1"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property></layout></widget></item>
-        <item stretch="1">
+        <item>
          <layout class="QVBoxLayout" name="featureTextLayout1"><property name="spacing"><number>6</number></property>
           <item><widget class="QLabel" name="featureKicker1"><property name="text"><string>01 / GEOMETRICAL OPTICS</string></property></widget></item>
           <item><widget class="QLabel" name="featureTitle1"><property name="text"><string>Refraction &amp; TIR</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
@@ -109,9 +109,9 @@
      <item row="0" column="1">
       <widget class="QFrame" name="featureCard2">
        <property name="sizePolicy"><sizepolicy hsizetype="Expanding" vsizetype="Expanding"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property><property name="frameShape"><enum>QFrame::NoFrame</enum></property>
-       <layout class="QHBoxLayout" name="featureCard2Layout"><property name="spacing"><number>15</number></property><property name="leftMargin"><number>15</number></property><property name="topMargin"><number>15</number></property><property name="rightMargin"><number>15</number></property><property name="bottomMargin"><number>15</number></property>
+       <layout class="QHBoxLayout" name="featureCard2Layout" stretch="0,1,0"><property name="spacing"><number>15</number></property><property name="leftMargin"><number>15</number></property><property name="topMargin"><number>15</number></property><property name="rightMargin"><number>15</number></property><property name="bottomMargin"><number>15</number></property>
         <item><widget class="QWidget" name="previewIconSlot2"><property name="minimumSize"><size><width>130</width><height>132</height></size></property><layout class="QVBoxLayout" name="previewIconLayout2"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property></layout></widget></item>
-        <item stretch="1">
+        <item>
          <layout class="QVBoxLayout" name="featureTextLayout2"><property name="spacing"><number>6</number></property>
           <item><widget class="QLabel" name="featureKicker2"><property name="text"><string>02 / IMAGE FORMATION</string></property></widget></item>
           <item><widget class="QLabel" name="featureTitle2"><property name="text"><string>Lenses &amp; Mirrors</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
@@ -128,9 +128,9 @@
      <item row="1" column="0">
       <widget class="QFrame" name="featureCard3">
        <property name="sizePolicy"><sizepolicy hsizetype="Expanding" vsizetype="Expanding"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property><property name="frameShape"><enum>QFrame::NoFrame</enum></property>
-       <layout class="QHBoxLayout" name="featureCard3Layout"><property name="spacing"><number>15</number></property><property name="leftMargin"><number>15</number></property><property name="topMargin"><number>15</number></property><property name="rightMargin"><number>15</number></property><property name="bottomMargin"><number>15</number></property>
+       <layout class="QHBoxLayout" name="featureCard3Layout" stretch="0,1,0"><property name="spacing"><number>15</number></property><property name="leftMargin"><number>15</number></property><property name="topMargin"><number>15</number></property><property name="rightMargin"><number>15</number></property><property name="bottomMargin"><number>15</number></property>
         <item><widget class="QWidget" name="previewIconSlot3"><property name="minimumSize"><size><width>130</width><height>132</height></size></property><layout class="QVBoxLayout" name="previewIconLayout3"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property></layout></widget></item>
-        <item stretch="1">
+        <item>
          <layout class="QVBoxLayout" name="featureTextLayout3"><property name="spacing"><number>6</number></property>
           <item><widget class="QLabel" name="featureKicker3"><property name="text"><string>03 / MINIMUM DEVIATION</string></property></widget></item>
           <item><widget class="QLabel" name="featureTitle3"><property name="text"><string>Prisms</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
@@ -147,9 +147,9 @@
      <item row="1" column="1">
       <widget class="QFrame" name="featureCard4">
        <property name="sizePolicy"><sizepolicy hsizetype="Expanding" vsizetype="Expanding"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property><property name="frameShape"><enum>QFrame::NoFrame</enum></property>
-       <layout class="QHBoxLayout" name="featureCard4Layout"><property name="spacing"><number>15</number></property><property name="leftMargin"><number>15</number></property><property name="topMargin"><number>15</number></property><property name="rightMargin"><number>15</number></property><property name="bottomMargin"><number>15</number></property>
+       <layout class="QHBoxLayout" name="featureCard4Layout" stretch="0,1,0"><property name="spacing"><number>15</number></property><property name="leftMargin"><number>15</number></property><property name="topMargin"><number>15</number></property><property name="rightMargin"><number>15</number></property><property name="bottomMargin"><number>15</number></property>
         <item><widget class="QWidget" name="previewIconSlot4"><property name="minimumSize"><size><width>130</width><height>132</height></size></property><layout class="QVBoxLayout" name="previewIconLayout4"><property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property></layout></widget></item>
-        <item stretch="1">
+        <item>
          <layout class="QVBoxLayout" name="featureTextLayout4"><property name="spacing"><number>6</number></property>
           <item><widget class="QLabel" name="featureKicker4"><property name="text"><string>04 / WAVE OPTICS</string></property></widget></item>
           <item><widget class="QLabel" name="featureTitle4"><property name="text"><string>Wave Interference (Double-Slit)</string></property><property name="wordWrap"><bool>true</bool></property></widget></item>
