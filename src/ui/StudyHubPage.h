@@ -21,7 +21,6 @@ namespace phy104 {
 
 class DiagramsPage;
 class ModeTabs;
-class Panel;
 
 /// Study Hub: chapter guides, a structured study-note catalog, autosaved personal notes and optical setups.
 class StudyHubPage : public BasePage {
@@ -57,7 +56,7 @@ private:
     QLineEdit* m_studyMaterialSearch = nullptr;
     QComboBox* m_studyMaterialChapterFilter = nullptr;
     QListWidget* m_studyMaterialList = nullptr;
-    Panel* m_studyMaterialListPanel = nullptr;
+    QLabel* m_studyMaterialListMeta = nullptr;
     QLabel* m_studyMaterialMeta = nullptr;
     QLabel* m_studyMaterialTitle = nullptr;
     QVBoxLayout* m_studyMaterialBody = nullptr;
@@ -80,7 +79,7 @@ private:
     bool m_notesLoadFailed = false;
     bool m_loadingNote = false;
     bool m_notesDirty = false;
-    Panel* m_rulesPanel = nullptr;
+    QLabel* m_rulesPanelTitle = nullptr;
 
     QString noteKey(const StudyTopic& topic) const;
     void filterStudyMaterials();
