@@ -165,7 +165,9 @@ void LineChart::paintEvent(QPaintEvent*) {
         ? 54 + (xLineCount + legendLineCount - 2) * lineHeight
         : 42 + (xLineCount - 1) * lineHeight;
     const int plotTop = 12 + std::max(1, yLabelLines.size()) * lineHeight;
-    const QRectF plot(46, plotTop, std::max(1, width() - 64), std::max(1, height() - plotTop - lowerReserve));
+    const QRectF plot(46, plotTop,
+                      std::max(1.0, static_cast<double>(width() - 64)),
+                      std::max(1.0, static_cast<double>(height() - plotTop - lowerReserve)));
     auto X = [&](double x) { return plot.left() + (x - m_xMin) / (m_xMax - m_xMin) * plot.width(); };
     auto Y = [&](double y) { return plot.bottom() - (y - m_yMin) / (m_yMax - m_yMin) * plot.height(); };
 

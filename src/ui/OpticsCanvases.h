@@ -139,7 +139,7 @@ public:
     static constexpr double kMaxInteractiveTravelUm = 2.0;
 
     explicit MichelsonCanvas(QWidget* p = nullptr);
-    void setDisplayData(const MichelsonDisplayData& data) { m_display = data; update(); }
+    void setDisplayData(const MichelsonDisplayData& displayData) { m_display = displayData; update(); }
     void setMirrorMovable(bool movable) { m_mirrorMovable = movable; setCursor(movable ? Qt::OpenHandCursor : Qt::ArrowCursor); }
     /// Local position of the actively movable mirror (M2 in legacy tabs, M1 in wavelength mode).
     QPointF movableMirrorCenter() const;
