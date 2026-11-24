@@ -371,6 +371,12 @@ static void testWaveInterference() {
         double I = relativeIntensityUnequal(1.0, 0.0, 1.5, 0.25e-3, 1.0);
         CHECK(near(I, 0.0));
     }
+
+    // Invalid ratios should be rejected rather than entering sqrt of a negative value.
+    {
+        CHECK(!std::isfinite(relativeIntensityUnequal(0.0, 600e-9, 1.5, 0.25e-3, -1.0)));
+        CHECK(near(relativeIntensityUnequal(0.0, 600e-9, 1.5, 0.25e-3, 1e300), 1.0));
+    }
 }
 
 // ============================================================================
