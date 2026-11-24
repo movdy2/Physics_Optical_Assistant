@@ -6,6 +6,7 @@
 
 #include "ThemeManager.h"
 
+#include <QApplication>
 #include <QComboBox>
 #include <QFormLayout>
 #include <QFrame>
@@ -356,6 +357,7 @@ void SolverPage::showFormula(const Formula& formula) {
     for (const auto& var : formula.variables) {
         auto* edit = new QLineEdit(QString::fromStdString(var.defaultValue));
         edit->setObjectName("lcdInput");
+        edit->setFont(qApp->font());
         edit->setLayoutDirection(Qt::LeftToRight);                 // keep variables and scientific notation readable in Arabic UI
         const auto ov = formula.unitOverrides.find(var.id);
         const std::string unit = ov != formula.unitOverrides.end() ? ov->second : var.unit;

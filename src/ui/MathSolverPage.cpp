@@ -6,6 +6,7 @@
 #include "ui_MathSolverPage.h"
 
 #include <QAbstractItemView>
+#include <QApplication>
 #include <QColor>
 #include <QLabel>
 #include <QLineEdit>
@@ -41,6 +42,8 @@ MathSolverPage::MathSolverPage(AppContext* context, QWidget* parent)
     m_input->setObjectName("lcdInput");
     m_result = ui.resultValue;
     m_result->setObjectName("lcdResult");
+    m_input->setFont(qApp->font());
+    m_result->setFont(qApp->font());
     m_status = ui.calculationStatus;
     m_status->setObjectName("statusError");
     m_keypad = new CalculatorKeypad;
