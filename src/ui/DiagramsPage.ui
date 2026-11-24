@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <ui version="4.0">
  <class>DiagramsPage</class>
  <widget class="QWidget" name="DiagramsPage">
@@ -19,7 +19,7 @@
       <widget class="QWidget" name="diagramContent">
        <layout class="QVBoxLayout" name="diagramContentLayout">
         <property name="spacing"><number>10</number></property>
-        <item><widget class="QComboBox" name="diagramVariantSelector"/></item>
+        <item><widget class="QComboBox" name="diagramVariantSelector" /></item>
         <item>
          <widget class="QWidget" name="diagramViewHost">
           <layout class="QVBoxLayout" name="diagramViewLayout">
@@ -28,8 +28,8 @@
          </widget>
          <property name="stretch"><number>1</number></property>
         </item>
-        <item><widget class="QLabel" name="sectionTitle"><property name="text"><string/></property></widget></item>
-        <item><widget class="QLabel" name="diagramCaption"><property name="text"><string/></property><property name="minimumSize"><size><width>0</width><height>0</height></size></property><property name="wordWrap"><bool>true</bool></property></widget></item>
+        <item><widget class="QLabel" name="sectionTitle"><property name="text"><string /></property></widget></item>
+        <item><widget class="QLabel" name="diagramCaption"><property name="text"><string /></property><property name="minimumSize"><size><width>0</width><height>0</height></size></property><property name="wordWrap"><bool>true</bool></property></widget></item>
         <item>
          <widget class="QWidget" name="equationsContainer">
           <layout class="QHBoxLayout" name="equationsLayout">
@@ -43,8 +43,7 @@
          <property name="alignment"><set>Qt::AlignRight</set></property>
         </item>
        </layout>
-       <property name="stretch"><number>1</number></property>
-      </widget>
+       </widget>
       <property name="stretch"><number>1</number></property>
      </item>
     </layout>
@@ -52,6 +51,6 @@
    </item>
   </layout>
  </widget>
- <resources/>
- <connections/>
+ <resources />
+ <connections />
 </ui>

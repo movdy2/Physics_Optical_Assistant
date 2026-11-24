@@ -6,11 +6,11 @@
 #include "RecentExportPanel.h"
 #include "ReportPage.h"
 #include "ThemeManager.h"
+#include "ui_ExportPage.h"
 
 #include <QCheckBox>
 #include <QComboBox>
 #include <QFileDialog>
-#include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
 #include <QListWidget>
@@ -22,8 +22,6 @@
 #include <QStackedWidget>
 #include <QTableWidget>
 #include <QTextDocument>
-#include <QToolButton>
-#include <QVBoxLayout>
 #include <cmath>
 
 namespace phy104 {
@@ -31,126 +29,86 @@ namespace phy104 {
 ExportPage::ExportPage(AppContext* ctx, QWidget* parent)
     : BasePage("Export", "CSV, Excel and PDF reports / Prepare complete data files or a formatted laboratory report",
                ctx, parent) {
+    // ---------------------------------------------------------------- Designer-defined series workspace; custom controls stay live C++ widgets
+    auto* exportFormHost = new QWidget;
+    Ui::ExportPage ui;
+    ui.setupUi(exportFormHost);
+    content()->addWidget(exportFormHost, 1);
+
     m_exportModes = new ModeTabs({"Series data", "PDF report"});
     m_exportModes->setObjectName("exportModeTabs");
-    content()->addWidget(m_exportModes);
-    m_workspace = new QStackedWidget;
-    m_workspace->setObjectName("exportWorkspace");
-    content()->addWidget(m_workspace, 1);
+    ui.exportModesLayout->addWidget(m_exportModes);
+    m_workspace = ui.exportWorkspace;
 
-    auto* dataPane = new QWidget;
-    auto* columnsRow = new QHBoxLayout(dataPane);
-    columnsRow->setContentsMargins(0, 0, 0, 0);
-    columnsRow->setSpacing(12);
-    Columns cols;
-    auto makeColumn = [columnsRow](int width) {
-        auto* column = new QVBoxLayout;
-        column->setSpacing(12);
-        auto* holder = new QWidget;
-        holder->setLayout(column);
-        column->setContentsMargins(0, 0, 0, 0);
-        if (width > 0) holder->setFixedWidth(width);
-        columnsRow->addWidget(holder, width > 0 ? 0 : 1);
-        return column;
-    };
-    cols.left = makeColumn(252);
-    cols.center = makeColumn(0);
-    cols.right = makeColumn(268);
-    m_workspace->addWidget(dataPane);
+    ui.seriesPanel->setObjectName("panel");
+    ui.seriesHeader->setObjectName("panelHeader");
+    ui.seriesBody->setObjectName("panelBody");
+    ui.seriesTitle->setObjectName("panelTitle");
+    ui.seriesMeta->setObjectName("panelMeta");
+    m_listMeta = ui.seriesMeta;
+    m_series = ui.seriesList;
 
-    // ---------------------------------------------------------------- left: the series and its description
-    m_listPanel = new Panel("Data series", "none");
-    auto* listPanel = m_listPanel;
-    m_series = new QListWidget;
-    m_series->setObjectName("seriesList");
-    m_series->setMinimumHeight(150);
-    listPanel->body()->addWidget(m_series, 1);
-    cols.left->addWidget(listPanel, 3);
-
-    auto* descPanel = new Panel("Series description", "SOURCE");
-    m_descTitle = new QLabel("No data series yet");
+    ui.descriptionPanel->setObjectName("panel");
+    ui.descriptionHeader->setObjectName("panelHeader");
+    ui.descriptionBody->setObjectName("panelBody");
+    ui.descriptionTitle->setObjectName("panelTitle");
+    ui.descriptionMeta->setObjectName("panelMeta");
+    m_descTitle = ui.descriptionName;
     m_descTitle->setObjectName("sectionTitle");
-    m_descTitle->setWordWrap(true);
-    m_descBody = new QLabel;
+    m_descBody = ui.descriptionText;
     m_descBody->setObjectName("hint");
-    m_descBody->setWordWrap(true);
-    m_descNote = new QLabel;
+    m_descNote = ui.descriptionNote;
     m_descNote->setObjectName("hint");
-    m_descNote->setWordWrap(true);
-    m_descColumns = new QLabel;
+    m_descColumns = ui.descriptionColumns;
     m_descColumns->setObjectName("caption");
-    m_descColumns->setWordWrap(true);
-    descPanel->body()->setSpacing(6);
-    descPanel->body()->addWidget(m_descTitle);
-    descPanel->body()->addWidget(m_descBody);
-    descPanel->body()->addWidget(m_descNote);
-    descPanel->body()->addSpacing(2);
-    descPanel->body()->addWidget(m_descColumns);
-    descPanel->body()->addStretch();
-    cols.left->addWidget(descPanel, 2);
 
-    // ---------------------------------------------------------------- centre: every row, not a sample
-    m_previewPanel = new Panel("Full preview", "");
-    m_table = new QTableWidget;
-    m_table->setObjectName("previewTable");
+    ui.previewPanel->setObjectName("panel");
+    ui.previewHeader->setObjectName("panelHeader");
+    ui.previewBody->setObjectName("panelBody");
+    ui.previewTitle->setObjectName("panelTitle");
+    ui.previewMeta->setObjectName("panelMeta");
+    m_previewTitle = ui.previewTitle;
+    m_previewMeta = ui.previewMeta;
+    m_table = ui.previewTable;
     m_table->verticalHeader()->hide();
     m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_table->setSelectionMode(QAbstractItemView::NoSelection);
-    m_table->setShowGrid(false);
     m_table->setFocusPolicy(Qt::NoFocus);
-    m_previewPanel->body()->setContentsMargins(12, 0, 12, 8);
-    m_previewPanel->body()->addWidget(m_table, 1);
-    m_previewFoot = new QLabel;
+    m_previewFoot = ui.previewFoot;
     m_previewFoot->setObjectName("caption");
-    m_previewFoot->setWordWrap(true);
-    m_previewPanel->body()->addWidget(m_previewFoot);
-    cols.center->addWidget(m_previewPanel, 1);
 
-    // ---------------------------------------------------------------- right: settings + recent export
-    auto* settings = new Panel("Export settings", "LOCAL");
+    ui.settingsPanel->setObjectName("panel");
+    ui.settingsHeader->setObjectName("panelHeader");
+    ui.settingsBody->setObjectName("panelBody");
+    ui.settingsTitle->setObjectName("panelTitle");
+    ui.settingsMeta->setObjectName("panelMeta");
     m_format = new ModeTabs({"Excel (.xls)", "CSV (.csv)"});
     m_format->setObjectName("seriesFormatTabs");
+    ui.formatTabsLayout->addWidget(m_format);
+    ui.fileNameLabel->setObjectName("fieldLabel");
+    ui.folderLabel->setObjectName("fieldLabel");
+    ui.includeLabel->setObjectName("caption");
     m_fileName = new UnitField(".xls");
-    m_folder = new QComboBox;
+    ui.fileNameLayout->addWidget(m_fileName);
+    m_folder = ui.folderCombo;
     m_folder->addItem("Documents / PHY104", QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + "/PHY104");
     m_folder->addItem("Desktop", QStandardPaths::writableLocation(QStandardPaths::DesktopLocation));
     m_folder->addItem("Choose folder…", QString());
-    auto* include = new QLabel("INCLUDE IN WORKBOOK");
-    include->setObjectName("caption");
-    auto checkbox = [](const QString& text) { auto* c = new QCheckBox(text); c->setChecked(true); return c; };
-    m_chkParams = checkbox("Input parameters and units");
-    m_chkSteps = checkbox("Step-by-step results");
-    m_chkData = checkbox("Measurement data && fit");
-    m_chkNotes = checkbox("Session notes");
+    m_chkParams = ui.parametersCheck;
+    m_chkSteps = ui.stepsCheck;
+    m_chkData = ui.dataCheck;
+    m_chkNotes = ui.notesCheck;
     m_ready = new NoticeCard;
-    m_primary = new QPushButton;
+    ui.readyCardLayout->addWidget(m_ready);
+    m_primary = ui.primaryButton;
     m_primary->setObjectName("primary");
-    m_secondary = new QPushButton;
+    m_secondary = ui.secondaryButton;
     m_secondary->setObjectName("secondary");
-    m_print = new QPushButton("Print…");
+    m_print = ui.printButton;
     m_print->setObjectName("secondary");
-    auto* sb = settings->body();
-    sb->setSpacing(8);
-    sb->addWidget(m_format);
-    sb->addWidget(labeled("File name", m_fileName));
-    sb->addWidget(labeled("Destination folder", m_folder));
-    sb->addWidget(include);
-    for (auto* c : {m_chkParams, m_chkSteps, m_chkData, m_chkNotes}) sb->addWidget(c);
-    sb->addWidget(m_ready);
-    sb->addWidget(m_primary);
-    sb->addWidget(m_secondary);
-    sb->addWidget(m_print);
-    sb->addStretch();
-    cols.right->addWidget(settings, 1);
-
     m_recent = new RecentExportPanel;
-    cols.right->addWidget(m_recent, 0);
+    ui.recentExportLayout->addWidget(m_recent);
 
-    connect(m_exportModes, &ModeTabs::currentChanged, this, &ExportPage::onExportPaneChanged);
-    connect(m_format, &ModeTabs::currentChanged, this, &ExportPage::onFormatChanged);
-    connect(m_series, &QListWidget::currentRowChanged, this, [this](int) { refreshPreview(); });
-    connect(m_series, &QListWidget::itemDoubleClicked, this, [this] { m_primary->click(); });
-    for (auto* c : {m_chkParams, m_chkSteps, m_chkData, m_chkNotes}) connect(c, &QCheckBox::toggled, this, [this] { refreshPreview(); });
     connect(m_folder, &QComboBox::activated, this, [this](int index) {
         if (m_folder->itemData(index).toString().isEmpty()) {
             const QString dir = QFileDialog::getExistingDirectory(this, "Destination folder");
@@ -158,6 +116,12 @@ ExportPage::ExportPage(AppContext* ctx, QWidget* parent)
             else m_folder->setCurrentIndex(0);
         }
     });
+
+    connect(m_exportModes, &ModeTabs::currentChanged, this, &ExportPage::onExportPaneChanged);
+    connect(m_format, &ModeTabs::currentChanged, this, &ExportPage::onFormatChanged);
+    connect(m_series, &QListWidget::currentRowChanged, this, [this](int) { refreshPreview(); });
+    connect(m_series, &QListWidget::itemDoubleClicked, this, [this] { m_primary->click(); });
+    for (auto* c : {m_chkParams, m_chkSteps, m_chkData, m_chkNotes}) connect(c, &QCheckBox::toggled, this, [this] { refreshPreview(); });
     connect(m_primary, &QPushButton::clicked, this, &ExportPage::exportPrimary);
     connect(m_secondary, &QPushButton::clicked, this, &ExportPage::exportSecondary);
     connect(m_print, &QPushButton::clicked, this, &ExportPage::printTable);
@@ -241,7 +205,7 @@ void ExportPage::refreshSeries() {
             if (m_series->item(i)->data(Qt::UserRole).toString() == keep) { row = i; break; }
         if (m_series->count() > 0) m_series->setCurrentRow(row);
     }
-    m_listPanel->setMeta(QString("%1 SERIES").arg(m_series->count()));
+    m_listMeta->setText(QString("%1 SERIES").arg(m_series->count()));
     refreshPreview();
 }
 
@@ -249,8 +213,8 @@ void ExportPage::refreshPreview() {
     const Snapshot* snap = currentSnapshot();
     m_table->clear();
     if (!snap || snap->series.rows.empty()) {
-        m_previewPanel->setTitle("Full preview");
-        m_previewPanel->setMeta("no data");
+        m_previewTitle->setText("Full preview");
+        m_previewMeta->setText("no data");
         m_table->setRowCount(0);
         m_table->setColumnCount(0);
         m_previewFoot->setText("Run a calculation on an experiment page: its table is published here automatically.");
@@ -278,8 +242,8 @@ void ExportPage::refreshPreview() {
     m_descColumns->setText(QString("\n") + columns.join(" · "));
 
     // ---- every row, full width
-    m_previewPanel->setTitle(QString(" ") + QString::fromStdString(s.id));
-    m_previewPanel->setMeta(QString("%1 ROWS × %2 COLUMNS").arg(s.rows.size()).arg(s.headers.size()));
+    m_previewTitle->setText(QString(" ") + QString::fromStdString(s.id));
+    m_previewMeta->setText(QString("%1 ROWS × %2 COLUMNS").arg(s.rows.size()).arg(s.headers.size()));
     const int rows = static_cast<int>(s.rows.size());
     const int cols = static_cast<int>(s.headers.size());
     m_table->setColumnCount(cols);

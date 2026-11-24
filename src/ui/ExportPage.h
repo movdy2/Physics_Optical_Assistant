@@ -14,7 +14,6 @@ namespace phy104 {
 struct Snapshot;
 class ModeTabs;
 class NoticeCard;
-class Panel;
 class RecentExportPanel;
 class ReportPage;
 class UnitField;
@@ -52,10 +51,10 @@ private:
     ModeTabs* m_exportModes = nullptr;
     QStackedWidget* m_workspace = nullptr;
     ReportPage* m_reportPage = nullptr;
-    Panel* m_listPanel;
+    QLabel* m_listMeta = nullptr;
     QListWidget* m_series;
     QLabel *m_descTitle, *m_descBody, *m_descNote, *m_descColumns;
-    Panel* m_previewPanel;
+    QLabel *m_previewTitle = nullptr, *m_previewMeta = nullptr;
     QTableWidget* m_table;
     QLabel* m_previewFoot;
     ModeTabs* m_format;

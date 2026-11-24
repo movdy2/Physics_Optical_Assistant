@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <ui version="4.0">
  <class>Panel</class>
  <widget class="QFrame" name="panel">
@@ -18,7 +18,7 @@
        <widget class="QLabel" name="panelTitle">
         <property name="sizePolicy"><sizepolicy hsizetype="Expanding" vsizetype="Preferred"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property>
         <property name="minimumSize"><size><width>0</width><height>0</height></size></property>
-        <property name="text"><string/></property><property name="wordWrap"><bool>true</bool></property>
+        <property name="text"><string /></property><property name="wordWrap"><bool>true</bool></property>
        </widget>
        <property name="stretch"><number>1</number></property>
       </item>
@@ -26,7 +26,7 @@
        <widget class="QLabel" name="panelMeta">
         <property name="sizePolicy"><sizepolicy hsizetype="Preferred" vsizetype="Preferred"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property>
         <property name="minimumSize"><size><width>0</width><height>0</height></size></property>
-        <property name="text"><string/></property><property name="wordWrap"><bool>true</bool></property>
+        <property name="text"><string /></property><property name="wordWrap"><bool>true</bool></property>
         <property name="layoutDirection"><enum>Qt::LeftToRight</enum></property>
        </widget>
       </item>
@@ -39,11 +39,11 @@
       <property name="spacing"><number>12</number></property>
       <property name="leftMargin"><number>12</number></property><property name="topMargin"><number>12</number></property><property name="rightMargin"><number>12</number></property><property name="bottomMargin"><number>12</number></property>
      </layout>
-     <property name="stretch"><number>1</number></property>
-    </widget>
-   </item>
+     </widget>
+   <property name="stretch"><number>1</number></property>
+    </item>
   </layout>
  </widget>
- <resources/>
- <connections/>
+ <resources />
+ <connections />
 </ui>

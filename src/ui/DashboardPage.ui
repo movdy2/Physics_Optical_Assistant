@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <ui version="4.0">
  <class>DashboardPage</class>
  <widget class="QWidget" name="DashboardPage">
@@ -22,9 +22,9 @@
           <item><widget class="QLabel" name="experimentsMetricDescription"><property name="text"><string>Geometrical &amp; wave optics</string></property></widget></item>
           <item><spacer name="experimentsMetricBottomSpacer"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>10</height></size></property></spacer></item>
          </layout>
-        </item>
         <property name="stretch"><number>1</number></property>
-       </layout>
+       </item>
+        </layout>
       </widget>
       <property name="stretch"><number>1</number></property>
      </item>
@@ -42,9 +42,9 @@
           <item><widget class="QLabel" name="savedMetricDescription"><property name="text"><string>Current lab session</string></property></widget></item>
           <item><spacer name="savedMetricBottomSpacer"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>10</height></size></property></spacer></item>
          </layout>
-        </item>
         <property name="stretch"><number>1</number></property>
-       </layout>
+       </item>
+        </layout>
       </widget>
       <property name="stretch"><number>1</number></property>
      </item>
@@ -62,9 +62,9 @@
           <item><widget class="QLabel" name="seriesMetricDescription"><property name="text"><string>Ready for Excel / CSV</string></property></widget></item>
           <item><spacer name="seriesMetricBottomSpacer"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>10</height></size></property></spacer></item>
          </layout>
-        </item>
         <property name="stretch"><number>1</number></property>
-       </layout>
+       </item>
+        </layout>
       </widget>
       <property name="stretch"><number>1</number></property>
      </item>
@@ -101,7 +101,7 @@
          <property name="stretch"><number>1</number></property>
         </item>
         <item>
-         <layout class="QVBoxLayout" name="featureArrowLayout1"><item><spacer name="featureArrowSpacer1"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>40</height></size></property></spacer></item><item><widget class="QLabel" name="featureArrow1"><property name="text"><string/></property></widget></item></layout>
+         <layout class="QVBoxLayout" name="featureArrowLayout1"><item><spacer name="featureArrowSpacer1"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>40</height></size></property></spacer></item><item><widget class="QLabel" name="featureArrow1"><property name="text"><string /></property></widget></item></layout>
         </item>
        </layout>
       </widget>
@@ -121,7 +121,7 @@
          </layout>
          <property name="stretch"><number>1</number></property>
         </item>
-        <item><layout class="QVBoxLayout" name="featureArrowLayout2"><item><spacer name="featureArrowSpacer2"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>40</height></size></property></spacer></item><item><widget class="QLabel" name="featureArrow2"><property name="text"><string/></property></widget></item></layout></item>
+        <item><layout class="QVBoxLayout" name="featureArrowLayout2"><item><spacer name="featureArrowSpacer2"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>40</height></size></property></spacer></item><item><widget class="QLabel" name="featureArrow2"><property name="text"><string /></property></widget></item></layout></item>
        </layout>
       </widget>
      </item>
@@ -140,7 +140,7 @@
          </layout>
          <property name="stretch"><number>1</number></property>
         </item>
-        <item><layout class="QVBoxLayout" name="featureArrowLayout3"><item><spacer name="featureArrowSpacer3"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>40</height></size></property></spacer></item><item><widget class="QLabel" name="featureArrow3"><property name="text"><string/></property></widget></item></layout></item>
+        <item><layout class="QVBoxLayout" name="featureArrowLayout3"><item><spacer name="featureArrowSpacer3"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>40</height></size></property></spacer></item><item><widget class="QLabel" name="featureArrow3"><property name="text"><string /></property></widget></item></layout></item>
        </layout>
       </widget>
      </item>
@@ -159,7 +159,7 @@
          </layout>
          <property name="stretch"><number>1</number></property>
         </item>
-        <item><layout class="QVBoxLayout" name="featureArrowLayout4"><item><spacer name="featureArrowSpacer4"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>40</height></size></property></spacer></item><item><widget class="QLabel" name="featureArrow4"><property name="text"><string/></property></widget></item></layout></item>
+        <item><layout class="QVBoxLayout" name="featureArrowLayout4"><item><spacer name="featureArrowSpacer4"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>40</height></size></property></spacer></item><item><widget class="QLabel" name="featureArrow4"><property name="text"><string /></property></widget></item></layout></item>
        </layout>
       </widget>
      </item>
@@ -168,6 +168,6 @@
    </item>
   </layout>
  </widget>
- <resources/>
- <connections/>
+ <resources />
+ <connections />
 </ui>

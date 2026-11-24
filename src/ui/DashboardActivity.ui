@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <ui version="4.0">
  <class>DashboardActivity</class>
  <widget class="QFrame" name="panel">
@@ -34,11 +34,11 @@
        </layout>
       </item>
      </layout>
-     <property name="stretch"><number>1</number></property>
-    </widget>
-   </item>
+     </widget>
+   <property name="stretch"><number>1</number></property>
+    </item>
   </layout>
  </widget>
- <resources/>
- <connections/>
+ <resources />
+ <connections />
 </ui>
