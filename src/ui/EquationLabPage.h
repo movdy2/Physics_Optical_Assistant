@@ -57,6 +57,7 @@ private:
     QToolButton* m_keyboardToggle;
     ScientificKeyboard* m_keyboard;
     QTimer* m_timer;
+    QString m_resultText;
     std::map<std::string, VarState> m_values;
     bool m_parsedOk = false;
     bool m_updatingTable = false;

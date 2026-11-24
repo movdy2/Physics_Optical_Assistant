@@ -486,10 +486,9 @@ MichelsonPage::MichelsonPage(AppContext* ctx, QWidget* parent)
     connect(m_viewAngle, &UnitField::edited, this, [this] { apply(false); });
     connect(m_canvas, &MichelsonCanvas::mirrorDisplacementChanged, this, &MichelsonPage::setMirrorDisplacement);
 
-    const auto updateModeControls = [this] {
+    const auto updateModeControls = [this, sliderLimit] {
         const bool wavelengthMode = m_tabs->current() == 2;
         const int target = m_solveFor->currentData().toInt();
-        const int sliderLimit = static_cast<int>(std::lround(MichelsonCanvas::kMaxInteractiveTravelUm * 10000.0));
         {
             QSignalBlocker blocker(m_dxSlider);
             m_dxSlider->setRange(wavelengthMode ? 0 : -sliderLimit, sliderLimit);
