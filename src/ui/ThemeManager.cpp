@@ -24,7 +24,7 @@ Theme Theme::gruvboxDark() {
     t.bg = "#282828";
     t.sidebar = "#3c3836";
     t.titleBar = "#1d2021";
-    t.card = "#3c3836";
+    t.card = "#32302f";
     t.cardHover = "#504945";
     t.input = "#282828";
     t.canvas = "#1d2021";
@@ -174,7 +174,7 @@ void ThemeManager::apply(QApplication& app, bool dark) {
     QString qss = loadQssFromResource();
 
     const std::pair<const char*, QColor> tokens[] = {
-        {"@bg@", t.bg}, {"@surface@", t.surface}, {"@surfaceHover@", t.surfaceHover},
+        {"@bg@", t.bg}, {"@card@", t.card}, {"@surface@", t.surface}, {"@surfaceHover@", t.surfaceHover},
         {"@border@", t.border}, {"@text@", t.text}, {"@muted@", t.muted},
         {"@dim@", t.dim},
         {"@accentPrimary@", t.accentPrimary}, {"@accentPrimaryHover@", t.accentPrimaryHover},

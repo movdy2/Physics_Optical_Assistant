@@ -25,9 +25,10 @@ BasePage::BasePage(const QString& title, const QString& subtitle, AppContext* co
     inner->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     outer->addWidget(inner, 1);
     auto* root = new QVBoxLayout(inner);
-    if (showHeader) root->setContentsMargins(20, 22, 20, 14);
+    m_root = root;
+    if (showHeader) root->setContentsMargins(16, 12, 16, 10);
     else root->setContentsMargins(0, 0, 0, 0);
-    root->setSpacing(showHeader ? 14 : 0);
+    root->setSpacing(showHeader ? 8 : 0);
 
     if (showHeader) {
         auto* header = new QHBoxLayout;
@@ -80,8 +81,15 @@ BasePage::BasePage(const QString& title, const QString& subtitle, AppContext* co
     }
 
     m_content = new QVBoxLayout;
-    m_content->setSpacing(12);
+    m_content->setSpacing(10);
     root->addLayout(m_content, 1);
+}
+
+void BasePage::setCompactLayout() {
+    if (!m_root) return;
+    m_root->setContentsMargins(12, 10, 12, 8);
+    m_root->setSpacing(8);
+    m_content->setSpacing(8);
 }
 
 void BasePage::useSaveExportHeader() {
@@ -100,7 +108,7 @@ void BasePage::setStatusInfo(const StatusInfo& info, bool paused) {
 
 BasePage::Columns BasePage::addThreeColumns(int leftWidth, int rightWidth) {
     auto* row = new QHBoxLayout;
-    row->setSpacing(12);
+    row->setSpacing(8);
     Columns c;
     const bool rtl = (layoutDirection() == Qt::RightToLeft);
     // In RTL mode, swap left/right so the sidebar appears on the right and the notebook on the left.
@@ -108,7 +116,7 @@ BasePage::Columns BasePage::addThreeColumns(int leftWidth, int rightWidth) {
     const int secondWidth = rtl ? leftWidth : rightWidth;
     auto make = [&](int width) {
         auto* col = new QVBoxLayout;
-        col->setSpacing(12);
+        col->setSpacing(8);
         auto* holder = new QWidget;
         holder->setLayout(col);
         col->setContentsMargins(0, 0, 0, 0);

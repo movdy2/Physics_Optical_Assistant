@@ -122,7 +122,7 @@ QLabel#pageTitle {
 QLabel#pageSubtitle {
     font-size: 12px;
     color: @muted@;
-    padding-bottom: 12px;
+    padding-bottom: 4px;
 }
 
 QLabel#sectionTitle {
@@ -152,7 +152,7 @@ QFrame#panel {
     background: @surface@;
     border: 1px solid @border@;
     border-radius: 8px;
-    padding: 8px;
+    padding: 0;
 }
 
 QFrame#panel[hover="true"] {
@@ -614,14 +614,16 @@ QSlider::handle:horizontal {
     border: 2px solid @bg@;
 }
 
-/* ---------- Calculation Register / LCD (compact) ---------- */
+/* ---------- Calculation result cards (Gruvbox surfaces; no segmented LCD treatment) ---------- */
 QFrame#register {
     background: @surface@;
     border: 1px solid @border@;
+    border-left: 3px solid @accentAmber@;
     border-radius: 8px;
 }
 
 QLabel#regBig, QLabel#lcdBig {
+    background: transparent;
     font-family: 'JetBrains Mono';
     font-size: 18px;
     font-weight: 700;
@@ -631,20 +633,23 @@ QLabel#regBig, QLabel#lcdBig {
 }
 
 QLabel#regLine {
+    background: transparent;
     font-family: 'JetBrains Mono';
-    font-size: 11px;
+    font-size: 10px;
     color: @muted@;
-    line-height: 1.6;
     padding-bottom: 1px;
 }
 
 QLabel#regCaption {
+    background: transparent;
     font-family: 'JetBrains Mono';
     font-size: 9px;
+    font-weight: 600;
     color: @dim@;
 }
 
 QLabel#regFoot {
+    background: transparent;
     font-family: 'JetBrains Mono';
     font-size: 9px;
     color: @dim@;
@@ -672,16 +677,17 @@ QLabel#resultCardCaption {
 }
 
 QFrame#resultCard QLabel#lcdBig {
+    background: transparent;
     color: @accentAmber@;
-    font-family: 'Inter';
-    font-size: 22px;
+    font-family: 'JetBrains Mono';
+    font-size: 20px;
     font-weight: 700;
     padding: 0;
 }
 
 QLabel#resultCardDetails {
     color: @muted@;
-    font-family: 'Inter';
+    font-family: 'JetBrains Mono';
     font-size: 10px;
 }
 
@@ -690,7 +696,7 @@ QFrame#notice {
     background: @surface@;
     border: 1px solid @border@;
     border-radius: 6px;
-    padding: 8px 12px;
+    padding: 0;
 }
 
 QFrame#notice[error="true"] {

@@ -21,7 +21,7 @@ class Panel : public QFrame {
 public:
     explicit Panel(const QString& title, const QString& meta = QString(), QWidget* parent = nullptr);
     QVBoxLayout* body() const;
-    void setMeta(const QString& meta);
+    void setMeta(const QString& meta, const QString& tooltip = QString());
     void setTitle(const QString& title);
 private:
     QLabel* m_title;
@@ -46,6 +46,7 @@ public:
     void setUnit(const QString& unit);
     QString unit() const;
     void setSpinner(bool enabled, double step = 1.0);   // ▲▼ arrows
+    void setPasteButtonVisible(bool visible);
     void setShowPlus(bool on) { m_plus = on; }
     bool showsPlus() const { return m_plus; }          // "+30.00" for signed quantities
     void setError(bool on, const QString& message = QString());
@@ -101,7 +102,7 @@ private:
     QButtonGroup* m_group;
 };
 
-/// One calculation register: title + mode, numbered lines, big result, footer.
+/// One calculation result card: title + mode, calculation details, emphasized result and metadata.
 class RegisterView : public QFrame {
     Q_OBJECT
 public:

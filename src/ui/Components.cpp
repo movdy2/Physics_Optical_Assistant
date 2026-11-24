@@ -74,9 +74,11 @@ Panel::Panel(const QString& title, const QString& meta, QWidget* parent) : QFram
 
     auto* header = new QFrame;
     header->setObjectName("panelHeader");
-    header->setFixedHeight(36);
+    header->setMinimumHeight(36);
+    header->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
     auto* hl = new QHBoxLayout(header);
-    hl->setContentsMargins(12, 0, 12, 0);
+    hl->setContentsMargins(12, 4, 12, 4);
+    hl->setSpacing(8);
     m_title = new QLabel(title);
     m_title->setObjectName("panelTitle");
     m_title->setWordWrap(true);
@@ -85,9 +87,11 @@ Panel::Panel(const QString& title, const QString& meta, QWidget* parent) : QFram
     m_meta->setObjectName("panelMeta");
     m_meta->setWordWrap(true);
     m_meta->setMinimumWidth(0);
+    m_meta->setLayoutDirection(Qt::LeftToRight); // run labels, formulas, units and counts must not bidi-mirror
+    m_title->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    m_meta->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     hl->addWidget(m_title, 1);
-    hl->addStretch();
-    hl->addWidget(m_meta);
+    hl->addWidget(m_meta, 0);
     root->addWidget(header);
 
     auto* bodyHolder = new QWidget;
@@ -109,7 +113,10 @@ QVBoxLayout* Panel::body() const {
     return m_body;
 }
 
-void Panel::setMeta(const QString& meta) { m_meta->setText(meta.toUpper()); }
+void Panel::setMeta(const QString& meta, const QString& tooltip) {
+    m_meta->setText(meta.toUpper());
+    m_meta->setToolTip(tooltip);
+}
 void Panel::setTitle(const QString& title) { m_title->setText(title); m_title->setWordWrap(true); m_title->setMinimumWidth(0); }
 
 // ---------------------------------------------------------------------------- UnitField
@@ -152,7 +159,7 @@ UnitField::UnitField(const QString& unit, QWidget* parent) : QFrame(parent) {
     makeArrow("spinDown", "chevron-down", -1);
     m_arrows->hide();
 
-    // Paste button: drop clipboard content straight into this field
+    // Paste button remains available to other UnitField users; dense screens can hide it.
     m_pasteBtn = new QPushButton("📋");
     m_pasteBtn->setFixedSize(24, 24);
     m_pasteBtn->setToolTip("Paste from clipboard");
@@ -164,7 +171,6 @@ UnitField::UnitField(const QString& unit, QWidget* parent) : QFrame(parent) {
         m_edit->setFocus();
         emit edited();
     });
-    // Enable when the clipboard has text
     connect(QApplication::clipboard(), &QClipboard::changed, this, [this] {
         m_pasteBtn->setEnabled(!QApplication::clipboard()->text().isEmpty());
     });
@@ -229,6 +235,10 @@ void UnitField::setSpinner(bool on, double stepSize) {
     m_arrows->setVisible(on);
 }
 
+void UnitField::setPasteButtonVisible(bool visible) {
+    m_pasteBtn->setVisible(visible);
+}
+
 void UnitField::step(int direction) {
     bool ok = false;
     const double v = value(&ok);
@@ -290,6 +300,18 @@ void ModeTabs::setCurrent(int index) {
     if (auto* b = m_group->button(index)) b->setChecked(true);
 }
 
+// ---------------------------------------------------------------------------- Result-card labels
+namespace {
+QString displayResultTitle(const std::string& source) {
+    QString title = QString::fromStdString(source);
+    if (title.compare(QStringLiteral("CALCULATION REGISTER"), Qt::CaseInsensitive) == 0)
+        title = QStringLiteral("Calculation summary");
+    // Keep the source-language string here; LanguageManager tracks this widget's original text so
+    // toggling English ↔ Arabic remains reversible for dynamic result updates.
+    return title;
+}
+}
+
 // ---------------------------------------------------------------------------- RegisterView
 RegisterView::RegisterView(QWidget* parent) : QFrame(parent) {
     setObjectName("register");
@@ -308,8 +330,11 @@ void RegisterView::updateTextAlignment() {
             const Qt::Alignment horizontal = mode
                 ? (rtl ? Qt::AlignLeft : Qt::AlignRight)
                 : (rtl ? Qt::AlignRight : Qt::AlignLeft);
+            if (mode) label->setLayoutDirection(Qt::LeftToRight);
             label->setAlignment(horizontal | Qt::AlignVCenter);
         } else if (name == "regLine" || name == "regCaption" || name == "regBig" || name == "lcdBig" || name == "regFoot") {
+            // Keep formulas, symbols, units and numeric values in a stable LTR run in Arabic UI.
+            label->setLayoutDirection(Qt::LeftToRight);
             label->setAlignment((rtl ? Qt::AlignRight : Qt::AlignLeft) | Qt::AlignTop);
         }
     }
@@ -330,7 +355,7 @@ void RegisterView::setRegister(const LcdRegister& reg) {
     };
 
     auto* top = new QHBoxLayout;
-    auto* title = new QLabel(QString::fromStdString(reg.title));
+    auto* title = new QLabel(displayResultTitle(reg.title));
     title->setObjectName("regTitle");
     title->setWordWrap(true);
     title->setMinimumWidth(0);
@@ -392,11 +417,9 @@ ResultCard::ResultCard(QWidget* parent) : QFrame(parent) {
     m_title = new QLabel;
     m_title->setObjectName("resultCardTitle");
     m_title->setWordWrap(true);
-    m_title->setLayoutDirection(Qt::LeftToRight);
     m_caption = new QLabel;
     m_caption->setObjectName("resultCardCaption");
     m_caption->setWordWrap(true);
-    m_caption->setLayoutDirection(Qt::LeftToRight);
     m_value = new QLabel;
     m_value->setObjectName("lcdBig"); // retained semantic selector used by interaction tests
     m_value->setWordWrap(true);
@@ -415,7 +438,7 @@ ResultCard::ResultCard(QWidget* parent) : QFrame(parent) {
 }
 
 void ResultCard::setRegister(const LcdRegister& result) {
-    m_title->setText(QString::fromStdString(result.title));
+    m_title->setText(displayResultTitle(result.title));
     m_caption->setText(QString::fromStdString(result.resultLabel));
     m_value->setText(QString::fromStdString(result.resultValue));
     QStringList details;

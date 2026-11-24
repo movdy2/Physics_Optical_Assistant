@@ -2,6 +2,7 @@
 
 #include "AppContext.h"
 #include "Components.h"
+#include "LanguageManager.h"
 
 #include <QLabel>
 #include <QPushButton>
@@ -55,12 +56,37 @@ bool ExperimentBase::readFields() {
     for (Binding& b : m_bindings) {
         bool ok = false;
         b.field->value(&ok);
-        b.field->setError(!ok, "Enter a number or expression.");
+        b.field->setError(!ok, LanguageManager::instance().text("Enter a number or expression."));
         allGood = allGood && ok;
     }
-    if (!allGood) {                                                  // nothing can be calculated from unreadable text
+    if (!allGood) {                                                  // no calculation is attempted from unreadable input
         m_calc->setEnabled(false);
-        emit m_ctx->message("Enter numbers only (for example 1.5 or 0.5*mm)");
+        Binding* firstInvalid = nullptr;
+        for (Binding& b : m_bindings) {
+            bool ok = false;
+            b.field->value(&ok);
+            if (!ok) { firstInvalid = &b; break; }
+        }
+        const bool canRestore = firstInvalid && firstInvalid->hasValid;
+        m_reset->setVisible(false);
+        m_restore->setVisible(canRestore);
+        if (canRestore) m_restore->setText("Restore last valid value");
+        const QString noticeTitle = LanguageManager::instance().text("Invalid input");
+        const QString noticeBody = LanguageManager::instance().text(
+            "Enter a number or expression, such as 1.5 or 0.5*mm. The last valid diagram and result remain visible until corrected.");
+        for (NoticeCard* notice : findChildren<NoticeCard*>()) {
+            notice->setNotice(noticeTitle, noticeBody, true);
+            notice->show();
+            break;
+        }
+        if (m_hint) m_hint->setText(LanguageManager::instance().text(m_haveLast
+            ? "Correct the highlighted input; the last valid result is retained."
+            : "Correct the highlighted input, then calculate again."));
+        StatusInfo info{"Paused", LanguageManager::instance().text("Invalid input"),
+                        LanguageManager::instance().text("Correct the highlighted field"), true};
+        setStatusInfo(info, true);
+        refreshMetas(true);
+        emit m_ctx->message(LanguageManager::instance().text("Enter a number or expression, such as 1.5 or 0.5*mm."));
     }
     return allGood;
 }
@@ -86,9 +112,21 @@ void ExperimentBase::setPanels(Panel* d, Panel* c, Panel* r, const QString& dm, 
 void ExperimentBase::refreshMetas(bool paused) {
     const QString run = lastRunLabel();
     const QString number = run.section(' ', 1);
-    if (m_diagramPanel) m_diagramPanel->setMeta(paused ? QString("LAST VALID") + (number.isEmpty() ? QString() : QString(" ") + number) : m_diagramMeta);
-    if (m_chartPanel) m_chartPanel->setMeta(paused ? QString("STALE") + (run.isEmpty() ? QString() : QString(" ") + run) : m_chartMeta);
-    if (m_resultsPanel) m_resultsPanel->setMeta(paused ? "PAUSED" : m_ctx->nextRunLabel());
+    const QString isolatedNumber = number.isEmpty() ? QString() : QString(QChar(0x2066)) + number + QChar(0x2069);
+    const QString isolatedRun = run.isEmpty() ? QString() : QString(QChar(0x2066)) + run + QChar(0x2069);
+    if (m_diagramPanel) m_diagramPanel->setMeta(paused
+        ? QString("LAST VALID") + (isolatedNumber.isEmpty() ? QString() : QString(" ") + isolatedNumber)
+        : m_diagramMeta);
+    if (m_chartPanel) m_chartPanel->setMeta(paused
+        ? QString("STALE") + (isolatedRun.isEmpty() ? QString() : QString(" · ") + isolatedRun)
+        : m_chartMeta);
+    if (m_resultsPanel) {
+        if (!paused) m_resultsPanel->setMeta(m_ctx->nextRunLabel());
+        else if (m_haveLast) m_resultsPanel->setMeta("STALE",
+            "Last valid result retained while the highlighted input is corrected.");
+        else m_resultsPanel->setMeta("INPUT ERROR",
+            "Correct the highlighted input before the first calculation.");
+    }
 }
 
 void ExperimentBase::setNormalHint(const QString& text) {
@@ -178,17 +216,24 @@ void ExperimentBase::applyIssues(const Report& r) {
         QString unit = firstWithValue->field->unit();
         if (unit == "integer" || unit == "order" || unit == "slits") unit.clear();            // labels, not units
         const double v = firstWithValue->lastValid;
-        m_restore->setText(QString(" ") + restoreLabel + QString(" ") + (firstWithValue->field->showsPlus() && v > 0 ? "+" : "") +
-                           QString::number(v, 'f', firstWithValue->field->decimals()) + (unit.isEmpty() ? "" : QString(" ") + unit));
+        const QString value = QString(QChar(0x2066)) +
+            (firstWithValue->field->showsPlus() && v > 0 ? QString("+") : QString()) +
+            QString::number(v, 'f', firstWithValue->field->decimals()) +
+            (unit.isEmpty() ? QString() : QString(" ") + unit) + QChar(0x2069);
+        m_restore->setText(restoreLabel + QString(" ") + value);
     }
-    m_hint->setText(paused ? (firstWithValue ? "Restore the last-valid value, then calculate again." : "Edit the highlighted field to continue.") : m_hintText);
+    m_hint->setText(LanguageManager::instance().text(paused
+        ? (firstWithValue ? "Restore the last-valid value, then calculate again." : "Edit the highlighted field to continue.")
+        : m_hintText));
 
     StatusInfo info;
     if (paused) {
         const QString text = q(r.statusText);
         QString tail = text.section(" · ", 1);
         if (!tail.isEmpty()) tail[0] = tail[0].toUpper();
-        info = {"Paused", text.section(" · ", 0, 0), tail, true};
+        info = {LanguageManager::instance().text("Paused"),
+                LanguageManager::instance().text(text.section(" · ", 0, 0)),
+                LanguageManager::instance().text(tail), true};
     } else if (!r.statusText.empty()) {
         info.mid = q(r.statusText);
     }

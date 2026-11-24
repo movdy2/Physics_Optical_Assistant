@@ -22,10 +22,10 @@ Wave Interference, Formulas Notes & Export, Component Sheet).
 | Panel (header + body) | `Panel` |
 | Input with unit, focus ring, error | `UnitField` (amber 2 px focus, red error, ↕ spinner, Up/Down keys) |
 | Segmented tabs | `ModeTabs` |
-| Calculation register | `RegisterView` (formatted data from `LcdRegister`) |
+| Calculation result card | `RegisterView` (formatted result data from `LcdRegister`; standard Gruvbox card, not a segmented LCD) |
 | Notice / guarded-case card | `NoticeCard` (amber title, red when `error`) |
 | Buttons | style sheet: `primary` (Gruvbox amber, hover `#fabd2f`, pressed `#b57614`), `secondary`, `outline` |
-| Colours | `Theme::gruvboxDark()` - `#282828 #3c3836 #ebdbb2 #d79921 #504945 #fb4934`, LCD `#9bb094 / #0b1c08 / #171e15 / #708369` |
+| Colours | `Theme::gruvboxDark()` - `#282828 #32302f / #3c3836 #ebdbb2 #d79921 #504945 #fb4934`; result cards use the same dark surfaces and amber emphasis |
 | Type | Inter (UI), JetBrains Mono (numbers, registers) |
 
 ## Numbers in the design are reproduced exactly

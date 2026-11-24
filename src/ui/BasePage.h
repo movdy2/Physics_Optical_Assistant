@@ -43,6 +43,8 @@ protected:
     struct Columns { QVBoxLayout* left; QVBoxLayout* center; QVBoxLayout* right; };
     Columns addThreeColumns(int leftWidth = 238, int rightWidth = 274);
     QVBoxLayout* content() const { return m_content; }
+    /// Reduce shell whitespace for dense experiment workspaces while retaining the shared header.
+    void setCompactLayout();
 
     void setStatusInfo(const StatusInfo& info, bool paused);
 
@@ -50,6 +52,7 @@ protected:
 
 private:
     QVBoxLayout* m_content;
+    QVBoxLayout* m_root = nullptr;
     QPushButton* m_saveButton = nullptr;
     QToolButton* m_exportButton = nullptr;
     StatusInfo m_status;
