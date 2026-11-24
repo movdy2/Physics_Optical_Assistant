@@ -15,7 +15,7 @@
       genAttrs systems (
         system: let
           pkgs = nixpkgs.legacyPackages.${system};
-          package = pkgs.callPackage ./packaging/nix/package.nix {};
+          package = pkgs.callPackage ./package.nix {};
         in
           perSystem {inherit pkgs system package;}
       );

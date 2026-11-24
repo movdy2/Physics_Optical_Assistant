@@ -1,27 +1,21 @@
 #include "ConstantsPage.h"
+#include "ui_ConstantsPage.h"
 
-#include <QHeaderView>
-#include <QLabel>
 #include <QLineEdit>
 #include <QTableWidget>
-#include <QVBoxLayout>
 
 namespace phy104 {
 
 ConstantsPage::ConstantsPage(const IConstantsRepository& repository, QWidget* parent)
     : QWidget(parent), m_constants(repository.loadAll()) {
-    m_search = new QLineEdit;
-    m_search->setPlaceholderText("Search constants (name or symbol)...");
+    Ui::ConstantsPage form;
+    form.setupUi(this);
+    m_search = form.constantsSearch;
+    m_table = form.constantsTable;
+    m_description = form.constantDescription;
+    m_table->setRowCount(static_cast<int>(m_constants.size()));
 
-    m_table = new QTableWidget(int(m_constants.size()), 4);
-    m_table->setHorizontalHeaderLabels({"Symbol", "Name", "Value", "Unit"});
-    m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_table->setSelectionMode(QAbstractItemView::SingleSelection);
-    m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    m_table->horizontalHeader()->setStretchLastSection(true);
-    m_table->verticalHeader()->hide();
-
-    for (int row = 0; row < int(m_constants.size()); ++row) {
+    for (int row = 0; row < static_cast<int>(m_constants.size()); ++row) {
         const auto& c = m_constants[std::size_t(row)];
         m_table->setItem(row, 0, new QTableWidgetItem(QString::fromStdString(c.symbol)));
         m_table->setItem(row, 1, new QTableWidgetItem(QString::fromStdString(c.name)));
@@ -29,17 +23,6 @@ ConstantsPage::ConstantsPage(const IConstantsRepository& repository, QWidget* pa
         m_table->setItem(row, 3, new QTableWidgetItem(QString::fromStdString(c.unit)));
     }
     m_table->resizeColumnsToContents();
-
-    m_description = new QLabel("Select a constant to see its description.");
-    m_description->setWordWrap(true);
-
-    auto* root = new QVBoxLayout(this);
-    auto* title = new QLabel("Physics Constants");
-    title->setObjectName("pageTitle");
-    root->addWidget(title);
-    root->addWidget(m_search);
-    root->addWidget(m_table, 1);
-    root->addWidget(m_description);
 
     connect(m_search, &QLineEdit::textChanged, this, &ConstantsPage::applyFilter);
     connect(m_table, &QTableWidget::itemSelectionChanged, this, &ConstantsPage::onSelectionChanged);
@@ -51,7 +34,7 @@ int ConstantsPage::selectedIndex() const {
 }
 
 void ConstantsPage::applyFilter(const QString& text) {
-    for (int row = 0; row < int(m_constants.size()); ++row) {
+    for (int row = 0; row < static_cast<int>(m_constants.size()); ++row) {
         const auto& c = m_constants[std::size_t(row)];
         const QString haystack = QString::fromStdString(c.symbol + std::string(" ") + c.name + std::string(" ") + c.description);
         m_table->setRowHidden(row, !haystack.contains(text, Qt::CaseInsensitive));

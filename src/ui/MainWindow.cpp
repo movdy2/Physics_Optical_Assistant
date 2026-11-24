@@ -6,6 +6,7 @@
 #include "Icons.h"
 #include "LanguageManager.h"
 #include "ThemeManager.h"
+#include "ui_MainWindow.h"
 
 #include <QCloseEvent>
 #include <QSettings>
@@ -14,20 +15,16 @@
 #include <QApplication>
 #include <QButtonGroup>
 #include <QFileInfo>
-#include <QFrame>
-#include <QHBoxLayout>
 #include <QLabel>
 #include <QListWidget>
 #include <QPainter>
 #include <QPushButton>
-#include <QScrollArea>
 #include <QShortcut>
 #include <QStackedWidget>
 #include <QStatusBar>
 #include <QStyle>
 #include <QTime>
 #include <QTimer>
-#include <QVBoxLayout>
 
 namespace phy104 {
 namespace {
@@ -83,117 +80,26 @@ private:
 
 MainWindow::MainWindow(AppContext* ctx, QWidget* parent)
     : QMainWindow(parent), m_ctx(ctx) {
-    setWindowTitle(QString());
     const auto applyWindowIcon = [this] {
         const Theme& t = ThemeManager::instance().theme();
         setWindowIcon(Icons::get("scan-line", t.amber, t.amber, 64));     // taskbar / alt-tab icon
     };
     applyWindowIcon();
-    resize(1280, 800);
-    setMinimumSize(1080, 700);
 
-    auto* central = new QWidget;
-    central->setObjectName("central");
-    auto* root = new QHBoxLayout(central);
-    root->setContentsMargins(0, 0, 0, 0);
-    root->setSpacing(0);
-
-    // ------------------------------------------------------------------ sidebar
-    auto* sidebar = new QFrame;
-    sidebar->setObjectName("sidebar");
-    sidebar->setFixedWidth(224);
-    auto* sl = new QVBoxLayout(sidebar);
-    sl->setContentsMargins(0, 0, 0, 0);
-    sl->setSpacing(0);
-
-    // v2.3 Figma sidebar: compact brand, one ungrouped page list, session status.
-    auto* brand = new QWidget;
-    brand->setObjectName("sidebarBrand");
-    auto* brandLayout = new QVBoxLayout(brand);
-    brandLayout->setContentsMargins(18, 14, 16, 12);
-    brandLayout->setSpacing(4);
-    auto* brandRow = new QHBoxLayout;
-    brandRow->setContentsMargins(0, 0, 0, 0);
-    brandRow->setSpacing(8);
-    auto* logo = new QLabel;
-    logo->setPixmap(Icons::pixmap("scan-line", ThemeManager::instance().theme().amber, 22));
-    logo->setFixedSize(22, 22);
-    auto* brandName = new QLabel("PHY104");
-    brandName->setObjectName("brandName");
-    brandRow->addWidget(logo);
-    brandRow->addWidget(brandName);
-    brandRow->addStretch();
-    auto* brandProduct = new QLabel("Optical Assistant");
-    brandProduct->setObjectName("brandProduct");
-    auto* brandMeta = new QLabel("COMPUTATIONAL OPTICS / v1.4");
-    brandMeta->setObjectName("brandMeta");
-    brandMeta->setWordWrap(false);
-    brandLayout->addLayout(brandRow);
-    brandLayout->addWidget(brandProduct);
-    brandLayout->addWidget(brandMeta);
-    sl->addWidget(brand);
-
-    auto* navigation = new QWidget;
-    navigation->setObjectName("navigationContents");
-    auto* navigationLayout = new QVBoxLayout(navigation);
-    navigationLayout->setContentsMargins(0, 0, 0, 0);
-    navigationLayout->setSpacing(0);
-    auto* pagesHeader = new QLabel("PAGES");
-    pagesHeader->setObjectName("navSection");
-    navigationLayout->addWidget(pagesHeader);
-    auto* navHolder = new QWidget;
-    navHolder->setObjectName("navigationItems");
-    m_pages = new QVBoxLayout(navHolder);
-    m_pages->setContentsMargins(12, 0, 12, 0);
-    m_pages->setSpacing(2);
-    navigationLayout->addWidget(navHolder);
-    navigationLayout->addStretch(1);
-
-    auto* navigationScroll = new QScrollArea;
-    navigationScroll->setObjectName("navigationScroll");
-    navigationScroll->viewport()->setObjectName("navigationViewport");
-    navigationScroll->setFrameShape(QFrame::NoFrame);
-    navigationScroll->setWidgetResizable(true);
-    navigationScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    navigationScroll->setWidget(navigation);
-    sl->addWidget(navigationScroll, 1);
-
-    auto* sessionFooter = new QWidget;
-    sessionFooter->setObjectName("sidebarFooter");
-    auto* footerLayout = new QVBoxLayout(sessionFooter);
-    footerLayout->setContentsMargins(14, 9, 14, 12);
-    footerLayout->setSpacing(3);
-    auto* sessionRow = new QHBoxLayout;
-    sessionRow->setContentsMargins(0, 0, 0, 0);
-    auto* sessionLabel = new QLabel("LAB SESSION");
-    sessionLabel->setObjectName("sidebarMeta");
-    m_savedRunCountLabel = new QLabel(QStringLiteral("%1").arg(ctx->log.savedCalculations(), 2, 10, QChar('0')));
-    m_savedRunCountLabel->setObjectName("sidebarCount");
-    sessionRow->addWidget(sessionLabel);
-    sessionRow->addStretch();
-    sessionRow->addWidget(m_savedRunCountLabel);
-    auto* engineReady = new QLabel("● ENGINE READY");
-    engineReady->setObjectName("engineReady");
-    footerLayout->addLayout(sessionRow);
-    footerLayout->addWidget(engineReady);
-    sl->addWidget(sessionFooter);
+    Ui::MainWindow form;
+    form.setupUi(this);
+    form.navigationScroll->viewport()->setObjectName("navigationViewport");
+    form.brandIconLabel->setPixmap(Icons::pixmap("scan-line", ThemeManager::instance().theme().amber, 22));
+    m_pages = form.navigationItemsLayout;
+    m_stack = form.pageStack;
+    m_savedRunCountLabel = form.sidebarCount;
+    m_savedRunCountLabel->setText(QStringLiteral("%1").arg(ctx->log.savedCalculations(), 2, 10, QChar('0')));
 
     // Keep the activity stream available to existing observers, but do not add a
     // recent-activity panel to the v2.3 shell.
-    m_activityLog = new QListWidget(central);
+    m_activityLog = new QListWidget(centralWidget());
     m_activityLog->setObjectName("activityLog");
     m_activityLog->hide();
-    root->addWidget(sidebar);
-
-    // ------------------------------------------------------------------ pages
-    auto* right = new QVBoxLayout;
-    right->setContentsMargins(0, 0, 0, 0);
-    right->setSpacing(0);
-    m_stack = new QStackedWidget;
-    m_stack->setObjectName("pageStack");
-    right->addWidget(m_stack, 1);
-    root->addLayout(right, 1);
-    setCentralWidget(central);
 
     m_navGroup = new QButtonGroup(this);
     m_navGroup->setExclusive(true);

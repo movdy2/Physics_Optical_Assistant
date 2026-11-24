@@ -8,8 +8,8 @@ class QTimer;
 namespace phy104 {
 class ResultCard;
 
-/// Shared body of the six screens of the second Figma batch (header with Save / Export, tabs + fields on the
-/// left, diagram + chart in the middle, two LCD registers + Interpretation / Input guard on the right).
+/// Shared body of the six model screens (header with Save / Export, tabs + fields on the
+/// left, diagram + chart in the middle, result cards + Interpretation / Input guard on the right).
 /// A subclass builds its fields in the constructor and implements compute() / updateCanvas() / resetFields().
 class ModelPage : public ExperimentPage {
     Q_OBJECT

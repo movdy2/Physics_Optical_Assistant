@@ -1,13 +1,14 @@
 #pragma once
 #include "BasePage.h"
 
+#include <QList>
 #include <QMap>
 
 class QCheckBox;
 class QComboBox;
+class QFrame;
 class QLabel;
 class QPushButton;
-class QScrollArea;
 class QToolButton;
 class QVBoxLayout;
 
@@ -46,20 +47,17 @@ private:
     QLabel* m_savedValue;
     QLabel* m_seriesValue;
     QList<QLabel*> m_results;          // "last result" line of each experiment card
+    QList<QFrame*> m_featuredCards;
     QLabel* m_lastSaved;
 
     // activity log sidebar
-    QScrollArea* m_logScroll = nullptr;
-    QWidget* m_logList = nullptr;
     QVBoxLayout* m_logLayout = nullptr;
     QPushButton* m_clearLog = nullptr;
     QPushButton* m_deleteRun = nullptr;
 
     // run comparison chart (center column)
     QComboBox* m_comparisonFilter = nullptr;
-    QWidget* m_runListContainer = nullptr;
     QVBoxLayout* m_runListLayout = nullptr;
-    QScrollArea* m_runScroll = nullptr;
     LineChart* m_comparisonChart = nullptr;
     QMap<int, QCheckBox*> m_runCheckboxes;                // run id -> checkbox
 };

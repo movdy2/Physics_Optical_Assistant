@@ -23,8 +23,8 @@ class UnitField;
 ///   * the page title / "Calculate & Simulate" / "Save & Export" header (BasePage)
 ///   * the Calculate & Simulate, Send to Notes, Reset and Restore buttons
 ///   * bound input fields with the paused / last-valid pattern
-///   * the right-side Results Panel and its two LCD registers
-///   * shared logic: send-to-notes, register (LCD) text updates, apply-issues
+///   * the right-side Results Panel and its two formatted result cards
+///   * shared logic: send-to-notes, result-card updates, apply-issues
 ///   * per-module field persistence via QSettings (saveState / restoreState)
 ///
 /// Concrete modules (Refraction, Lenses, Prisms, Wave, Newton's Rings, Michelson,

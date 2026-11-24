@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>RegisterView</class>
+ <widget class="QFrame" name="register">
+  <property name="frameShape"><enum>QFrame::NoFrame</enum></property>
+  <layout class="QVBoxLayout" name="registerLayout">
+   <property name="spacing"><number>2</number></property>
+   <property name="leftMargin"><number>8</number></property><property name="topMargin"><number>5</number></property><property name="rightMargin"><number>8</number></property><property name="bottomMargin"><number>5</number></property>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

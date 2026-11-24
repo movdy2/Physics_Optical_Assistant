@@ -966,5 +966,9 @@
   "Marginal focus": "البؤرة الهامشية",
   "Different rays, different foci": "أشعة مختلفة وبؤر مختلفة",
   "Spherical aberration": "الزيغ الكروي",
-  "Thick lens-maker relation": "علاقة صانع العدسات السميكة"
+  "Thick lens-maker relation": "علاقة صانع العدسات السميكة",
+  "Enter a number or expression.": "أدخل رقمًا أو تعبيرًا.",
+  "Enter numbers only (for example 1.5 or 0.5*mm)": "أدخل أرقامًا فقط (مثل 1.5 أو 0.5*mm)",
+  "Enter a number or expression, such as 1.5 or 0.5*mm.": "أدخل رقمًا أو تعبيرًا مثل ⁦1.5 أو 0.5*mm⁩.",
+  "Enter a number or expression, such as 1.5 or 0.5*mm. The last valid diagram and result remain visible until corrected.": "أدخل رقمًا أو تعبيرًا مثل ⁦1.5 أو 0.5*mm⁩. تبقى آخر محاكاة ونتيجة صحيحتين ظاهرتين حتى تصحيح الإدخال."
 }

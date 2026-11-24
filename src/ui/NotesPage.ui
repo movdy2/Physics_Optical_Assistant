@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>NotesPage</class>
+ <widget class="QWidget" name="NotesPage">
+  <layout class="QVBoxLayout" name="notesBodyLayout">
+   <property name="spacing"><number>12</number></property>
+   <property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+   <item>
+    <layout class="QHBoxLayout" name="keyboardToolbarLayout">
+     <property name="spacing"><number>0</number></property>
+     <property name="leftMargin"><number>9</number></property><property name="topMargin"><number>9</number></property><property name="rightMargin"><number>9</number></property><property name="bottomMargin"><number>9</number></property>
+     <item><spacer name="toolbarLeadingSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
+     <item>
+      <widget class="QToolButton" name="notesKeyboard">
+       <property name="text"><string>⌨ Keyboard</string></property>
+       <property name="toolTip"><string>Scientific keyboard: types LaTeX formulas straight into the note</string></property>
+       <property name="checkable"><bool>true</bool></property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QWidget" name="editorSlot">
+     <layout class="QVBoxLayout" name="editorSlotLayout">
+      <property name="spacing"><number>0</number></property>
+      <property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+     </layout>
+    </widget>
+    <property name="stretch"><number>1</number></property>
+   </item>
+   <item>
+    <widget class="QWidget" name="keyboardSlot">
+     <layout class="QVBoxLayout" name="keyboardSlotLayout">
+      <property name="spacing"><number>0</number></property>
+      <property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

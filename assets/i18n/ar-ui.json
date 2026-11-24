@@ -355,5 +355,14 @@
   "Exported": "تم التصدير",
   "Sent result to Notes": "أُرسلت النتيجة إلى الملاحظات",
   "Removed saved calculation": "حُذف حساب محفوظ",
-  "Append the latest valid result to session Notes.": "أضف أحدث نتيجة صالحة إلى ملاحظات الجلسة."
+  "Append the latest valid result to session Notes.": "أضف أحدث نتيجة صالحة إلى ملاحظات الجلسة.",
+  "Calculation summary": "ملخص الحساب",
+  "Restore last valid value": "استعادة آخر قيمة صحيحة",
+  "Correct the highlighted input; the last valid result is retained.": "صحّح الحقل المحدد؛ ستبقى آخر نتيجة صحيحة معروضة.",
+  "Correct the highlighted input, then calculate again.": "صحّح الحقل المحدد ثم أعد الحساب.",
+  "Invalid input": "إدخال غير صالح",
+  "Correct the highlighted field": "صحّح الحقل المحدد",
+  "INPUT ERROR": "خطأ في الإدخال",
+  "Last valid result retained while the highlighted input is corrected.": "تبقى آخر نتيجة صحيحة معروضة أثناء تصحيح الحقل المحدد.",
+  "Correct the highlighted input before the first calculation.": "صحّح الحقل المحدد قبل إجراء الحساب الأول."
 }

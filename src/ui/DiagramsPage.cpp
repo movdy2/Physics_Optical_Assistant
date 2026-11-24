@@ -1,6 +1,7 @@
 #include "DiagramsPage.h"
 #include "LatexRenderer.h"
 #include "SvgDiagramView.h"
+#include "ui_DiagramsPage.h"
 
 #include <QComboBox>
 #include <QFileDialog>
@@ -10,7 +11,6 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QSignalBlocker>
-#include <QVBoxLayout>
 
 namespace phy104 {
 namespace {
@@ -97,50 +97,18 @@ const QList<DiagramInfo>& diagrams() {
 } // namespace
 
 DiagramsPage::DiagramsPage(QWidget* parent) : QWidget(parent) {
-    auto* title = new QLabel("Optical Setups");
-    title->setObjectName("pageTitle");
+    Ui::DiagramsPage form;
+    form.setupUi(this);
+    m_list = form.diagramList;
+    m_viewSelector = form.diagramVariantSelector;
+    m_title = form.sectionTitle;
+    m_caption = form.diagramCaption;
+    m_equations = form.equationsContainer;
+    m_view = new SvgDiagramView(this);
+    form.diagramViewLayout->addWidget(m_view);
 
-    m_list = new QListWidget;
-    m_list->setObjectName("diagramList");
-    m_list->setMinimumWidth(220);
-    m_list->setMaximumWidth(300);
     for (const auto& d : diagrams()) m_list->addItem(d.title);
-
-    m_viewSelector = new QComboBox;
-    m_viewSelector->setObjectName("diagramVariantSelector");
-    m_view = new SvgDiagramView;
-    m_title = new QLabel;
-    m_title->setObjectName("sectionTitle");
-    m_caption = new QLabel;
-    m_caption->setWordWrap(true);
-    m_caption->setMinimumWidth(0);
-    m_equations = new QWidget;
-    auto* equationsLayout = new QHBoxLayout(m_equations);
-    equationsLayout->setContentsMargins(0, 0, 0, 0);
-    equationsLayout->setSpacing(8);
-
-    auto* exportBtn = new QPushButton("Export PNG…");
-    connect(exportBtn, &QPushButton::clicked, this, &DiagramsPage::exportPng);
-
-    auto* right = new QVBoxLayout;
-    right->setSpacing(10);
-    right->addWidget(m_viewSelector);
-    right->addWidget(m_view, 1);
-    right->addWidget(m_title);
-    right->addWidget(m_caption);
-    right->addWidget(m_equations);
-    right->addWidget(exportBtn, 0, Qt::AlignRight);
-
-    auto* body = new QHBoxLayout;
-    body->setSpacing(12);
-    body->addWidget(m_list, 0);
-    body->addLayout(right, 1);
-
-    auto* root = new QVBoxLayout(this);
-    root->setContentsMargins(0, 0, 0, 0);
-    root->setSpacing(12);
-    root->addWidget(title);
-    root->addLayout(body, 1);
+    connect(form.exportDiagramButton, &QPushButton::clicked, this, &DiagramsPage::exportPng);
 
     connect(m_list, &QListWidget::currentRowChanged, this, &DiagramsPage::showDiagram);
     connect(m_viewSelector, qOverload<int>(&QComboBox::currentIndexChanged), this, &DiagramsPage::showDiagramView);

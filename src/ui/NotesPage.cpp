@@ -3,10 +3,9 @@
 #include "Components.h"
 #include "MarkdownWorkspace.h"
 #include "ScientificKeyboard.h"
+#include "ui_NotesPage.h"
 
-#include <QHBoxLayout>
 #include <QToolButton>
-#include <QVBoxLayout>
 #include <utility>
 
 namespace phy104 {
@@ -15,30 +14,27 @@ NotesPage::NotesPage(AppContext* ctx, std::vector<ScientificPage> keyboardPages,
     : BasePage("Notes", "MARKDOWN STUDY WORKSPACE / Write, edit and preview your lab notes", ctx, parent) {
     // One panel across the whole window: the editor, its toolbar and the live preview, nothing else.
     m_notesPanel = new Panel("Session notes", QString(" ") + ctx->lastSavedTime());
+    auto* notesContent = new QWidget;
+    Ui::NotesPage form;
+    form.setupUi(notesContent);
+    m_keyboardToggle = form.notesKeyboard;
+
     m_notes = new MarkdownWorkspace;
     const QString saved = QString::fromStdString(ctx->log.notes());
     const bool showingStarter = saved.isEmpty();
     m_notes->setMarkdown(showingStarter ? MarkdownWorkspace::starterNotes() : saved);
     if (showingStarter) m_notes->editor()->setProperty("i18nBuiltinContent", true);
+    form.editorSlotLayout->addWidget(m_notes, 1);
 
     // the same scientific keyboard as the Equation Lab, docked under the note and writing LaTeX into it
     m_keyboard = new ScientificKeyboard(std::move(keyboardPages), this);
     m_keyboard->setTarget(m_notes->editor());
     m_keyboard->setFixedSize(600, 330);
     m_keyboard->hide();
-    m_keyboardToggle = new QToolButton;
-    m_keyboardToggle->setObjectName("notesKeyboard");
-    m_keyboardToggle->setText("⌨ Keyboard");
-    m_keyboardToggle->setCheckable(true);
-    m_keyboardToggle->setToolTip("Scientific keyboard: types LaTeX formulas straight into the note");
-    auto* bar = new QHBoxLayout;
-    bar->addStretch();
-    bar->addWidget(m_keyboardToggle);
+    form.keyboardSlotLayout->addWidget(m_keyboard, 0, Qt::AlignLeft);
 
     m_notesPanel->body()->setContentsMargins(12, 0, 12, 10);
-    m_notesPanel->body()->addLayout(bar);
-    m_notesPanel->body()->addWidget(m_notes, 1);
-    m_notesPanel->body()->addWidget(m_keyboard, 0, Qt::AlignLeft);
+    m_notesPanel->body()->addWidget(notesContent, 1);
     content()->addWidget(m_notesPanel, 1);
 
     connect(m_keyboardToggle, &QToolButton::toggled, this, &NotesPage::toggleKeyboard);

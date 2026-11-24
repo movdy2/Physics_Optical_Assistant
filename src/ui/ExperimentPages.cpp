@@ -14,6 +14,7 @@
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QStackedWidget>
+#include <QSizePolicy>
 #include <QToolButton>
 #include <QVBoxLayout>
 #include <algorithm>
@@ -1014,9 +1015,14 @@ void PrismsPage::apply(bool record) {
 // ============================================================================ Wave interference
 WavePage::WavePage(AppContext* ctx, QWidget* parent)
     : ExperimentPage("Wave Interference", "Young's double-slit experiment · coherent monochromatic light", "Wave Interference", ctx, parent) {
-    auto cols = addThreeColumns();
+    setCompactLayout();
+    auto cols = addThreeColumns(232, 250);
+    auto* row = qobject_cast<QHBoxLayout*>(content()->itemAt(content()->count() - 1)->layout());
+    if (row) row->setSpacing(8);
+    for (QVBoxLayout* column : {cols.left, cols.center, cols.right}) column->setSpacing(8);
     auto* controls = new Panel("Experiment controls");
-    controls->body()->setSpacing(10);
+    controls->body()->setContentsMargins(8, 8, 8, 8);
+    controls->body()->setSpacing(6);
     cols.left->addWidget(controls, 1);
 
     m_source = new QComboBox;
@@ -1039,6 +1045,8 @@ WavePage::WavePage(AppContext* ctx, QWidget* parent)
     bind(QString::fromLatin1(FieldIds::slitWidth), m_slitWidth);
     m_intensityRatio = new UnitField;  m_intensityRatio->setSpinner(true, 0.01);
     m_intensityRatio->setObjectName(FieldIds::intensityRatio);
+    for (UnitField* field : {m_lambda, m_d, m_L, m_order, m_sigmaLambda, m_sigmaD, m_sigmaL, m_slitWidth, m_intensityRatio})
+        field->setPasteButtonVisible(false);
     bind(QString::fromLatin1(FieldIds::intensityRatio), m_intensityRatio);
     m_chkExact = new QCheckBox("Exact formula y = L tan(asin(mλ/d))");  m_chkExact->setObjectName("rayToggle");
     m_chkEnvelope = new QCheckBox("Show diffraction envelope");  m_chkEnvelope->setObjectName("rayToggle");
@@ -1077,10 +1085,13 @@ WavePage::WavePage(AppContext* ctx, QWidget* parent)
     f->addWidget(presetLabel);
     auto* presetRow = new QHBoxLayout;
     presetRow->setSpacing(4);
-    auto makePreset = [&](const QString& label, double lambda, double d, double L, double slitWidth) {
+    auto makePreset = [&](const QString& label, const QString& detail, double lambda, double d, double L, double slitWidth) {
         auto* b = new QPushButton(label);
         b->setObjectName("presetBtn");
         b->setCursor(Qt::PointingHandCursor);
+        b->setToolTip(detail);
+        b->setMinimumWidth(0);
+        b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         b->setMinimumHeight(30);
         connect(b, &QPushButton::clicked, this, [this, lambda, d, L, slitWidth] {
             m_lambda->setValue(lambda, 1);
@@ -1092,9 +1103,9 @@ WavePage::WavePage(AppContext* ctx, QWidget* parent)
         presetRow->addWidget(b);
         return b;
     };
-    (void)makePreset("Red laser · d=0.25mm", 650.0, 0.25, 1.5, 0.0);
-    (void)makePreset("Green laser · d=0.1mm", 532.0, 0.1, 2.0, 0.0);
-    (void)makePreset("With envelope · a=0.05mm", 532.0, 0.2, 1.5, 0.05);
+    (void)makePreset("Red laser", "650 nm · d = 0.25 mm · L = 1.5 m", 650.0, 0.25, 1.5, 0.0);
+    (void)makePreset("Green laser", "532 nm · d = 0.1 mm · L = 2.0 m", 532.0, 0.1, 2.0, 0.0);
+    (void)makePreset("Envelope", "532 nm · d = 0.2 mm · L = 1.5 m · a = 0.05 mm", 532.0, 0.2, 1.5, 0.05);
     presetRow->addStretch(1);
     f->addLayout(presetRow);
 
@@ -1131,6 +1142,8 @@ WavePage::WavePage(AppContext* ctx, QWidget* parent)
     cols.center->addWidget(m_chartPanel, 2);
 
     m_results = new Panel("Fringe calculation", ctx->nextRunLabel());
+    m_results->body()->setContentsMargins(8, 8, 8, 8);
+    m_results->body()->setSpacing(8);
     m_reg1 = new RegisterView;
     m_reg2 = new RegisterView;
     m_results->body()->addWidget(m_reg1);

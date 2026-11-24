@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>BasePage</class>
+ <widget class="QWidget" name="BasePage">
+  <property name="geometry"><rect><x>0</x><y>0</y><width>1024</width><height>720</height></rect></property>
+  <layout class="QHBoxLayout" name="outerLayout">
+   <property name="spacing"><number>0</number></property>
+   <property name="leftMargin"><number>0</number></property>
+   <property name="topMargin"><number>0</number></property>
+   <property name="rightMargin"><number>0</number></property>
+   <property name="bottomMargin"><number>0</number></property>
+   <item>
+    <widget class="QWidget" name="pageInner">
+     <property name="sizePolicy"><sizepolicy hsizetype="Expanding" vsizetype="Expanding"><horstretch>0</horstretch><verstretch>0</verstretch></sizepolicy></property>
+     <layout class="QVBoxLayout" name="rootLayout">
+      <property name="spacing"><number>8</number></property>
+      <property name="leftMargin"><number>16</number></property>
+      <property name="topMargin"><number>12</number></property>
+      <property name="rightMargin"><number>16</number></property>
+      <property name="bottomMargin"><number>10</number></property>
+      <item>
+       <widget class="QWidget" name="pageHeader">
+        <layout class="QHBoxLayout" name="headerLayout">
+         <property name="spacing"><number>0</number></property>
+         <property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+         <item>
+          <layout class="QVBoxLayout" name="titleLayout">
+           <property name="spacing"><number>4</number></property>
+           <item><widget class="QLabel" name="pageTitle"><property name="text"><string/></property></widget></item>
+           <item><widget class="QLabel" name="pageSubtitle"><property name="text"><string/></property></widget></item>
+          </layout>
+          <property name="stretch"><number>1</number></property>
+         </item>
+         <item><spacer name="headerGap"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>10</width><height>20</height></size></property></spacer></item>
+         <item>
+          <widget class="QPushButton" name="outline">
+           <property name="minimumSize"><size><width>130</width><height>0</height></size></property>
+           <property name="text"><string>Save</string></property>
+          </widget>
+          <property name="alignment"><set>Qt::AlignTop</set></property>
+         </item>
+         <item><spacer name="saveExportGap"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>8</width><height>20</height></size></property></spacer></item>
+         <item>
+          <widget class="QToolButton" name="exportMenu">
+           <property name="toolTip"><string>Export: PDF report, Excel (.xls) or CSV (.csv)</string></property>
+           <property name="text"><string>Export</string></property>
+           <property name="toolButtonStyle"><enum>Qt::ToolButtonTextBesideIcon</enum></property>
+           <property name="popupMode"><enum>QToolButton::InstantPopup</enum></property>
+           <property name="iconSize"><size><width>18</width><height>18</height></size></property>
+          </widget>
+          <property name="alignment"><set>Qt::AlignTop</set></property>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="contentLayout">
+        <property name="spacing"><number>10</number></property>
+        <property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+        <item>
+         <widget class="QWidget" name="threeColumnsHost">
+          <property name="visible"><bool>false</bool></property>
+          <layout class="QHBoxLayout" name="threeColumnsLayout">
+           <property name="spacing"><number>8</number></property>
+           <property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+           <item>
+            <widget class="QWidget" name="firstColumn">
+             <layout class="QVBoxLayout" name="firstColumnLayout">
+              <property name="spacing"><number>8</number></property>
+              <property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QWidget" name="centerColumn">
+             <layout class="QVBoxLayout" name="centerColumnLayout">
+              <property name="spacing"><number>8</number></property>
+              <property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+             </layout>
+            </widget>
+            <property name="stretch"><number>1</number></property>
+           </item>
+           <item>
+            <widget class="QWidget" name="lastColumn">
+             <layout class="QVBoxLayout" name="lastColumnLayout">
+              <property name="spacing"><number>8</number></property>
+              <property name="leftMargin"><number>0</number></property><property name="topMargin"><number>0</number></property><property name="rightMargin"><number>0</number></property><property name="bottomMargin"><number>0</number></property>
+             </layout>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+         <property name="stretch"><number>1</number></property>
+        </item>
+       </layout>
+       <property name="stretch"><number>1</number></property>
+      </item>
+     </layout>
+    </widget>
+    <property name="stretch"><number>1</number></property>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
