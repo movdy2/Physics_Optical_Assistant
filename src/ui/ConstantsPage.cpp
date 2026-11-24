@@ -1,6 +1,7 @@
 #include "ConstantsPage.h"
 #include "ui_ConstantsPage.h"
 
+#include <QHeaderView>
 #include <QLineEdit>
 #include <QTableWidget>
 
@@ -13,6 +14,7 @@ ConstantsPage::ConstantsPage(const IConstantsRepository& repository, QWidget* pa
     m_search = form.constantsSearch;
     m_table = form.constantsTable;
     m_description = form.constantDescription;
+    m_table->verticalHeader()->setVisible(false);
     m_table->setRowCount(static_cast<int>(m_constants.size()));
 
     for (int row = 0; row < static_cast<int>(m_constants.size()); ++row) {
