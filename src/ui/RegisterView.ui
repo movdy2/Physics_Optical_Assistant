@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>RegisterView</class>
- <widget class="QFrame" name="register">
+ <widget class="QFrame" name="registerFrame">
   <property name="frameShape"><enum>QFrame::NoFrame</enum></property>
   <layout class="QVBoxLayout" name="registerLayout">
    <property name="spacing"><number>2</number></property>
