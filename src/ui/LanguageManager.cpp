@@ -686,6 +686,7 @@ void LanguageManager::translateWidget(QWidget* widget) {
         if (edit->property("i18nBuiltinContent").toBool()) {
             const QString source = edit->property("i18nBuiltinSource").toString();
             const QString translated = text(source.isEmpty() ? edit->toPlainText() : source);
+            edit->setProperty("i18nBuiltinLastText", translated);
             if (translated != edit->toPlainText()) {
                 const QSignalBlocker blocker(edit);
                 edit->setPlainText(translated);

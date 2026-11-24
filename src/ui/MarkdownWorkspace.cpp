@@ -218,8 +218,9 @@ MarkdownWorkspace::MarkdownWorkspace(QWidget* parent) : QWidget(parent) {
         if (m_editor->property("i18nBuiltinContent").toBool()) {
             const QString source = m_editor->property("i18nBuiltinSource").toString();
             const QString current = m_editor->toPlainText();
+            const QString lastText = m_editor->property("i18nBuiltinLastText").toString();
             const bool stillBuiltin = !source.isEmpty() &&
-                (current == source || current == LanguageManager::instance().text(source));
+                (current == source || current == lastText || current == LanguageManager::instance().text(source));
             if (!stillBuiltin) {
                 m_editor->setProperty("i18nBuiltinContent", false);
                 m_editor->setProperty("i18nBuiltinSource", QString());

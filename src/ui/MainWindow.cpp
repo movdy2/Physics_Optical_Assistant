@@ -28,6 +28,9 @@
 #include <QTime>
 #include <QTimer>
 
+#include <utility>
+#include <vector>
+
 namespace phy104 {
 namespace {
 
@@ -158,21 +161,27 @@ MainWindow::MainWindow(AppContext* ctx, QWidget* parent)
     connect(m_messageTimer, &QTimer::timeout, this, [this] { m_transient.clear(); refreshStatus(); });
     connect(ctx, &AppContext::message, this, &MainWindow::showMessage);
     connect(m_languageButton, &QPushButton::clicked, this, [this] {
+        // Remember untouched built-in notes before the generic pass changes any widget state.
+        std::vector<std::pair<QPlainTextEdit*, QString>> builtinEditors;
+        for (QPlainTextEdit* editor : findChildren<QPlainTextEdit*>()) {
+            if (editor->property("i18nBuiltinContent").toBool())
+                builtinEditors.emplace_back(editor, editor->property("i18nBuiltinSource").toString());
+        }
         auto& language = LanguageManager::instance();
         language.setLanguage(language.isArabic() ? UiLanguage::English : UiLanguage::Arabic);
         ThemeManager::instance().apply(*qApp, ThemeManager::instance().isDark());
         ThemeManager::instance().setLayoutDirectionForLanguage(language.isArabic());
         refreshStatus();
         language.apply(this);
-        // Built-in Markdown is deliberately localized as a whole only while untouched. Apply the
-        // language pass directly to the editor as well, so the custom workspace keeps its marker
-        // and source text stable across shell-wide polish/layout changes.
-        for (QPlainTextEdit* editor : findChildren<QPlainTextEdit*>()) {
-            if (!editor->property("i18nBuiltinContent").toBool()) continue;
+        // Apply the complete starter translation while preserving its canonical source and marker.
+        for (const auto& [editor, source] : builtinEditors) {
+            if (!editor || source.isEmpty()) continue;
+            editor->setProperty("i18nBuiltinContent", true);
+            editor->setProperty("i18nBuiltinSource", source);
             language.apply(editor);
-            const QString source = editor->property("i18nBuiltinSource").toString();
             const QString translated = language.text(source);
-            if (!source.isEmpty() && editor->toPlainText() != translated) {
+            editor->setProperty("i18nBuiltinLastText", translated);
+            if (editor->toPlainText() != translated) {
                 const QSignalBlocker blocker(editor);
                 editor->setPlainText(translated);
             }

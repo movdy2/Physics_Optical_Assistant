@@ -26,6 +26,7 @@ NotesPage::NotesPage(AppContext* ctx, std::vector<ScientificPage> keyboardPages,
     m_notes->setMarkdown(initialNotes);
     if (showingStarter) {
         m_notes->editor()->setProperty("i18nBuiltinSource", initialNotes);
+        m_notes->editor()->setProperty("i18nBuiltinLastText", initialNotes);
         m_notes->editor()->setProperty("i18nBuiltinContent", true);
     }
     form.editorSlotLayout->addWidget(m_notes, 1);
