@@ -3,6 +3,13 @@
 #include "Icons.h"
 #include "LanguageManager.h"
 #include "ThemeManager.h"
+#include "ui_CalculatorKeypad.h"
+#include "ui_ModeTabs.h"
+#include "ui_NoticeCard.h"
+#include "ui_Panel.h"
+#include "ui_RegisterView.h"
+#include "ui_ResultCard.h"
+#include "ui_UnitField.h"
 
 #include <QButtonGroup>
 #include <QDialog>
@@ -12,7 +19,6 @@
 #include <QKeyEvent>
 #include <QLabel>
 #include <QLineEdit>
-#include <QGridLayout>
 #include <QLocale>
 #include <QTextBrowser>
 #include <QTimer>
@@ -26,7 +32,6 @@
 #include <QSizePolicy>
 #include <QStyle>
 #include <QStringList>
-#include <QVBoxLayout>
 #include <cmath>
 
 namespace phy104 {
@@ -67,38 +72,13 @@ QWidget* labeled(const QString& label, QWidget* field) {
 
 // ---------------------------------------------------------------------------- Panel
 Panel::Panel(const QString& title, const QString& meta, QWidget* parent) : QFrame(parent) {
-    setObjectName("panel");
-    auto* root = new QVBoxLayout(this);
-    root->setContentsMargins(0, 0, 0, 0);
-    root->setSpacing(0);
-
-    auto* header = new QFrame;
-    header->setObjectName("panelHeader");
-    header->setMinimumHeight(36);
-    header->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
-    auto* hl = new QHBoxLayout(header);
-    hl->setContentsMargins(12, 4, 12, 4);
-    hl->setSpacing(8);
-    m_title = new QLabel(title);
-    m_title->setObjectName("panelTitle");
-    m_title->setWordWrap(true);
-    m_title->setMinimumWidth(0);
-    m_meta = new QLabel(meta.toUpper());
-    m_meta->setObjectName("panelMeta");
-    m_meta->setWordWrap(true);
-    m_meta->setMinimumWidth(0);
-    m_meta->setLayoutDirection(Qt::LeftToRight); // run labels, formulas, units and counts must not bidi-mirror
-    m_title->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    m_meta->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
-    hl->addWidget(m_title, 1);
-    hl->addWidget(m_meta, 0);
-    root->addWidget(header);
-
-    auto* bodyHolder = new QWidget;
-    m_body = new QVBoxLayout(bodyHolder);
-    m_body->setContentsMargins(12, 12, 12, 12);
-    m_body->setSpacing(12);
-    root->addWidget(bodyHolder, 1);
+    Ui::Panel form;
+    form.setupUi(this);
+    m_title = form.panelTitle;
+    m_meta = form.panelMeta;
+    m_body = form.bodyLayout;
+    m_title->setText(title);
+    m_meta->setText(meta.toUpper());
 }
 QVBoxLayout* Panel::body() const {
     if (!m_body) {
@@ -121,50 +101,30 @@ void Panel::setTitle(const QString& title) { m_title->setText(title); m_title->s
 
 // ---------------------------------------------------------------------------- UnitField
 UnitField::UnitField(const QString& unit, QWidget* parent) : QFrame(parent) {
-    setObjectName("field");
-    setFixedHeight(32);
-    auto* l = new QHBoxLayout(this);
-    l->setContentsMargins(10, 0, 4, 0);
-    l->setSpacing(6);
-    m_edit = new QLineEdit;
-    m_edit->setFrame(false);
-    m_edit->setLayoutDirection(Qt::LeftToRight);       // keep numeric expressions and scientific symbols stable in Arabic UI
-    m_edit->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
+    Ui::UnitField form;
+    form.setupUi(this);
+    m_edit = form.numberEdit;
+    m_unit = form.unitLabel;
+    m_arrows = form.spinnerControls;
+    m_pasteBtn = form.pasteButton;
+    m_unit->setObjectName("unit");
+    m_unit->setText(unit);
+
     m_edit->installEventFilter(this);
     installEventFilter(this);
-    m_unit = new QLabel(unit);
-    m_unit->setObjectName("unit");
-    m_unit->setAlignment(Qt::AlignVCenter | Qt::AlignRight);
-
-    // clickable arrows ▲▼
-    m_arrows = new QWidget;
-    auto* al = new QVBoxLayout(m_arrows);
-    al->setContentsMargins(0, 2, 0, 2);
-    al->setSpacing(0);
-    auto makeArrow = [&](const char* name, const char* icon, int dir) {
-        auto* b = new QToolButton;
-        b->setObjectName(name);
-        b->setFixedSize(18, 13);
-        b->setAutoRaise(true);
-        b->setAutoRepeat(true);
-        b->setFocusPolicy(Qt::NoFocus);
-        b->setCursor(Qt::PointingHandCursor);
-        b->setIconSize(QSize(12, 12));
-        b->setProperty("iconName", icon);
-        connect(b, &QToolButton::clicked, this, [this, dir] { step(dir); });
-        al->addWidget(b);
-        return b;
-    };
-    makeArrow("spinUp", "chevron-up", +1);
-    makeArrow("spinDown", "chevron-down", -1);
     m_arrows->hide();
-
-    // Paste button remains available to other UnitField users; dense screens can hide it.
-    m_pasteBtn = new QPushButton("📋");
-    m_pasteBtn->setFixedSize(24, 24);
-    m_pasteBtn->setToolTip("Paste from clipboard");
     m_pasteBtn->setCursor(Qt::PointingHandCursor);
     m_pasteBtn->setEnabled(false);
+
+    const auto connectArrow = [this](QToolButton* button, const char* icon, int direction) {
+        button->setCursor(Qt::PointingHandCursor);
+        button->setProperty("iconName", icon);
+        connect(button, &QToolButton::clicked, this, [this, direction] { step(direction); });
+    };
+    connectArrow(form.spinUp, "chevron-up", +1);
+    connectArrow(form.spinDown, "chevron-down", -1);
+
+    // Paste button remains available to other UnitField users; dense screens can hide it.
     connect(m_pasteBtn, &QPushButton::clicked, this, [this] {
         QClipboard* cb = QApplication::clipboard();
         m_edit->insert(cb->text());
@@ -175,11 +135,6 @@ UnitField::UnitField(const QString& unit, QWidget* parent) : QFrame(parent) {
         m_pasteBtn->setEnabled(!QApplication::clipboard()->text().isEmpty());
     });
     m_pasteBtn->setEnabled(!QApplication::clipboard()->text().isEmpty());
-
-    l->addWidget(m_edit, 1);
-    l->addWidget(m_unit);
-    l->addWidget(m_arrows);
-    l->addWidget(m_pasteBtn);
 
     m_liveTimer = new QTimer(this);                  // live update while typing, after a short pause
     m_liveTimer->setSingleShot(true);
@@ -279,12 +234,12 @@ bool UnitField::eventFilter(QObject* watched, QEvent* event) {
 
 // ---------------------------------------------------------------------------- ModeTabs
 ModeTabs::ModeTabs(const QStringList& labels, QWidget* parent) : QWidget(parent), m_group(new QButtonGroup(this)) {
-    auto* l = new QHBoxLayout(this);
-    l->setContentsMargins(0, 0, 0, 0);
-    l->setSpacing(8);
+    Ui::ModeTabs form;
+    form.setupUi(this);
+    auto* l = form.tabsLayout;
     int id = 0;
     for (const QString& label : labels) {
-        auto* b = new QPushButton(QString(label).replace("&", "&&"));
+        auto* b = new QPushButton(QString(label).replace("&", "&&"), this);
         b->setObjectName("modeTab");
         b->setCheckable(true);
         b->setCursor(Qt::PointingHandCursor);
@@ -314,10 +269,9 @@ QString displayResultTitle(const std::string& source) {
 
 // ---------------------------------------------------------------------------- RegisterView
 RegisterView::RegisterView(QWidget* parent) : QFrame(parent) {
-    setObjectName("register");
-    m_layout = new QVBoxLayout(this);
-    m_layout->setContentsMargins(8, 5, 8, 5);
-    m_layout->setSpacing(2);
+    Ui::RegisterView form;
+    form.setupUi(this);
+    m_layout = form.registerLayout;
 }
 
 void RegisterView::updateTextAlignment() {
@@ -409,32 +363,12 @@ void RegisterView::setRegister(const LcdRegister& reg) {
 
 // ---------------------------------------------------------------------------- ResultCard
 ResultCard::ResultCard(QWidget* parent) : QFrame(parent) {
-    setObjectName("resultCard");
-    auto* layout = new QVBoxLayout(this);
-    layout->setContentsMargins(12, 10, 12, 10);
-    layout->setSpacing(4);
-
-    m_title = new QLabel;
-    m_title->setObjectName("resultCardTitle");
-    m_title->setWordWrap(true);
-    m_caption = new QLabel;
-    m_caption->setObjectName("resultCardCaption");
-    m_caption->setWordWrap(true);
-    m_value = new QLabel;
-    m_value->setObjectName("lcdBig"); // retained semantic selector used by interaction tests
-    m_value->setWordWrap(true);
-    m_value->setMinimumWidth(0);
-    m_value->setLayoutDirection(Qt::LeftToRight);
-    m_details = new QLabel;
-    m_details->setObjectName("resultCardDetails");
-    m_details->setWordWrap(true);
-    m_details->setMinimumWidth(0);
-    m_details->setLayoutDirection(Qt::LeftToRight);
-
-    layout->addWidget(m_title);
-    layout->addWidget(m_caption);
-    layout->addWidget(m_value);
-    layout->addWidget(m_details);
+    Ui::ResultCard form;
+    form.setupUi(this);
+    m_title = form.resultCardTitle;
+    m_caption = form.resultCardCaption;
+    m_value = form.lcdBig; // retained semantic selector used by interaction tests
+    m_details = form.resultCardDetails;
 }
 
 void ResultCard::setRegister(const LcdRegister& result) {
@@ -451,18 +385,10 @@ void ResultCard::setRegister(const LcdRegister& result) {
 
 // ---------------------------------------------------------------------------- NoticeCard
 NoticeCard::NoticeCard(QWidget* parent) : QFrame(parent) {
-    setObjectName("notice");
-    auto* l = new QVBoxLayout(this);
-    l->setContentsMargins(8, 6, 8, 6);
-    l->setSpacing(3);
-    m_title = new QLabel;
-    m_title->setObjectName("noticeTitle");
-    m_title->setWordWrap(true);
-    m_body = new QLabel;
-    m_body->setObjectName("noticeBody");
-    m_body->setWordWrap(true);
-    l->addWidget(m_title);
-    l->addWidget(m_body);
+    Ui::NoticeCard form;
+    form.setupUi(this);
+    m_title = form.noticeTitle;
+    m_body = form.noticeBody;
 }
 
 void NoticeCard::setNotice(const QString& title, const QString& body, bool error) {
@@ -478,15 +404,13 @@ void NoticeCard::setNotice(const Notice& n) {
 
 // ---------------------------------------------------------------------------- CalculatorKeypad
 CalculatorKeypad::CalculatorKeypad(QWidget* parent) : QWidget(parent) {
-    auto* grid = new QGridLayout(this);
-    grid->setContentsMargins(0, 0, 0, 0);
-    grid->setSpacing(5);
+    Ui::CalculatorKeypad form;
+    form.setupUi(this);
 
     struct Key {
         const char* label;
         const char* insert;
         const char* kind;
-        int span = 1;
     }; // insert: text to type, or "" for special keys
     const Key rows[7][8] = {
         {{"sin", "sin(", "calcScientific"}, {"cos", "cos(", "calcScientific"}, {"tan", "tan(", "calcScientific"},
@@ -506,20 +430,19 @@ CalculatorKeypad::CalculatorKeypad(QWidget* parent) : QWidget(parent) {
         {{"1", "1", "calcNumber"}, {"2", "2", "calcNumber"}, {"3", "3", "calcNumber"}, {"−", "-", "calcOperator"},
          {"cm", "cm", "calcScientific"}, {"mm", "mm", "calcScientific"}, {"µm", "um", "calcScientific"},
          {"^", "^", "calcOperator"}},
-        {{"0", "0", "calcNumber", 2}, {"", "", "", 1}, {".", ".", "calcNumber", 2}, {"", "", "", 1},
-         {"+", "+", "calcOperator", 2}, {"", "", "", 1}, {"=", "", "calcEquals", 2}, {"", "", "", 1}}};
+        {{"0", "0", "calcNumber"}, {"", "", ""}, {".", ".", "calcNumber"}, {"", "", ""},
+         {"+", "+", "calcOperator"}, {"", "", ""}, {"=", "", "calcEquals"}, {"", "", ""}}};
 
     for (int r = 0; r < 7; ++r) {
         for (int c = 0; c < 8; ++c) {
             const Key& k = rows[r][c];
             if (!*k.label) continue;
-            auto* b = new QPushButton(k.label);
+            const QString uiName = QStringLiteral("key%1%2").arg(r).arg(c);
+            auto* b = findChild<QPushButton*>(uiName);
+            Q_ASSERT_X(b, "CalculatorKeypad", qPrintable("Missing Designer key: " + uiName));
+            if (!b) continue;
             b->setObjectName(k.kind);
-            b->setFocusPolicy(Qt::NoFocus);                       // the LCD input keeps the cursor
             b->setCursor(Qt::PointingHandCursor);
-            b->setMinimumSize(0, 30);
-            b->setMaximumHeight(36);
-            b->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
             const QString label = k.label, text = k.insert;
             connect(b, &QPushButton::clicked, this, [this, label, text] {
                 if (label == "DEL") emit backspace();
@@ -527,10 +450,8 @@ CalculatorKeypad::CalculatorKeypad(QWidget* parent) : QWidget(parent) {
                 else if (label == "=") emit equals();
                 else emit insertText(text);
             });
-            grid->addWidget(b, r, c, 1, k.span);
         }
     }
-    for (int c = 0; c < 8; ++c) grid->setColumnStretch(c, 1);
 }
 
 void showHelpDialog(QWidget* parent, const QString& title, const QString& html) {

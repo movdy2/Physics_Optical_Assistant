@@ -2,87 +2,67 @@
 #include "AppContext.h"
 #include "Icons.h"
 #include "ThemeManager.h"
+#include "ui_BasePage.h"
 
 #include <QAction>
-#include <utility>
 #include <QHBoxLayout>
-#include <QLabel>
 #include <QMenu>
 #include <QPushButton>
 #include <QToolButton>
 #include <QVBoxLayout>
+#include <utility>
 
 namespace phy104 {
 
 BasePage::BasePage(const QString& title, const QString& subtitle, AppContext* context, QWidget* parent, bool showHeader)
     : QWidget(parent), m_ctx(context) {
+    Ui::BasePage form;
+    form.setupUi(this);
+
     setObjectName("pageArea");
-    // every page fills the whole window: no width cap, no centring, so a maximised window is used end to end
-    auto* outer = new QHBoxLayout(this);
-    outer->setContentsMargins(0, 0, 0, 0);
-    auto* inner = new QWidget;
-    inner->setObjectName("pageInner");
-    inner->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    outer->addWidget(inner, 1);
-    auto* root = new QVBoxLayout(inner);
-    m_root = root;
-    if (showHeader) root->setContentsMargins(16, 12, 16, 10);
-    else root->setContentsMargins(0, 0, 0, 0);
-    root->setSpacing(showHeader ? 8 : 0);
+    form.pageInner->setObjectName("pageInner");
+    m_root = form.rootLayout;
+    m_content = form.contentLayout;
+    m_columnsLayout = form.threeColumnsLayout;
+    m_firstColumnLayout = form.firstColumnLayout;
+    m_centerColumnLayout = form.centerColumnLayout;
+    m_lastColumnLayout = form.lastColumnLayout;
+    m_columnsHost = form.threeColumnsHost;
+    m_firstColumn = form.firstColumn;
+    m_lastColumn = form.lastColumn;
+    m_saveButton = form.outline;
+    m_exportButton = form.exportMenu;
 
-    if (showHeader) {
-        auto* header = new QHBoxLayout;
-        auto* titles = new QVBoxLayout;
-        titles->setSpacing(4);
-        auto* t = new QLabel(title);
-        t->setObjectName("pageTitle");
-        titles->addWidget(t);
-        if (!subtitle.isEmpty()) {
-            auto* s = new QLabel(subtitle);
-            s->setObjectName("pageSubtitle");
-            titles->addWidget(s);
-        }
-        auto* save = new QPushButton("Save");
-        m_saveButton = save;
-        save->setMinimumWidth(130);
-        save->setObjectName("outline");
-        save->setCursor(Qt::PointingHandCursor);
-        // one icon, three formats: PDF report / Excel / CSV (the menu is attached below)
-        m_exportButton = new QToolButton;
-        m_exportButton->setObjectName("exportMenu");
-        m_exportButton->setCursor(Qt::PointingHandCursor);
-        m_exportButton->setPopupMode(QToolButton::InstantPopup);
-        m_exportButton->setToolTip("Export: PDF report, Excel (.xls) or CSV (.csv)");
-        m_exportButton->setText("Export");
-        m_exportButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-        m_exportButton->setIconSize(QSize(18, 18));
-        auto* exportMenu = new QMenu(m_exportButton);
-        for (const auto& entry : {std::pair<const char*, int>{"PDF report…", 0}, {"Excel (.xls)…", 1}, {"CSV (.csv)…", 2}}) {
-            QAction* action = exportMenu->addAction(QString::fromUtf8(entry.first));
-            const int format = entry.second;
-            connect(action, &QAction::triggered, this, [this, format] { emit exportFormatRequested(format); });
-        }
-        m_exportButton->setMenu(exportMenu);
-        const auto refreshExportIcon = [this] {
-            m_exportButton->setIcon(Icons::pixmap("download", ThemeManager::instance().theme().amber, 18));
-        };
-        refreshExportIcon();
-        connect(&ThemeManager::instance(), &ThemeManager::themeChanged, this, refreshExportIcon);
-        header->addLayout(titles, 1);
-        header->addSpacing(10);
-        header->addWidget(save, 0, Qt::AlignTop);
-        header->addSpacing(8);
-        header->addWidget(m_exportButton, 0, Qt::AlignTop);
-        root->addLayout(header);
-
-        connect(save, &QPushButton::clicked, this, [this] {
-            if (m_ctx->saveSession()) emit m_ctx->message(QString(" ") + m_ctx->sessionFile);
-        });
+    form.pageTitle->setObjectName("pageTitle");
+    form.pageSubtitle->setObjectName("pageSubtitle");
+    form.pageTitle->setText(title);
+    form.pageSubtitle->setText(subtitle);
+    form.pageSubtitle->setVisible(!subtitle.isEmpty());
+    form.pageHeader->setVisible(showHeader);
+    if (!showHeader) {
+        m_root->setContentsMargins(0, 0, 0, 0);
+        m_root->setSpacing(0);
     }
 
-    m_content = new QVBoxLayout;
-    m_content->setSpacing(10);
-    root->addLayout(m_content, 1);
+    m_saveButton->setCursor(Qt::PointingHandCursor);
+    m_exportButton->setCursor(Qt::PointingHandCursor);
+    auto* exportMenu = new QMenu(m_exportButton);
+    for (const auto& entry : {std::pair<const char*, int>{"PDF report…", 0}, {"Excel (.xls)…", 1}, {"CSV (.csv)…", 2}}) {
+        QAction* action = exportMenu->addAction(QString::fromUtf8(entry.first));
+        const int format = entry.second;
+        connect(action, &QAction::triggered, this, [this, format] { emit exportFormatRequested(format); });
+    }
+    m_exportButton->setMenu(exportMenu);
+    const auto refreshExportIcon = [this] {
+        m_exportButton->setIcon(Icons::pixmap("download", ThemeManager::instance().theme().amber, 18));
+    };
+    refreshExportIcon();
+    connect(&ThemeManager::instance(), &ThemeManager::themeChanged, this, refreshExportIcon);
+
+    connect(m_saveButton, &QPushButton::clicked, this, [this] {
+        if (m_ctx->saveSession()) emit m_ctx->message(QString(" ") + m_ctx->sessionFile);
+    });
+
 }
 
 void BasePage::setCompactLayout() {
@@ -107,35 +87,33 @@ void BasePage::setStatusInfo(const StatusInfo& info, bool paused) {
 }
 
 BasePage::Columns BasePage::addThreeColumns(int leftWidth, int rightWidth) {
-    auto* row = new QHBoxLayout;
-    row->setSpacing(8);
     Columns c;
     const bool rtl = (layoutDirection() == Qt::RightToLeft);
-    // In RTL mode, swap left/right so the sidebar appears on the right and the notebook on the left.
     const int firstWidth = rtl ? rightWidth : leftWidth;
-    const int secondWidth = rtl ? leftWidth : rightWidth;
-    auto make = [&](int width) {
-        auto* col = new QVBoxLayout;
-        col->setSpacing(8);
-        auto* holder = new QWidget;
-        holder->setLayout(col);
-        col->setContentsMargins(0, 0, 0, 0);
-        if (width > 0) holder->setFixedWidth(width);
-        row->addWidget(holder, width > 0 ? 0 : 1);
-        return col;
+    const int lastWidth = rtl ? leftWidth : rightWidth;
+    auto setColumnWidth = [](QWidget* column, int width) {
+        if (width > 0) column->setFixedWidth(width);
+        else {
+            column->setMinimumWidth(0);
+            column->setMaximumWidth(QWIDGETSIZE_MAX);
+        }
     };
-    auto* firstCol = make(firstWidth);
-    auto* centerCol = make(0);
-    auto* lastCol = make(secondWidth);
+
+    setColumnWidth(m_firstColumn, firstWidth);
+    setColumnWidth(m_lastColumn, lastWidth);
+    m_columnsLayout->setStretch(0, firstWidth > 0 ? 0 : 1);
+    m_columnsLayout->setStretch(1, 1);
+    m_columnsLayout->setStretch(2, lastWidth > 0 ? 0 : 1);
+
+    m_columnsHost->show();
     if (rtl) {
-        c.left = lastCol;
-        c.right = firstCol;
+        c.left = m_lastColumnLayout;
+        c.right = m_firstColumnLayout;
     } else {
-        c.left = firstCol;
-        c.right = lastCol;
+        c.left = m_firstColumnLayout;
+        c.right = m_lastColumnLayout;
     }
-    c.center = centerCol;
-    m_content->addLayout(row, 1);
+    c.center = m_centerColumnLayout;
     return c;
 }
 

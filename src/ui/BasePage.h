@@ -6,6 +6,7 @@ class QHBoxLayout;
 class QPushButton;
 class QToolButton;
 class QVBoxLayout;
+class QWidget;
 
 namespace phy104 {
 
@@ -53,6 +54,13 @@ protected:
 private:
     QVBoxLayout* m_content;
     QVBoxLayout* m_root = nullptr;
+    QHBoxLayout* m_columnsLayout = nullptr;
+    QVBoxLayout* m_firstColumnLayout = nullptr;
+    QVBoxLayout* m_centerColumnLayout = nullptr;
+    QVBoxLayout* m_lastColumnLayout = nullptr;
+    QWidget* m_columnsHost = nullptr;
+    QWidget* m_firstColumn = nullptr;
+    QWidget* m_lastColumn = nullptr;
     QPushButton* m_saveButton = nullptr;
     QToolButton* m_exportButton = nullptr;
     StatusInfo m_status;
