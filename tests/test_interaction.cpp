@@ -857,6 +857,8 @@ private slots:
 
     // ------------------------------------------------------------------ the six screens of the second Figma batch
     void newScreensShowTheNumbersOfTheDesign() {
+        goTo(m_app->grating);
+        click(findControl(m_app->grating, "resetParameters"));
         struct Case { QWidget* page; const char* big; };
         const Case cases[] = {{m_app->newton, "1.5492 mm"}, {m_app->thinFilm, "1.0000"}, {m_app->grating, "+17.4576°"},
                               {m_app->singleSlit, "0.2865°"}, {m_app->polarization, "12.5000 W/m²"}, {m_app->michelson, "+2.3704"}};
@@ -1035,8 +1037,9 @@ private slots:
         click(findControl(m_app->singleSlit, "resetParameters"));
         QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->singleSlit) == QString("0.2865°"), 1500);
 
-        // grating: the Resolution tab resolves 600 nm / (1 × 120 lines) in the first order
+        // grating: begin from known defaults so persisted user settings cannot invalidate the order
         goTo(m_app->grating);
+        click(findControl(m_app->grating, "resetParameters"));
         QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->grating) == QString("+17.4576°"), 1500);
         click(modeTab(m_app->grating, "Resolution"));
         const bool resolutionReady = waitForBigValue(m_app->grating, QString("30 nm"));
@@ -1340,6 +1343,7 @@ private slots:
         QVERIFY(!win().findChild<QLabel*>("engineReady"));
 
         goTo(m_app->grating);
+        click(findControl(m_app->grating, "resetParameters"));
         UnitField* gratingOrder = nullptr;
         for (auto* field : m_app->grating->findChildren<UnitField*>())
             if (field->property("fieldId").toString() == QLatin1String("m")) gratingOrder = field;
@@ -1351,6 +1355,7 @@ private slots:
     }
     void gratingSpinnerSteps() {
         goTo(m_app->grating);
+        click(findControl(m_app->grating, "resetParameters"));
         UnitField* gratingOrder = nullptr;
         for (auto* field : m_app->grating->findChildren<UnitField*>())
             if (field->property("fieldId").toString() == QLatin1String("m")) gratingOrder = field;
