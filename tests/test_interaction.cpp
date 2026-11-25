@@ -1227,8 +1227,16 @@ private slots:
                 QVERIFY(label->font().families().contains("JetBrains Mono"));
             if (objectName != "regTitle") QVERIFY(label->alignment().testFlag(Qt::AlignRight));
             if (label->text().contains("الانعكاس الكلي الداخلي")) hasArabicTirResult = true;
-            if (label->hasHeightForWidth())
-                QVERIFY2(label->height() >= label->heightForWidth(label->width()), qPrintable("clipped register label: " + label->text()));
+            if (label->hasHeightForWidth()) {
+                const int requiredHeight = label->heightForWidth(label->width());
+                QVERIFY2(label->height() >= requiredHeight,
+                         qPrintable(QStringLiteral("clipped register label %1: %2x%3, needs %4; parent %5 %6x%7; text=%8")
+                                        .arg(objectName).arg(label->width()).arg(label->height()).arg(requiredHeight)
+                                        .arg(label->parentWidget() ? label->parentWidget()->objectName() : QString())
+                                        .arg(label->parentWidget() ? label->parentWidget()->width() : -1)
+                                        .arg(label->parentWidget() ? label->parentWidget()->height() : -1)
+                                        .arg(label->text())));
+            }
         }
         QVERIFY(checkedRegisterLabels > 0);
         QVERIFY2(hasArabicTirResult, "the Arabic TIR result is missing from the calculation registers");
