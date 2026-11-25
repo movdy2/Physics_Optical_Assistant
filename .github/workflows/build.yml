@@ -220,9 +220,14 @@ jobs:
           $replayExit = $LASTEXITCODE
           Write-Host "::notice title=diagnostic::Verbose interaction replay exited with $replayExit"
           if (Test-Path "interaction-replay.txt") {
-            $replayFailures = @(Select-String -Path "interaction-replay.txt" -Pattern "FAIL!|QFATAL|Totals:") | Select-Object -Last 20
+            $replayFailures = @(Select-String -Path "interaction-replay.txt" -Pattern "FAIL!|QFATAL|Totals:" -Context 0,4 | Select-Object -Last 15)
             if ($replayFailures.Count -gt 0) {
-              $replayFailures | ForEach-Object { Write-Host "::error title=Qt interaction replay::$($_.Line)" }
+              foreach ($failure in $replayFailures) {
+                Write-Host "::error title=Qt interaction replay::$($failure.Line)"
+                foreach ($contextLine in $failure.Context.PostContext) {
+                  if ($contextLine.Trim()) { Write-Host "::error title=Qt interaction context::$contextLine" }
+                }
+              }
             } else {
               Get-Content "interaction-replay.txt" -Tail 30 | Where-Object { $_.Trim() } |
                 ForEach-Object { Write-Host "::error title=Qt interaction replay::$($_)" }
