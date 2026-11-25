@@ -110,8 +110,10 @@ public:
     void setRegister(const LcdRegister& reg);
 protected:
     void changeEvent(QEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
 private:
     void updateTextAlignment();
+    void updateWrappedTitleHeights();
     QVBoxLayout* m_layout;
 };
 
