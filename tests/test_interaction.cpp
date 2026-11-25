@@ -129,6 +129,35 @@ QString bigValue(QWidget* page, int index = 0) {
     return index < bigs.size() ? bigs[index]->text() : QString();
 }
 
+bool waitForBigValue(QWidget* page, const QString& expected, int timeoutMs = 1500) {
+    QElapsedTimer timer;
+    timer.start();
+    do {
+        QApplication::processEvents();
+        if (bigValue(page) == expected) return true;
+        QTest::qWait(10);
+    } while (timer.elapsed() < timeoutMs);
+    return bigValue(page) == expected;
+}
+
+QString modelPageState(QWidget* page) {
+    QStringList fields;
+    for (UnitField* field : page->findChildren<UnitField*>()) {
+        bool ok = false;
+        const double value = field->value(&ok);
+        fields << QStringLiteral("%1=%2 (ok=%3, value=%4)")
+                      .arg(field->property("fieldId").toString(), field->text())
+                      .arg(ok).arg(value, 0, 'g', 8);
+    }
+    const auto* tabs = page->findChild<ModeTabs*>();
+    bool calculateEnabled = true;
+    for (QPushButton* button : page->findChildren<QPushButton*>())
+        if (button->property("controlId").toString() == QLatin1String("calculate")) calculateEnabled = button->isEnabled();
+    return QStringLiteral("tab=%1 calculateEnabled=%2 fields=[%3]")
+        .arg(tabs ? tabs->current() : -1).arg(calculateEnabled)
+        .arg(fields.join(QStringLiteral("; ")));
+}
+
 /// The real tab buttons inside a ModeTabs strip (objectName "modeTab").
 QPushButton* modeTab(QWidget* page, const QString& label) {
     for (auto* b : page->findChildren<QPushButton*>(QStringLiteral("modeTab")))
@@ -1010,7 +1039,10 @@ private slots:
         goTo(m_app->grating);
         QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->grating) == QString("+17.4576°"), 1500);
         click(modeTab(m_app->grating, "Resolution"));
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->grating), QString("30 nm"), 1500);            // δλ = 600 / (1 × 20 illuminated lines)
+        const bool resolutionReady = waitForBigValue(m_app->grating, QString("30 nm"));
+        QVERIFY2(resolutionReady,
+                 qPrintable(QStringLiteral("grating resolution actual=%1; %2")
+                                .arg(bigValue(m_app->grating), modelPageState(m_app->grating))));
         QVERIFY2(allLabelTexts(m_app->grating).contains("Grating / two lines one Rayleigh step apart"), "resolution title missing");
         click(findControl(m_app->grating, "resetParameters"));
         QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->grating) == QString("+17.4576°"), 1500);
@@ -1021,7 +1053,10 @@ private slots:
         goTo(m_app->grating);
         QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->grating) == QString("+17.4576°"), 1500);
         click(modeTab(m_app->grating, "Orders"));
-        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->grating), QString("7 orders"), 1500);
+        const bool ordersReady = waitForBigValue(m_app->grating, QString("7 orders"));
+        QVERIFY2(ordersReady,
+                 qPrintable(QStringLiteral("grating orders actual=%1; %2")
+                                .arg(bigValue(m_app->grating), modelPageState(m_app->grating))));
         QVERIFY2(allLabelTexts(m_app->grating).contains("Grating / every propagating order"), "orders title missing");
         click(modeTab(m_app->grating, "Transmission"));
         QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->grating) == QString("+17.4576°"), 1500);
