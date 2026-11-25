@@ -223,7 +223,8 @@ void ScientificKeyboard::handleControl(const QString& control, QPushButton* butt
 }
 
 void ScientificKeyboard::applyShift() {                           // SHIFT: capital Greek letters on the Greek page
-    for (auto* b : findChildren<QPushButton*>("rkey")) {
+    const auto buttons = findChildren<QPushButton*>("rkey");
+    for (auto* b : buttons) {
         const QString capital = b->property("shiftLegend").toString();
         if (capital.isEmpty()) continue;
         b->setText(m_shift ? capital : b->property("legend").toString());
