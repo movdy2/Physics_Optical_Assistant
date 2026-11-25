@@ -41,5 +41,6 @@ if(TARGET phy104_ui)
     phy104_enable_warnings(test_interaction)
     target_compile_definitions(test_interaction PRIVATE DATA_DIR="${CMAKE_SOURCE_DIR}/data")
     add_test(NAME interaction_tests COMMAND test_interaction)
-    set_tests_properties(interaction_tests PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 120)
+    # The full real-window interaction suite is significantly slower on Windows than Linux.
+    set_tests_properties(interaction_tests PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 300)
 endif()
