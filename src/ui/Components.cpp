@@ -292,12 +292,12 @@ void RegisterView::updateTextAlignment() {
             label->setAlignment((rtl ? Qt::AlignRight : Qt::AlignLeft) | Qt::AlignTop);
         }
     }
-    QTimer::singleShot(0, this, &RegisterView::updateWrappedTitleHeights);
+    QTimer::singleShot(0, this, &RegisterView::updateWrappedLabelHeights);
 }
 
-void RegisterView::updateWrappedTitleHeights() {
+void RegisterView::updateWrappedLabelHeights() {
     for (QLabel* label : findChildren<QLabel*>()) {
-        if (label->objectName() != QLatin1String("regTitle") || !label->hasHeightForWidth() || label->width() <= 0)
+        if (!label->hasHeightForWidth() || label->width() <= 0)
             continue;
         const int requiredHeight = label->heightForWidth(label->width());
         if (requiredHeight > 0 && label->minimumHeight() != requiredHeight)
@@ -307,7 +307,7 @@ void RegisterView::updateWrappedTitleHeights() {
 
 void RegisterView::resizeEvent(QResizeEvent* event) {
     QFrame::resizeEvent(event);
-    QTimer::singleShot(0, this, &RegisterView::updateWrappedTitleHeights);
+    QTimer::singleShot(0, this, &RegisterView::updateWrappedLabelHeights);
 }
 
 void RegisterView::changeEvent(QEvent* event) {

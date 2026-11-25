@@ -113,7 +113,7 @@ protected:
     void resizeEvent(QResizeEvent* event) override;
 private:
     void updateTextAlignment();
-    void updateWrappedTitleHeights();
+    void updateWrappedLabelHeights();
     QVBoxLayout* m_layout;
 };
 
