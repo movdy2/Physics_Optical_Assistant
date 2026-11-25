@@ -1054,6 +1054,7 @@ private slots:
     void remainingSecondTabsShowTheirOwnNumbers() {
         // grating: the Orders tab lists every peak instead of one selected order
         goTo(m_app->grating);
+        click(findControl(m_app->grating, "resetParameters"));
         QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->grating) == QString("+17.4576°"), 1500);
         click(modeTab(m_app->grating, "Orders"));
         const bool ordersReady = waitForBigValue(m_app->grating, QString("7 orders"));
