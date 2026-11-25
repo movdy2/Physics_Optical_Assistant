@@ -202,6 +202,29 @@ jobs:
         run: |
           ctest --test-dir build -C Release --output-on-failure 2>&1 | Tee-Object -FilePath ctest.log
 
+      - name: Replay failing Windows interaction tests
+        if: failure()
+        shell: pwsh
+        timeout-minutes: 4
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          $PSNativeCommandUseErrorActionPreference = $false
+          $testExe = Get-ChildItem -Path build -Filter test_interaction.exe -Recurse | Select-Object -First 1
+          if (-not $testExe) {
+            Write-Host "::error title=diagnostic::Could not locate test_interaction.exe for a verbose replay"
+            exit 0
+          }
+          Write-Host "::notice title=diagnostic::Replaying $($testExe.FullName) with QtTest output captured to a file"
+          & $testExe.FullName -v1 -o "interaction-replay.txt,txt"
+          $replayExit = $LASTEXITCODE
+          Write-Host "::notice title=diagnostic::Verbose interaction replay exited with $replayExit"
+          if (Test-Path "interaction-replay.txt") {
+            Get-Content "interaction-replay.txt" -Tail 35 | Where-Object { $_.Trim() } |
+              ForEach-Object { Write-Host "::error title=Qt interaction replay::$($_)" }
+          }
+          exit 0
+
       - name: Annotate failing tests
         if: failure()
         shell: pwsh
