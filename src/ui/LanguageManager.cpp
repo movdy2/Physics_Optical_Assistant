@@ -11,6 +11,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLabel>
+#include <QLayout>
 #include <QRegularExpression>
 #include <QSet>
 #include <QVector>
@@ -803,6 +804,7 @@ void LanguageManager::apply(QWidget* root) {
     }
     m_applying = false;
     root->updateGeometry();
+    if (QLayout* layout = root->layout()) layout->activate();
     root->update();
 }
 
