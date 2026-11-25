@@ -1010,7 +1010,7 @@ private slots:
         goTo(m_app->grating);
         QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->grating) == QString("+17.4576°"), 1500);
         click(modeTab(m_app->grating, "Resolution"));
-        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->grating) == QString("30 nm"), 1500);           // δλ = 600 / (1 × 20 illuminated lines)
+        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->grating), QString("30 nm"), 1500);            // δλ = 600 / (1 × 20 illuminated lines)
         QVERIFY2(allLabelTexts(m_app->grating).contains("Grating / two lines one Rayleigh step apart"), "resolution title missing");
         click(findControl(m_app->grating, "resetParameters"));
         QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->grating) == QString("+17.4576°"), 1500);
@@ -1021,7 +1021,7 @@ private slots:
         goTo(m_app->grating);
         QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->grating) == QString("+17.4576°"), 1500);
         click(modeTab(m_app->grating, "Orders"));
-        QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->grating) == QString("7 orders"), 1500);
+        QTRY_COMPARE_WITH_TIMEOUT(bigValue(m_app->grating), QString("7 orders"), 1500);
         QVERIFY2(allLabelTexts(m_app->grating).contains("Grating / every propagating order"), "orders title missing");
         click(modeTab(m_app->grating, "Transmission"));
         QTRY_VERIFY_WITH_TIMEOUT(bigValue(m_app->grating) == QString("+17.4576°"), 1500);
