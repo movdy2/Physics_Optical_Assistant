@@ -200,7 +200,7 @@ jobs:
         env:
           QT_QPA_PLATFORM: offscreen
         run: |
-          ctest --test-dir build -C Release --output-on-failure 2>&1 | Tee-Object -FilePath ctest.log
+          ctest --test-dir build -C Release --output-on-failure --verbose 2>&1 | Tee-Object -FilePath ctest.log
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Annotate failing tests
