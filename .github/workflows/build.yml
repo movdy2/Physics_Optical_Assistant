@@ -201,7 +201,18 @@ jobs:
           QT_QPA_PLATFORM: offscreen
         run: |
           ctest --test-dir build -C Release --output-on-failure --verbose 2>&1 | Tee-Object -FilePath ctest.log
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $ctestExit = $LASTEXITCODE
+          if ($ctestExit -ne 0) {
+            $testExe = Join-Path $PWD "build\tests\Release\test_interaction.exe"
+            if (Test-Path $testExe) {
+              Write-Host "::group::Replay interaction tests with per-test output"
+              & $testExe -v1 2>&1 | Tee-Object -FilePath interaction-replay.log
+              Write-Host "::endgroup::"
+            } else {
+              Write-Host "::error title=diagnostic::Could not locate $testExe for a verbose replay"
+            }
+            exit $ctestExit
+          }
 
       - name: Annotate failing tests
         if: failure()
@@ -209,12 +220,16 @@ jobs:
         run: |
           $log = "ctest.log"
           if (Test-Path $log) {
-            $diagnosticLines = @(Select-String -Path $log -Pattern "FAIL:|FAIL!|QFATAL|Segmentation|Aborted|Test #[0-9]+:|[0-9]+ - .*\((Failed|Timeout|Not Run)\)|The following tests FAILED|Errors while running CTest|Total Test time|tests failed" | Select-Object -First 40)
+            $diagnosticLines = @(Select-String -Path $log -Pattern "FAIL:|FAIL!|QFATAL|Segmentation|Aborted|Test #[0-9]+:|[0-9]+ - .*\((Failed|Timeout|Not Run)\)|The following tests FAILED|Errors while running CTest|Total Test time|tests failed" | Select-Object -First 8)
             if ($diagnosticLines.Count -gt 0) {
               $diagnosticLines | ForEach-Object { Write-Host "::error title=CTest diagnostic::$($_.Line)" }
             }
-            Get-Content $log -Tail 40 | Where-Object { $_.Trim() } |
+            Get-Content $log -Tail 10 | Where-Object { $_.Trim() } |
               ForEach-Object { Write-Host "::error title=CTest output::$($_)" }
+          }
+          if (Test-Path "interaction-replay.log") {
+            Get-Content "interaction-replay.log" -Tail 32 | Where-Object { $_.Trim() } |
+              ForEach-Object { Write-Host "::error title=Qt interaction replay::$($_)" }
           }
 
   # ------------------------------------------------------------------ the business layer alone, no Qt needed
